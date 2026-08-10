@@ -1,0 +1,13 @@
+{
+  "plugins": {
+    "agentmail": {
+      "enabled": true
+    },
+    "apify": {
+      "enabled": true
+    },
+    "datadog": {
+      "enabled": true
+    }
+  }
+}

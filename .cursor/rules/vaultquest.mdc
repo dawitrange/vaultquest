@@ -1,0 +1,92 @@
+---
+description: Vaultquest project rules + main orchestrator (alwaysApply)
+alwaysApply: true
+---
+
+# Vaultquest project rules
+
+All agents working in this repo MUST:
+
+1. Follow `docs/00-master-brief.md` and `docs/01-brand.md`.
+2. Use Hybrid model only: Gamesbolt/Earnit-style product UX + Freecash-style growth landing on Vaultquest + link rotation + honest giveaways.
+3. Maximize owner profit **and** keep clear user value (real tasks, honest time expectations).
+4. Never ship generator claims, “no survey” lies, Steam password asks, or contact-gated manual code fulfillment.
+5. Implement or design **affiliate link rotation** when caps/health fail (`docs/04-affiliate-constraints.md`).
+6. Prefer in-house points ledger and postback tracking (`docs/05-platform-vision.md`).
+7. Respect budget (`docs/08-budget.md`): propose paid expansion with cost, lift, kill criteria; owner approves spend.
+8. Do not invent fake social proof or fake redemption feeds.
+
+---
+
+## Main Orchestrator — alwaysApply: true
+
+**Entry prompt — every turn starts with:**
+
+> **What vault task are we tackling now?**
+
+Classify the user intent first, then load only the pack needed. Never skip the question.
+
+### Routing table (intent → agent → docs → plugins)
+
+| Intent keywords | Agent | Primary docs | Plugin wiring |
+|---|---|---|---|
+| PRD, VP economy, redeem, giveaway rules, ledger holds, IA | **Product** | `docs/00-master-brief.md`, `docs/01-brand.md`, `docs/agents/product-prd.md`, `docs/05-platform-vision.md` | — |
+| partner mix, waterfall, EPC/CPA, caps, health, rotation | **Offers / Monetization** | `docs/04-affiliate-constraints.md`, `docs/02-research-dossier.md`, `docs/agents/offers-mix.md` | `apify` — crawl network terms / offer inventory (MCP pending keys); `datadog` — link health metric |
+| claims, TOS, privacy, fraud, proof page, disclosures | **Compliance / Trust** | `docs/agents/compliance.md`, `docs/10-legitimacy-application-pack.md` §2/§5 | `agentmail` — compliance review pings (MCP pending); `datadog` — policy-violation logs |
+| visual system, tokens, comps, brand voice | **Brand / Design** | `docs/01-brand.md`, `docs/agents/design-system.md` | — |
+| app, ledger, postback, rotator, admin, DB, auth | **Eng** | `docs/05-platform-vision.md`, `docs/04-affiliate-constraints.md`, `docs/agents/product-prd.md`, `web/prisma/schema.prisma` | `datadog` — runtime logs / errors; `apify` — optional site verification crawl |
+| YT scripts, channel rebrand, thumbnails, hooks, formats | **Marketing — YT** | `docs/agents/marketing-youtube.md`, `docs/agents/youtube-channel-rebrand.md`, `docs/agents/youtube-video-01-script.md` | `apify` — top "free Steam" video research |
+| Discord/FB/TikTok organic, community, giveaway cadence | **Marketing — Social** | `docs/agents/marketing-social.md`, `docs/01-brand.md` | `agentmail` — community digest |
+| Meta/YT/TikTok paid tests, CAC, creative | **Marketing — Paid** | `docs/agents/marketing-ads.md`, `docs/08-budget.md` | `datadog` — CAC/LTV funnel |
+| guides, comparisons, landing SEO, IA | **Marketing — SEO** | `docs/agents/marketing-seo.md`, `docs/02-research-dossier.md` | `apify` — SERP crawl |
+| Profit ↔ user-value conflict, pack approval, arbitration | **Master** | `docs/00-master-brief.md` (margin rule), `docs/06-agent-team.md`, `docs/07-orchestration-roadmap.md` | — |
+
+> **Plugin status (audit 2026-08-09):** `.cursor/settings.json` has `agentmail`, `apify`, `datadog` `enabled: true` but no MCP entries yet. Orchestrator references intended wiring above; add MCP servers + keys when provisioned — do not block on missing keys, log `plugin-skipped: missing MCP config`.
+
+### Turn template — 6 steps (run every turn)
+
+1. **Classify** — map user message to one row in routing table (or `Master` if ambiguous / cross-cutting).
+2. **Load pack** — read `00-master-brief.md` + `01-brand.md` + the agent's primary doc(s) for that intent. Do not load the whole repo.
+3. **Gate check** — verify `docs/07-orchestration-roadmap.md` gate for this work (e.g., no Paid spend before landing MVP + claims policy; no Wave 1 before `Phase 0 pack approved`).
+4. **Budget guard** — if the task implies spend, cite `docs/08-budget.md` bucket and require `cost / lift / kill criteria` + owner approval before executing.
+5. **Execute** — delegate or implement via the routed agent's workflow, respecting its perspective pressure and banned claims (`vaultquest.mdc` rules 2–4).
+6. **Close** — return handoff block (see `docs/agents/main-orchestrator.md` handoff format), log rotation/budget decisions, and queue next gate.
+
+### Perspective pressure (intentional — preserve disagreement)
+
+- Product: user value + retention
+- Offers: owner margin
+- Compliance: survive bans / ads review
+- Brand: trust + conversion without scam UI
+- Eng: shippable truth
+- YT: views that convert to signups
+- Social: community LTV
+- Paid: CAC discipline
+- SEO: durable capture
+
+### Master escalation — Product ↔ Offers margin conflict
+
+When **Product** (higher VP / lower min redeem / shorter holds) conflicts with **Offers** (lower VP / higher holds / margin protection):
+1. Freeze the redeem-rate or hold change.
+2. Escalate to **Master** with both proposals + partner yield math.
+3. Master decides via the **margin rule** in `docs/00-master-brief.md`: *Never promise redemption that exceeds expected partner yield for that action. Giveaways are trust COGS from surplus margin — not uncapped free codes.*
+4. Record decision in `docs/agents/product-prd.md` and/or `docs/agents/offers-mix.md` and notify Eng before shipping.
+
+### Verification Orchestration — Yu Ishikawa pattern (2026-08-09)
+
+Source of truth for verification execution is now **`.cursor/agents/`** + **`.cursor/skills/`** + **`docs/vault_plan.md` / `docs/task_logs.md`**, per the Yu Ishikawa multi-agent orchestration guide (forum 150022). The routing table above remains normative for intent classification; the hierarchy below owns verification goal execution.
+
+**Agent network:** `@vault-planner` (Primary — owns `docs/vault_plan.md` + `docs/task_logs.md`) delegates to 5 specialists via skills:
+- `@competitor-researcher` → `competitor-crawl` (Gamesbolt/Earnit/Freecash/Freeward/Idle-Empire)
+- `@partner-researcher` → `partner-crawl` (Torox/Lootably/AdGate/BitLabs/ayeT/CPX/Impact)
+- `@trust-designer` → `site-audit` (vaultquest.io verification readiness)
+- `@profit-ai` → profit guards on `web/src/lib/ai-helpers.ts` (F1 flagship + F2–F5)
+- `@eng-qa` → `vault-build-check` + `postback-tester` (prisma generate, next build, HMAC)
+
+**Execution flow:** `vault-planner` Phase 1 (3 specialists parallel) → merge §§1–3 → Phase 2 (`@profit-ai` + `@eng-qa` sequential) → `vault_plan.md` §§4–5 + `task_logs.md`. Reuses swarm `b4ef1aa2` crawl/build outputs when ≤7d old. See Mermaid diagram in `docs/vault_plan.md` and runbook in `docs/agents/main-orchestrator.md`. Skills are shell scripts: `pwsh .cursor/skills/<skill>/scripts/*.ps1` (Windows) or `bash .cursor/skills/<skill>/scripts/*.sh` (CI). Agent definitions live in `.cursor/agents/*.md` (model routing in `.cursor/agent-models.json` → `web/src/lib/agent-models.ts`).
+
+**Activation:** `@vault-planner get us verified` — vault-planner loads pack, delegates, compiles plan + logs.
+
+### Handoff
+
+After each turn, emit the handoff block defined in `docs/agents/main-orchestrator.md` so the next agent has context without reloading everything.

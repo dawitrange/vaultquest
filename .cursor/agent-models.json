@@ -1,0 +1,65 @@
+{
+  "_comment": "Single source of truth for Vaultquest agent → OpenRouter model routing. Mirrors web/src/lib/agent-models.ts — keep in sync.",
+  "version": "1.0.0",
+  "updated": "2026-08-09",
+  "baseUrl": "https://openrouter.ai/api/v1",
+  "defaultModel": "openai/gpt-4o-mini",
+  "agents": {
+    "vault-planner": {
+      "model": "anthropic/claude-sonnet-4",
+      "displayName": "@vault-planner",
+      "role": "Primary orchestrator — plan synthesis, trade-off arbitration",
+      "reason": "Strongest reasoning / long-context planning; best at stitching specialist outputs into vault_plan.md",
+      "pricing": "$3.00 in / $15.00 out per 1M tokens",
+      "fallback": "anthropic/claude-3.5-sonnet"
+    },
+    "competitor-researcher": {
+      "model": "google/gemini-2.0-flash-001",
+      "displayName": "@competitor-researcher",
+      "role": "Crawl + summarize competitor pages fast",
+      "reason": "Fast, cheap, vision-capable; ideal for Apify crawl summarization at scale",
+      "pricing": "$0.10 in / $0.40 out per 1M tokens",
+      "fallback": "google/gemini-flash-1.5"
+    },
+    "partner-researcher": {
+      "model": "openai/gpt-4o-mini",
+      "displayName": "@partner-researcher",
+      "role": "Precise extraction of offer terms, caps, EPC/CPA",
+      "reason": "Precise structured extraction + function-calling; cheap enough to run per-offer",
+      "pricing": "$0.15 in / $0.60 out per 1M tokens",
+      "fallback": "openai/gpt-4o-mini-2024-07-18"
+    },
+    "trust-designer": {
+      "model": "anthropic/claude-3.5-sonnet",
+      "displayName": "@trust-designer",
+      "role": "Brand, UX copy, trust/compliance surfaces",
+      "reason": "Top-tier creative + tone control; respects transparent voice without overusing 'honest'",
+      "pricing": "$3.00 in / $15.00 out per 1M tokens",
+      "fallback": "openai/gpt-4o"
+    },
+    "profit-ai": {
+      "model": "deepseek/deepseek-chat",
+      "displayName": "@profit-ai",
+      "role": "Yield math, VP economy, hold/rate simulations",
+      "reason": "Cost-efficient analytical reasoning (DeepSeek-V3); strong at math and discipline on margin rule",
+      "pricing": "$0.27 in / $1.10 out per 1M tokens",
+      "fallback": "openai/gpt-4o-mini"
+    },
+    "eng-qa": {
+      "model": "qwen/qwen-2.5-coder-32b-instruct",
+      "displayName": "@eng-qa",
+      "role": "Code generation, review, QA, postback/ledger work",
+      "reason": "Code-specialized, fast, inexpensive; strong on TS/Prisma/Next.js patterns",
+      "pricing": "$0.17 in / $0.70 out per 1M tokens",
+      "fallback": "deepseek/deepseek-coder"
+    },
+    "db-guardian": {
+      "model": "meta-llama/llama-3.3-70b-instruct",
+      "displayName": "@db-guardian",
+      "role": "Fallback + DB master — Neon branching, backup/restore, ledger integrity",
+      "reason": "Reliable ops/DB reasoning at 70B scale; cost-effective for backup/DR runbooks, distinct from code-specialized Qwen and planning Claudes",
+      "pricing": "$0.59 in / $0.79 out per 1M tokens",
+      "fallback": "qwen/qwen-2.5-72b-instruct"
+    }
+  }
+}

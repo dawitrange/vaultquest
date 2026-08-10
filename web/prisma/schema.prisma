@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String?
+  passwordHash  String?
+  image         String?
+  role          UserRole       @default(USER)
+  ageConfirmed  Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  accounts      Account[]
+  ledgerEntries LedgerEntry[]
+  redemptions   Redemption[]
+  clicks        OfferClick[]
+  contactMessages ContactMessage[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+enum LedgerKind {
+  EARN
+  RELEASE
+  REDEEM
+  ADJUST
+  CLAWBACK
+}
+
+enum LedgerStatus {
+  PENDING
+  POSTED
+  VOID
+}
+
+model LedgerEntry {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vp          Int
+  kind        LedgerKind
+  status      LedgerStatus @default(POSTED)
+  availableAt DateTime?
+  questId     String?
+  clickId     String?
+  note        String?
+  createdAt   DateTime     @default(now())
+
+  @@index([userId, status])
+  @@index([userId, availableAt])
+  @@index([clickId])
+}
+
+enum RedemptionStatus {
+  REQUESTED
+  FULFILLING
+  FULFILLED
+  CANCELLED
+}
+
+model Redemption {
+  id           String           @id @default(cuid())
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sku          String
+  label        String
+  costVp       Int
+  status       RedemptionStatus @default(REQUESTED)
+  fulfillNote  String?
+  deliveryCode String?
+  fulfilledAt  DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+enum AffiliateCategory {
+  offerwall_primary
+  offerwall_backup
+  survey_wall
+  cpa_signup
+  cpe_play
+}
+
+enum AffiliateHealth {
+  healthy
+  capped
+  disabled
+}
+
+model AffiliateLink {
+  id         String            @id @default(cuid())
+  slug       String            @unique
+  partner    String
+  url        String
+  category   AffiliateCategory
+  priority   Int               @default(1)
+  status     AffiliateHealth   @default(healthy)
+  capDaily   Int?
+  clicks     OfferClick[]
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@index([category, status, priority])
+}
+
+model OfferClick {
+  id              String        @id @default(cuid())
+  userId          String?
+  user            User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  affiliateLinkId String
+  affiliateLink   AffiliateLink @relation(fields: [affiliateLinkId], references: [id], onDelete: Cascade)
+  questId         String?
+  credited        Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+
+  @@index([userId])
+  @@index([affiliateLinkId, createdAt])
+  @@index([createdAt])
+}
+
+enum ContactStatus {
+  NEW
+  READ
+  REPLIED
+}
+
+model ContactMessage {
+  id        String        @id @default(cuid())
+  userId    String?
+  user      User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name      String
+  email     String
+  message   String
+  status    ContactStatus @default(NEW)
+  createdAt DateTime      @default(now())
+
+  @@index([status, createdAt])
+}
