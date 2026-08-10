@@ -1,4 +1,4 @@
-# Platform vision — Vaultquest
+# Platform vision — VaultQuest
 
 ## In-house (prefer)
 
@@ -46,7 +46,7 @@
 
 **Freecash-style creators**
 - YT walkthroughs with honest hooks
-- CTA → Vaultquest landing
+- CTA → VaultQuest landing
 - Optional secondary partner deep-links via rotator
 - Creator briefs with allowed/banned claims
 

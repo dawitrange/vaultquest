@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "About — Since 2020",
   description:
-    "Vaultquest is the 2026 rebuild of ZaKai (YouTube @zakai1769 + Facebook Freesteamcodes21 since 2020) — same community, transparent ledger, link rotation, no generators.",
+    "VaultQuest is the 2026 rebuild of ZaKai (YouTube @zakai1769 + Facebook Freesteamcodes21 since 2020) — same community, transparent ledger, link rotation, no generators.",
 };
 
 const TIMELINE = [
@@ -24,9 +24,9 @@ const TIMELINE = [
   },
   {
     year: "2026",
-    title: "Vaultquest rebuild",
-    body: "Full rebrand to Vaultquest. Next.js 16 + Vault Points ledger (PENDING → POSTED with verification holds), affiliate link rotation/failover, S2S postbacks, and a clear promise: Complete quests, build Vault points, unlock Steam credit & keys — or enter fair giveaways. No generators. No Steam password asks.",
-    proof: "Live: vaultquest.io · YouTube rebrand in progress (@zakai1769 → Vaultquest, handle kept until @vaultquest free) · Facebook Page migrating to Vaultquest Community.",
+    title: "VaultQuest rebuild",
+    body: "Full rebrand to VaultQuest. Next.js 16 + Vault Points ledger (PENDING → POSTED with verification holds), affiliate link rotation/failover, S2S postbacks, and a clear promise: Complete quests, build Vault points, unlock Steam credit & keys — or enter fair giveaways. No generators. No Steam password asks.",
+    proof: "Live: vaultquest.io · YouTube rebrand in progress (@zakai1769 → VaultQuest, handle kept until @vaultquest free) · Facebook Page migrating to VaultQuest Community.",
     pill: "Now",
   },
 ];
@@ -39,7 +39,7 @@ export default function AboutPage() {
           SINCE DEC 26, 2020
         </p>
         <h1 className="mt-2 font-[family-name:var(--vq-font-display)] text-4xl font-bold tracking-tight sm:text-5xl">
-          From ZaKai to Vaultquest
+          From ZaKai to VaultQuest
         </h1>
         <p className="mt-4 text-lg leading-relaxed text-[var(--vq-ink-muted)]">
           Same operator since 2020. New name, new product. We kept the community and replaced the
@@ -123,7 +123,7 @@ export default function AboutPage() {
           </ul>
         </div>
         <div className="rounded-xl border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] p-6">
-          <h3 className="font-[family-name:var(--vq-font-display)] text-lg font-semibold">What&apos;s new in Vaultquest</h3>
+          <h3 className="font-[family-name:var(--vq-font-display)] text-lg font-semibold">What&apos;s new in VaultQuest</h3>
           <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-[var(--vq-ink-muted)]">
             <li>Vault Points ledger — PENDING → POSTED with clear verification holds</li>
             <li>Partner rotation &amp; failover so rewards stay available</li>
@@ -150,7 +150,7 @@ export default function AboutPage() {
             <iframe
               className="h-full w-full"
               src="https://www.youtube-nocookie.com/embed/sOQWHaHeCkg"
-              title="Free Steam Codes — legacy Vaultquest video (pre-rebrand)"
+              title="Free Steam Codes — legacy VaultQuest video (pre-rebrand)"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
               loading="lazy"

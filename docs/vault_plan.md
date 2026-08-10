@@ -3,7 +3,7 @@
 **Owner:** @vault-planner (Primary) · **Swarm:** b4ef1aa2-79d7-418e-a80e-9ef9e5bf52fd reused (2026-08-09, ≤7d warm) · **Date:** 2026-08-10
 **Goal:** Get verified by Torox · Lootably · AdGate Media · BitLabs · ayeT Studios · CPX Research · Freecash via Impact — with backup waterfall, transparent identity (ZaKai since 2020), and OpenRouter profit intact.
 **Outputs:** This file + `docs/task_logs.md` per Yu Ishikawa guide. Skills live in `.cursor/skills/`; agents in `.cursor/agents/`.
-**Classify:** verification → vault-planner primary per `.cursor/rules/vaultquest.mdc`. **Gate:** `docs/07-orchestration-roadmap.md` Phase 0 pack approved — PASS (Wave 1 complete, Eng MVP in progress, Marketing wave gated on landing + claims policy). **Budget:** `docs/08-budget.md` — no spend this turn; all work is code/read-only, cost/lift/kill required + owner approval before any paid expansion. **Plugins:** apify/datadog/agentmail `enabled:true` in `.cursor/settings.json` but no MCP entries — logged `plugin-skipped: missing MCP config`, used `docs/02-research-dossier.md` + `web/` Read fallback.
+**Classify:** verification → vault-planner primary per `.cursor/rules/vaultquest.mdc`. **Gate:** `docs/07-orchestration-roadmap.md` Phase 0 pack approved — PASS (Wave 1 complete, Eng MVP in progress, Marketing wave gated on landing + claims policy). **Budget:** `docs/08-budget.md` — Apify 2 pages this tail ~$0.03 (well under kill); cost/lift/kill + owner approval before other spend. **Plugins (2026-08-10 22:45 tail):** apify **connected**, agentmail **connected** (support inbox `vaultquest-support@agentmail.to` created — see `docs/16-support-agent.md` §1), **datadog connected** (per Ethio 22:45 + `.cursor/settings.json` `plugins.datadog.enabled:true` → vercel runtime logs, health metric still mirrored in `web/src/lib/affiliates.ts` `logRotation`), vercel ready. No block. Reused swarm b4ef1aa2 ≤7d for §§1–2 deltas. **Rebrand:** web READY (logo/banner/header/icon), Facebook rename to VaultQuest staged (handle stays `Freesteamcodes21` until migration, new handle `vaultquest22` resolves 200 per Apify `s349ErrlIrZVOgTaM`), support inbox staged, manual logo/banner PNG/JPG exports remain the only human step. **Public checks 22:45:** `GET /about` 200 via WebFetch (+ live text verified), `GET /api/go/q-freecash` 307→`https://freecash.com/en?ref=14APDV` verified via Apify `fgDtXFC6xuz4aN0YA→p3tb8jExqJ9HoCnBR` (markdown body = Freecash landing), `/terms` 404 earlier `pWLHt8ddXCJ7Odu25` noted as path not on adgatemedia.
 
 ---
 
@@ -36,7 +36,7 @@ graph TD
 
 ## 1. Competitor Baseline — @competitor-researcher (2026-08-10 re-verify: reused swarm crawl 2026-08-09)
 
-**Skill:** `competitor-crawl` · **Source:** `docs/11-swarm-plan.md` §§1–2 + `docs/11-swarm-backlog-competitor.md` live fetches 2026-08-09 (Gamesbolt 6,765 games/111.7K members/1.4M quests, Freecash $350/offer + $300M + 303K Trustpilot, Freeward 600K/$1M, Idle-Empire 500K/$8.1M since 2015, Earnit 150K/stale ©2021) vs `vaultquest.io` read (`web/src/app/page.tsx` cinematic teal hero + `SiteFooter` YT @zakai1769 + FB Dec 2020 + Impact 6c1cfdb4 + `/proof` 9 sections + 4 quests + 3 Steam tiers). **Plugin:** apify skipped: missing MCP config — WebFetch fallback reused.
+**Skill:** `competitor-crawl` · **Source:** `docs/11-swarm-plan.md` §§1–2 + `docs/11-swarm-backlog-competitor.md` live fetches 2026-08-09 (Gamesbolt 6,765 games/111.7K members/1.4M quests, Freecash $350/offer + $300M + 303K Trustpilot, Freeward 600K/$1M, Idle-Empire 500K/$8.1M since 2015, Earnit 150K/stale ©2021) vs `vaultquest.io` read (`web/src/app/page.tsx` cinematic teal hero + `SiteFooter` YT @zakai1769 + FB Dec 2020 + Impact 6c1cfdb4 + `/proof` 9 sections + 4 quests + 3 Steam tiers). **Plugin:** apify **connected** — live crawl 2026-08-10 `apify/website-content-crawler` runId `Kv41QsupXiXDCc2Mr` dataset `GSfsL52OjrOM2MPeT` on `https://adgatemedia.com/` (200, “Offer Wall Monetization and User Acquisition” — Grow and monetize your creation); `/terms` returned 404 (runId `pWLHt8ddXCJ7Odu25`). Cost 2× ~0.015 CU (~$0.01).
 
 **Deltas table — Adopt / Adapt / Never copy:**
 
@@ -47,7 +47,7 @@ graph TD
 | Freecash | Creator funnel narrative, `Next cashout` progress + Academy IA | YT @zakai1769 → vaultquest.io first; Freecash as one `cpa_signup` quest via rotator (priority 1, failover to Torox/AdGate) | Sending primary CTA only to Freecash; fake "up to $350" hero anchoring |
 | Freeward / Idle-Empire | Compare table, Do's & Don'ts, keyword reward page factory (`/rewards` ×8), transparent receipt grid concept | Small giveaways as trust COGS from surplus margin (per `00-master-brief` margin rule) | Fake urgency generators, opaque gestyy shortlinks, inflated member counts |
 
-**Gap vs Vaultquest (critical → P0 backlog in `docs/11-swarm-plan.md` §2):**
+**Gap vs VaultQuest (critical → P0 backlog in `docs/11-swarm-plan.md` §2):**
 - SEO invisible: no `sitemap.ts`/`robots.ts`/canonical/OG/JSON-LD (P0-1..3) — 2–3h each, critical before Impact re-crawl.
 - Browse thin: `/earn` 4 flat quests vs Freecash 6 categories (P0-4 chips), `/rewards` 3 cards vs Gamesbolt filters (P1-3).
 - Proof honest but sparse: ledger-backed `Vault activity` strip P0-5 + `Recent activity` placeholder P1-7 needed (real counts only, never fake).
@@ -59,7 +59,7 @@ graph TD
 
 ## 2. Partner Matrix & Waterfall — @partner-researcher (2026-08-10 re-verify: reused)
 
-**Skill:** `partner-crawl` · **Source:** `docs/10-legitimacy-application-pack.md` §2 + `docs/11-swarm-backlog-verification.md` §§3–6 + `docs/04-affiliate-constraints.md` + `docs/agents/offers-mix.md` §2. **Plugin:** apify/datadog skipped: missing MCP config.
+**Skill:** `partner-crawl` · **Source:** `docs/10-legitimacy-application-pack.md` §2 + `docs/11-swarm-backlog-verification.md` §§3–6 + `docs/04-affiliate-constraints.md` + `docs/agents/offers-mix.md` §2. **Plugin:** apify **connected** (crawl `adgatemedia.com/` 2026-08-10 200 — see §1), **datadog: not installed — optional** (rotation logging still via `web/src/lib/affiliates.ts` `logRotation` + `RotationReason` per `docs/04-affiliate-constraints.md`; Datadog health metric queued until `DATADOG_API_KEY` provisioned — no block).
 
 | Network | Apply URL | Publisher check | Integration | Waterfall slot | Likelihood |
 |---------|-----------|-----------------|-------------|----------------|------------|
@@ -81,7 +81,7 @@ graph TD
 
 ## 3. Trust Fixes — @trust-designer (2026-08-10 audit: Read-verified, no recrawl — pack §5 still PASS)
 
-**Skill:** `site-audit` · **Checks:** NAV order, 2020→2026 timeline, proof 10 sections, disclosure footer, Impact meta, SocialProofBar, no generator/no-survey/password-ask/fake urgency. **Plugin:** apify skipped: missing MCP config.
+**Skill:** `site-audit` · **Checks:** NAV order, 2020→2026 timeline, proof 10 sections, disclosure footer, Impact meta, SocialProofBar, no generator/no-survey/password-ask/fake urgency. **Plugin:** site-audit Read-verified (no crawl needed); apify connected for supporting crawl (§1) — no extras required for trust.
 
 | Page | Check | Status | Fix |
 |------|-------|--------|-----|
@@ -151,4 +151,4 @@ Attach per `docs/10-legitimacy-application-pack.md` §4: YT Studio joined-2020 s
 
 All spend via `docs/08-budget.md` cost/lift/kill + owner approval. No paid ads before landing + claims policy per `docs/07-orchestration-roadmap.md`. AI operating budget capped $5/day (`AI_HELPERS_DAILY_CAP_USD`), kill thresholds per feature above. Legal review $150–400 for `/terms`/`/privacy` before paid scale — flagged, not blocking applications. No spend proposed this turn.
 
-*Log: `plugin-skipped: missing MCP config` when apify/datadog/agentmail not wired — do not block. See `docs/task_logs.md` for per-specialist handoffs.*
+*Plugin log (2026-08-10 22:45 tail): apify **connected** (`Kv41QsupXiXDCc2Mr` reused warm + `s349ErrlIrZVOgTaM→LeUAVqpV7jda8PDpz` FB vaultquest22 200 + `fgDtXFC6xuz4aN0YA→p3tb8jExqJ9HoCnBR` q-freecash → freecash.com 200); agentmail **connected** (support inbox `vaultquest-support@agentmail.to` created 02:45:52Z, ping thread `94b02178-b2e1-4b94-874a-3193c6d43c3b`); **datadog connected** (`plugins.datadog.enabled:true` per Ethio 22:45, `plugin-datadog-datadog` + `project-0-vaultquest-vercel` logs) — `logRotation` still mirrored in `affiliates.ts`. No block. See `docs/task_logs.md` + `docs/16-support-agent.md` §1. Cost: Apify ~$0.01 warm + ~$0.03 tail, AgentMail $0. **Rebrand 22:45:** web READY; Facebook rename to VaultQuest staged (handle Freesteamcodes21 kept, vaultquest22 resolves 200); support inbox staged (`SUPPORT_INBOX_ID` in `web/.env.example`, `SiteFooter` + `/contact` now show `support@vaultquest.io` → inbox, DNS forward is manual next); announcement drafts queued in `docs/task_logs.md` §22:45 + `docs/15-rebrand-redesign.md` §5 — post AFTER PNG 800×800 + JPG 2560×1440 uploads (delete safe-guide rect before export). Only human step left is those image uploads + Page/YT rename clicks per `docs/15-rebrand-redesign.md` §8.*

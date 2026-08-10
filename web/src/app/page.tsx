@@ -53,7 +53,7 @@ export default function HomePage() {
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-14 lg:py-20">
           <div>
             <h2 className="font-[family-name:var(--vq-font-display)] text-2xl font-semibold tracking-tight sm:text-3xl">
-              From Vaultquest to Steam
+              From VaultQuest to Steam
             </h2>
             <p className="mt-3 max-w-md text-[var(--vq-ink-muted)]">
               Watch the path: quest credit → unlock Steam credit → activate the code in Steam. No password sharing.

@@ -1,5 +1,5 @@
 /**
- * Vaultquest — backup.ts (DB Guardian)
+ * VaultQuest — backup.ts (DB Guardian)
  * Zero-spend scaffolding: Neon branching + ledger snapshot + verify.
  * No network required to build; DATABASE_URL optional at import time.
  * Owner approves remote storage / Neon paid tier before real dumps.

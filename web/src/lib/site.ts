@@ -1,5 +1,5 @@
 export const SITE = {
-  name: "Vaultquest",
+  name: "VaultQuest",
   tagline: "Transparent gaming rewards",
   promise: "Complete quests, build Vault points, unlock Steam credit & keys — or enter fair giveaways.",
   minRedeemUsd: 5,

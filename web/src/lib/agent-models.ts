@@ -1,5 +1,5 @@
 /**
- * Vaultquest — Agent → OpenRouter model routing
+ * VaultQuest — Agent → OpenRouter model routing
  * Single source of truth for heterogeneous model assignment.
  * Keep in sync with .cursor/agent-models.json
  *

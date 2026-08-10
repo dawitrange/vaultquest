@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Giveaways",
-  description: "Fair, scheduled Vaultquest giveaways with published rules and public winners.",
+  description: "Fair, scheduled VaultQuest giveaways with published rules and public winners.",
 };
 
 export default function GiveawaysPage() {

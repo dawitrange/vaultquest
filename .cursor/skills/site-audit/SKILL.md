@@ -5,7 +5,7 @@ description: Audits vaultquest.io (and localhost) pages for verification readine
 
 # site-audit
 
-Crawls Vaultquest pages via WebFetch + optional apify when wired. Invoked by @trust-designer (and @eng-qa when build-coupled).
+Crawls VaultQuest pages via WebFetch + optional apify when wired. Invoked by @trust-designer (and @eng-qa when build-coupled).
 
 ## When to use
 Before each publisher application wave, or after changes to `/about`, `/proof`, `/terms`, `/privacy`, `SiteFooter`, `SocialProofBar`, `web/src/lib/site.ts`.

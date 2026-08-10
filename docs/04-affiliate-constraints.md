@@ -6,7 +6,7 @@ Maintain a **priority-ordered affiliate link inventory**. If a link/network hits
 
 ## Tracking
 
-- Prefer **S2S / postback** with click IDs into the Vaultquest ledger
+- Prefer **S2S / postback** with click IDs into the VaultQuest ledger
 - Browser pixels alone are **not** enough for in-house points credit
 - Store: `click_id`, `user_id`, `partner`, `offer_id`, `sub_id`, timestamps, status, clawback flags
 
@@ -40,7 +40,7 @@ on_postback_fail_rate | on_manual_disable | on_cap -> status=unhealthy; failover
 
 ## Compliance for Marketing
 
-- Land traffic on **Vaultquest**, not raw CPA when possible
+- Land traffic on **VaultQuest**, not raw CPA when possible
 - Disclose sponsored/partner relationships where required
 - Match ad claims to live offers
 - No “working codes” creatives

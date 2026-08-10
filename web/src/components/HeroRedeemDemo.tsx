@@ -92,7 +92,7 @@ export function HeroRedeemDemo() {
             <p className="vq-demo__heading">Activate a Product Code</p>
             <div className="vq-demo__steam-field">VQ-STEAM-7K2M</div>
             <p className="vq-demo__steam-ok">Wallet credited · +$5.00 USD</p>
-            <p className="vq-demo__hint">Same flow users follow after unlock on Vaultquest</p>
+            <p className="vq-demo__hint">Same flow users follow after unlock on VaultQuest</p>
           </div>
         )}
       </div>

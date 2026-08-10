@@ -2,6 +2,20 @@
   "mcpServers": {
     "vercel": {
       "url": "https://mcp.vercel.com"
+    },
+    "apify": {
+      "command": "npx",
+      "args": ["-y", "@apify/actors-mcp-server"],
+      "env": {
+        "APIFY_TOKEN": "${APIFY_TOKEN}"
+      }
+    },
+    "agentmail": {
+      "command": "npx",
+      "args": ["-y", "agentmail-mcp"],
+      "env": {
+        "AGENTMAIL_API_KEY": "${AGENTMAIL_API_KEY}"
+      }
     }
   }
 }

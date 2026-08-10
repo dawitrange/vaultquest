@@ -28,7 +28,7 @@ export const QUESTS: Quest[] = [
   {
     id: "q-freecash",
     title: "Featured partner signup",
-    description: "Create a Freecash account via Vaultquest. Fixed VP when verified — not a magic code.",
+    description: "Create a Freecash account via VaultQuest. Fixed VP when verified — not a magic code.",
     effort: "Low",
     timeHint: "5–10 min",
     vpReward: 150,
@@ -225,7 +225,7 @@ export async function createOfferClick(opts: {
     },
   });
 
-  // CPX uses stable ext_user_id — prefer Vaultquest userId, fall back to click id for anon
+  // CPX uses stable ext_user_id — prefer VaultQuest userId, fall back to click id for anon
   const cpxExtUserId = opts.userId ?? click.id;
 
   return { click, link, cpxExtUserId };

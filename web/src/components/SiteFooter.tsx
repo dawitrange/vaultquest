@@ -38,7 +38,7 @@ export function SiteFooter() {
             </Link>
           </div>
           <p className="mt-3 text-xs text-[var(--vq-ink-faint)]">
-            Rebranded from ZaKai (2020) → Vaultquest 2026. Same operator, transparent ledger.
+            Rebranded from ZaKai (2020) → VaultQuest 2026. Same operator, transparent ledger.
           </p>
         </div>
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-[var(--vq-ink-muted)] lg:justify-end lg:text-right">
@@ -52,6 +52,9 @@ export function SiteFooter() {
             <Link href="/proof" className="hover:text-[var(--vq-teal)]">
               Proof & Rules
             </Link>
+            <a href="mailto:support@vaultquest.io" className="hover:text-[var(--vq-teal)]">
+              support@vaultquest.io
+            </a>
             <Link href="/contact" className="hover:text-[var(--vq-teal)]">
               Contact
             </Link>
@@ -91,7 +94,7 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-[var(--vq-border)] px-4 py-4 text-center text-xs text-[var(--vq-ink-faint)] sm:px-6">
         Some links are affiliate/partner links. We may earn when you complete offers. Rewards require real tasks; time
-        varies by region. <span className="text-[var(--vq-ink-muted)]">Vaultquest — YouTube since 2020 · Facebook since Dec 2020</span>
+        varies by region. <span className="text-[var(--vq-ink-muted)]">VaultQuest — YouTube since 2020 · Facebook since Dec 2020</span>
       </div>
     </footer>
   );

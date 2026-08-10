@@ -1,5 +1,5 @@
 /**
- * Vaultquest — Heterogeneous model smoke test
+ * VaultQuest — Heterogeneous model smoke test
  * Hits OpenRouter once per agent with that agent's assigned model.
  *
  * Usage (PowerShell):
@@ -19,13 +19,13 @@ dotenv.config({ path: path.resolve(process.cwd(), "web/.env") });
 import { chatForAgent, getFallbackModel, AGENT_MODELS, type AgentId } from "../src/lib/agent-models";
 
 const PROMPTS: Record<AgentId, string> = {
-  "vault-planner": "In one sentence, what is Vaultquest's VP economy (100 VP = $1)?",
+  "vault-planner": "In one sentence, what is VaultQuest's VP economy (100 VP = $1)?",
   "competitor-researcher": "Summarize in 10 words: what makes a rewards site look transparent?",
   "partner-researcher": "Extract as JSON: offer pays $1.20, cap 50/day, vertical: gaming. Return {payout, cap, vertical}.",
   "trust-designer": "Write a 6-word transparent tagline for a gaming rewards hub (no 'honest' word).",
   "profit-ai": "If payout is $1.20 and we award 100 VP ($1.00), what is margin %? One number.",
   "eng-qa": "Return a one-line TypeScript type for a ledger entry: id, userId, vp, status.",
-  "db-guardian": "In 10 words, what is the Neon branching backup cadence for Vaultquest?",
+  "db-guardian": "In 10 words, what is the Neon branching backup cadence for VaultQuest?",
   "end-user-auditor": "List 3 checks an anon user would use to spot a scam rewards site.",
 };
 
@@ -62,7 +62,7 @@ async function main(): Promise<void> {
     console.error("OPENROUTER_API_KEY not set. Set it in env or web/.env");
     process.exit(1);
   }
-  console.log("Vaultquest agent model smoke test — OpenRouter");
+  console.log("VaultQuest agent model smoke test — OpenRouter");
   console.log(`Base: ${process.env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1"}`);
   const agents = Object.keys(AGENT_MODELS) as AgentId[];
   for (const id of agents) {

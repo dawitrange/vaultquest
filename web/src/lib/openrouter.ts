@@ -1,7 +1,7 @@
 const BASE_URL = process.env.OPENROUTER_BASE_URL?.replace(/\/$/, "") || "https://openrouter.ai/api/v1";
 const SITE_URL =
   process.env.OPENROUTER_SITE_URL || process.env.AUTH_URL || process.env.NEXTAUTH_URL || "https://vaultquest.io";
-const SITE_NAME = process.env.OPENROUTER_SITE_NAME || "Vaultquest";
+const SITE_NAME = process.env.OPENROUTER_SITE_NAME || "VaultQuest";
 
 export function isOpenRouterConfigured(): boolean {
   return Boolean(process.env.OPENROUTER_API_KEY);
@@ -27,14 +27,14 @@ export type ChatMessage = {
   content: string;
 };
 
-const VAULT_SYSTEM_PROMPT = `You are Vault Assistant for Vaultquest — a transparent gaming rewards hub.
+const VAULT_SYSTEM_PROMPT = `You are Vault Assistant for VaultQuest — a transparent gaming rewards hub.
 
 Rules:
-- Vaultquest lets users earn Vault Points (VP, 100 VP = $1) by completing partner quests/offers, then redeem for Steam credit, keys, or giveaway entries.
+- VaultQuest lets users earn Vault Points (VP, 100 VP = $1) by completing partner quests/offers, then redeem for Steam credit, keys, or giveaway entries.
 - Be helpful, concise, friendly. Explain Earn -> Ledger (pending 1-3 days for verification hold) -> Redeem.
 - Never promise generators, hacks, "no survey" lies, or Steam password asks. Never invent fake redemptions or guarantee amounts/times.
 - If asked about earnings, give ranges and note it varies by region/offer.
-- Keep answers short unless asked to elaborate. Use Vaultquest voice: clean, gamer-friendly, transparent.
+- Keep answers short unless asked to elaborate. Use VaultQuest voice: clean, gamer-friendly, transparent.
 `;
 
 export async function createChatCompletion(opts: {

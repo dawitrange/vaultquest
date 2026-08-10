@@ -1,8 +1,8 @@
-# Brand — Vaultquest
+# Brand — VaultQuest
 
 ## Chosen name
 
-**Vaultquest** (workspace: `C:\Users\mulaw\vaultquest`)
+**VaultQuest** (workspace: `C:\Users\mulaw\vaultquest`)
 
 Alternatives considered (backup if domain blocked): Questvault, Earnforge, Boltward, Keyquest.
 
@@ -35,8 +35,8 @@ Redeem framing: “Unlock from the vault” (Steam GC, keys, giveaway tickets).
 
 - **URL:** https://www.youtube.com/@zakai1769  
 - **Handle today:** `@zakai1769` (ZaKai)  
-- **Action:** Rebrand channel identity to **Vaultquest** (name, art, about, trailers) while keeping the existing channel/URL unless handle change is available.  
-- **Role:** Primary video growth surface (Freecash-style creator funnels → Vaultquest site).
+- **Action:** Rebrand channel identity to **VaultQuest** (name, art, about, trailers) while keeping the existing channel/URL unless handle change is available.  
+- **Role:** Primary video growth surface (Freecash-style creator funnels → VaultQuest site).
 
 ## Domain targets (buy with budget)
 

@@ -25,7 +25,7 @@ export function SocialProofBar() {
           >
             Facebook Page
           </a>
-          <span className="hidden text-[var(--vq-ink-faint)] sm:inline">→ rebranded to Vaultquest 2026</span>
+          <span className="hidden text-[var(--vq-ink-faint)] sm:inline">→ rebranded to VaultQuest 2026</span>
         </div>
         <div className="flex flex-wrap gap-1.5 text-[var(--vq-ink-faint)]">
           <Link href="/about" className="rounded-full border border-[var(--vq-border)] px-2.5 py-1 hover:text-[var(--vq-ink)]">

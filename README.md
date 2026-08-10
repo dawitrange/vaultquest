@@ -1,4 +1,4 @@
-# Vaultquest
+# VaultQuest
 
 In-house gaming rewards hub + honest giveaways (Hybrid model).
 

@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Proof & Rules",
   description:
-    "How Vaultquest makes money, what we ban, how giveaways and ledger holds work, and partner disclosures — rebranded from ZaKai (2020).",
+    "How VaultQuest makes money, what we ban, how giveaways and ledger holds work, and partner disclosures — rebranded from ZaKai (2020).",
 };
 
 const TOC = [
@@ -56,7 +56,7 @@ export default function ProofPage() {
         <a href="https://www.facebook.com/Freesteamcodes21" target="_blank" rel="noreferrer" className="text-[var(--vq-teal)] hover:underline">
           Freesteamcodes21
         </a>{" "}
-        → now Vaultquest (2026).
+        → now VaultQuest (2026).
       </div>
 
       <section id="earnings" className="mt-10 scroll-mt-24 space-y-3">
@@ -107,7 +107,7 @@ export default function ProofPage() {
         <ul className="list-disc space-y-1 pl-5 text-sm text-[var(--vq-ink-muted)]">
           <li>Eligibility: 16+ (or 18+ where local law / partner requires); void where prohibited</li>
           <li>
-            Entry: Vaultquest account + optional VP or quest completion as stated per giveaway page (
+            Entry: VaultQuest account + optional VP or quest completion as stated per giveaway page (
             <Link href="/giveaways" className="text-[var(--vq-teal)] hover:underline">
               /giveaways
             </Link>
@@ -140,7 +140,7 @@ export default function ProofPage() {
       <section id="disclosure" className="mt-10 scroll-mt-24 space-y-3">
         <h2 className="font-[family-name:var(--vq-font-display)] text-xl font-semibold">5 · Partner & affiliate disclosure</h2>
         <p className="text-[var(--vq-ink-muted)]">
-          Vaultquest uses third-party offer and survey networks (Torox, Lootably, AdGate Media, BitLabs,
+          VaultQuest uses third-party offer and survey networks (Torox, Lootably, AdGate Media, BitLabs,
           ayeT Studios, CPX Research) and affiliate programs such as{" "}
           <strong className="text-[var(--vq-ink)]">Freecash on Impact</strong>. Some links on{" "}
           <Link href="/earn" className="text-[var(--vq-teal)] hover:underline">
@@ -174,11 +174,11 @@ export default function ProofPage() {
       <section id="creator" className="mt-10 scroll-mt-24 space-y-3">
         <h2 className="font-[family-name:var(--vq-font-display)] text-xl font-semibold">7 · Creator / ad disclosure</h2>
         <p className="text-[var(--vq-ink-muted)]">
-          Videos and ads promoting Vaultquest or partner quests must disclose sponsorship/affiliates. On
+          Videos and ads promoting VaultQuest or partner quests must disclose sponsorship/affiliates. On
           YouTube: verbal disclosure early in the video <em>and</em> written disclosure in the first 3 lines of the
-          description. Example: “This video promotes Vaultquest; we may earn when you complete offers via our links.”
+          description. Example: “This video promotes VaultQuest; we may earn when you complete offers via our links.”
           Our channel <a href="https://www.youtube.com/@zakai1769" target="_blank" rel="noreferrer" className="text-[var(--vq-teal)] hover:underline">@zakai1769</a> → rebranding
-          to Vaultquest follows this policy. Creators who teach fraud lose affiliate status.
+          to VaultQuest follows this policy. Creators who teach fraud lose affiliate status.
         </p>
       </section>
 
@@ -197,7 +197,7 @@ export default function ProofPage() {
       <section id="legal" className="mt-10 scroll-mt-24 space-y-3">
         <h2 className="font-[family-name:var(--vq-font-display)] text-xl font-semibold">9 · Legal</h2>
         <p className="text-sm text-[var(--vq-ink-muted)]">
-          Vaultquest is not affiliated with Valve Corporation or Steam. Points are promotional credits, not cash or bank
+          VaultQuest is not affiliated with Valve Corporation or Steam. Points are promotional credits, not cash or bank
           deposits — redeem only via the catalog at{" "}
           <Link href="/rewards" className="text-[var(--vq-teal)] hover:underline">
             /rewards
