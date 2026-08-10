@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "How it works",
-  description: "Honest path from quests to Vault points to Steam rewards.",
+  description: "Transparent path from quests to Vault points to Steam rewards.",
 };
 
 const STEPS = [
