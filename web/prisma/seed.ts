@@ -42,7 +42,7 @@ const SEED = [
   {
     slug: "freecash-cpa",
     partner: "Freecash",
-    url: "https://freecash.com/",
+    url: "https://freecash.com/r/14APDV",
     category: AffiliateCategory.cpa_signup,
     priority: 1,
     status: AffiliateHealth.healthy,

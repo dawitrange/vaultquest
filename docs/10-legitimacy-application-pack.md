@@ -8,9 +8,7 @@ Use this verbatim for Torox / Lootably / AdGate / BitLabs / ayeT / CPX / Freecas
 
 ## 1. Rebrand narrative (copy/paste into every application "Tell us about your site")
 
-> Vaultquest is the 2026 rebuild of ZaKai — operating since Dec 26, 2020 on YouTube @zakai1769 and Facebook Page Freesteamcodes21 (67 followers, archived Weebly at freesteamcodes21.weebly.com). The 2020 model was a manual email-for-code funnel via Freecash + PointsPrizes referrals — we retired that flow. Vaultquest is now a professional Next.js 16 product with an in-house Vault Points ledger (100 VP = $1 at 70% user share, PENDING → POSTED with 3–14 day clawback holds), affiliate link rotation & failover, and honest claims (no generators, no Steam password asks). Traffic is YouTube organic → vaultquest.io first; Freecash is one quest inside /earn, not the destination. Screenshots of YouTube Studio "Joined 2020" + Facebook Page age attached as continuity proof. Impact site verification `6c1cfdb4-889e-4703-8c10-f8a4960fb83a` is in <head>. S2S postbacks at /api/postback with HMAC verification (BitLabs SHA1, ayeT).
-
-**What we killed (so reviewers don't flag):** "NO SURVEY OR DOWNLOAD" lies, contact-gated Code #1 → email fulfillment, gestyy opaque shortlinks as primary, single affiliate link with no failover, generators / "working codes" / password asks.
+> Vaultquest is the 2026 rebuild of ZaKai — operating since Dec 26, 2020 on YouTube @zakai1769 and Facebook Page Freesteamcodes21 (67 followers, archived Weebly at freesteamcodes21.weebly.com). Vaultquest is now a Next.js 16 product with an in-house Vault Points ledger (100 VP = $1 at 70% user share, PENDING → POSTED with 3–14 day verification holds), affiliate link rotation & failover, and transparent rewards (no generators, no Steam password asks). Traffic is YouTube organic → vaultquest.io first; Freecash is one quest inside /earn, not the destination. Screenshots of YouTube Studio "Joined 2020" + Facebook Page age attached as continuity proof. Site verification for our affiliate program is configured.
 
 ---
 

@@ -48,17 +48,15 @@ export default function ProofPage() {
       </div>
 
       <div className="mt-8 rounded-xl border border-[var(--vq-border)] bg-[var(--vq-bg-raised)]/60 px-4 py-3 text-sm text-[var(--vq-ink-muted)]">
-        <strong className="text-[var(--vq-ink)]">Continuity proof for partners:</strong> YouTube{" "}
+        <strong className="text-[var(--vq-ink)]">Our community since 2020:</strong> YouTube{" "}
         <a href="https://www.youtube.com/@zakai1769" target="_blank" rel="noreferrer" className="text-[var(--vq-teal)] hover:underline">
           @zakai1769
         </a>{" "}
         + Facebook{" "}
         <a href="https://www.facebook.com/Freesteamcodes21" target="_blank" rel="noreferrer" className="text-[var(--vq-teal)] hover:underline">
-          Freesteamcodes21 (Dec 26, 2020)
+          Freesteamcodes21
         </a>{" "}
-        → rebranded to Vaultquest 2026. Impact site verification{" "}
-        <code className="text-[var(--vq-ink)]">6c1cfdb4-889e-4703-8c10-f8a4960fb83a</code> in{" "}
-        <code className="text-[var(--vq-ink)]">&lt;head&gt;</code>.
+        → now Vaultquest (2026).
       </div>
 
       <section id="earnings" className="mt-10 scroll-mt-24 space-y-3">
@@ -82,7 +80,7 @@ export default function ProofPage() {
             We never promise a reward larger than <code className="text-[var(--vq-ink)]">expected partner yield × 70% share</code> after
             typical clawbacks. See <Link href="/how-it-works" className="text-[var(--vq-teal)] hover:underline">How it works</Link>.
           </li>
-          <li>S2S postbacks only for credit — browser pixels alone don&apos;t pay. Endpoint: <code className="text-[var(--vq-ink)]">/api/postback</code></li>
+            <li>Credits are verified server-to-server with our partners — browser pixels alone don&apos;t pay.</li>
         </ul>
       </section>
 
@@ -93,14 +91,11 @@ export default function ProofPage() {
           <li>Ask for your Steam password — never share it</li>
           <li>Claim “no survey” when surveys/offers exist</li>
           <li>Promise guaranteed $ amounts or instant free $50</li>
-          <li>Use contact-gated “email us after Code #1” redeem theater (killed from 2020 Weebly)</li>
+          <li>Gate rewards behind manual email or contact-form steps</li>
           <li>Publish fake winner feeds, fake counters, or stock “PROOF” badges</li>
           <li>Coach VPNs, emulators, multi-accounts, or self-referrals</li>
         </ul>
-        <p className="text-xs text-[var(--vq-ink-faint)]">
-          Kill list enforced from <code className="text-[var(--vq-ink-faint)]">docs/03-old-model-autopsy.md</code> +{" "}
-          <code className="text-[var(--vq-ink-faint)]">docs/agents/compliance.md</code>.
-        </p>
+        <p className="text-xs text-[var(--vq-ink-faint)]">See our sourcing and claims policy for what we never show.</p>
       </section>
 
       <section id="giveaways" className="mt-10 scroll-mt-24 space-y-3">
@@ -151,9 +146,8 @@ export default function ProofPage() {
           <Link href="/earn" className="text-[var(--vq-teal)] hover:underline">
             /earn
           </Link>{" "}
-          are affiliate/partner links — we may earn when you complete qualifying offers. Link rotation
-          automatically fails over to a healthy partner if a link caps or goes unhealthy; every rotation
-          is logged per <code className="text-[var(--vq-ink)]">docs/04-affiliate-constraints.md</code>.
+          are affiliate/partner links — we may earn when you complete qualifying offers. If a partner&apos;s
+          link is capped or unavailable we automatically route to a healthy partner and log the rotation.
         </p>
       </section>
 

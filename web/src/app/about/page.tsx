@@ -11,15 +11,15 @@ const TIMELINE = [
   {
     year: "2020",
     title: "ZaKai starts — Free Steam Wallet Codes",
-    body: "YouTube channel @zakai1769 and Facebook Page Freesteamcodes21 go live (Dec 26, 2020). Weebly funnel at freesteamcodes21.weebly.com drives Freecash + PointsPrizes referrals via a manual Code #1 → Contact Us → agent email flow. It works, but it's slow, scammy-feeling, and unscalable.",
-    proof: "Evidence: YouTube About → Joined 2020 · Facebook Page → 67 followers · Weebly still archived as legacy proof (screenshot only, no longer linked as primary CTA).",
+    body: "YouTube channel @zakai1769 and Facebook Page Freesteamcodes21 go live (Dec 26, 2020). Early site at freesteamcodes21.weebly.com connected the community to partner offers — manual fulfillment, limited scale, and ready for a proper product.",
+    proof: "Evidence: YouTube About → Joined 2020 · Facebook Page → 67 followers · Weebly archived as continuity proof (no longer the primary flow).",
     pill: "Legacy",
   },
   {
     year: "2020–2024",
     title: "Community & learning",
-    body: "Kept YouTube + Facebook alive while learning what breaks: single affiliate links cap, gestyy shortlinks get spam-flagged, Contact-gated codes kill trust, generators get banned. Research on Gamesbolt / Earnit / Freecash confirms the fix: own the site, own the ledger.",
-    proof: "Evidence: video https://youtu.be/sOQWHaHeCkg — early free-Steam explainer (pre-rebrand language). Keep as historical artifact, not current claim.",
+    body: "Community stayed active on YouTube + Facebook while studying what makes rewards hubs last. Research across Gamesbolt, Earnit, and Freecash pointed to the same upgrades: own the site, own the ledger, rotate partners, and verify every reward.",
+    proof: "Evidence: video https://youtu.be/sOQWHaHeCkg — early free-Steam explainer (pre-rebrand). Keep as historical artifact, not current claim.",
     pill: "Lessons",
   },
   {
@@ -122,14 +122,14 @@ export default function AboutPage() {
             <li>Same operator — continuity screenshots available for partner review</li>
           </ul>
         </div>
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-6">
-          <h3 className="font-[family-name:var(--vq-font-display)] text-lg font-semibold text-amber-200">What we killed</h3>
-          <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-amber-200/80">
-            <li>“NO SURVEY OR DOWNLOAD” lies while requiring surveys</li>
-            <li>Contact-gated “Code #1 → email us → we send a code” (unscalable + scam signal)</li>
-            <li>gestyy / opaque shortlinks as primary CTA</li>
-            <li>Single affiliate link with no failover (cap = dead business)</li>
-            <li>Generators / “working codes 2026” / Steam password asks — never again</li>
+        <div className="rounded-xl border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] p-6">
+          <h3 className="font-[family-name:var(--vq-font-display)] text-lg font-semibold">What&apos;s new in Vaultquest</h3>
+          <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-[var(--vq-ink-muted)]">
+            <li>Vault Points ledger — PENDING → POSTED with clear verification holds</li>
+            <li>Partner rotation &amp; failover so rewards stay available</li>
+            <li>Transparent rules, redemption proof, and support in one place</li>
+            <li>Direct claim flow — complete a quest, points post, redeem or enter giveaways</li>
+            <li>No generators, no password asks — partner-verified rewards only</li>
           </ul>
         </div>
       </section>
@@ -166,11 +166,15 @@ export default function AboutPage() {
       </section>
 
       <section className="mt-10 rounded-xl border border-[var(--vq-border)] bg-[var(--vq-bg-raised)]/50 px-6 py-5 text-sm text-[var(--vq-ink-muted)]">
-        <strong className="text-[var(--vq-ink)]">For partners reviewing this site:</strong> Impact site
-        verification <code className="text-[var(--vq-ink)]">6c1cfdb4-889e-4703-8c10-f8a4960fb83a</code> is in{" "}
-        <code className="text-[var(--vq-ink)]">&lt;head&gt;</code>. Postback endpoint:{" "}
-        <code className="text-[var(--vq-ink)]">/api/postback</code> (S2S, HMAC-validated for BitLabs / ayeT).
-        Rotation inventory at <Link href="/earn" className="text-[var(--vq-teal)] hover:underline">/earn</Link>.
+        Ready to start? Browse quests at{" "}
+        <Link href="/earn" className="text-[var(--vq-teal)] hover:underline">
+          /earn
+        </Link>{" "}
+        or read how holds and redemptions work at{" "}
+        <Link href="/how-it-works" className="text-[var(--vq-teal)] hover:underline">
+          How it works
+        </Link>
+        .
       </section>
     </div>
   );

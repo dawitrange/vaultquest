@@ -25,8 +25,7 @@ export default async function EarnPage() {
 
       <div className="mt-6 rounded-[10px] border border-[var(--vq-border)] bg-[var(--vq-bg-raised)]/50 px-4 py-3 text-sm text-[var(--vq-ink-muted)]">
         <strong className="text-[var(--vq-ink)]">Tracked quests:</strong> Start quest creates a click ID and rotates
-        partner URLs. Partners hit <code className="text-[var(--vq-ink)]">/api/postback</code> (S2S) to credit VP
-        after their hold clears.{" "}
+        partner URLs. Partners verify your completion server-side to credit VP after their hold clears.{" "}
         {signedIn ? (
           <span>
             <strong className="text-[var(--vq-ink)]">Demo: credit VP</strong> still works for local testing — real

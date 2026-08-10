@@ -19,7 +19,8 @@ export type AgentId =
   | "trust-designer"
   | "profit-ai"
   | "eng-qa"
-  | "db-guardian";
+  | "db-guardian"
+  | "end-user-auditor";
 
 export type AgentModelConfig = {
   model: string;
@@ -86,6 +87,14 @@ export const AGENT_MODELS: Record<AgentId, AgentModelConfig> = {
     reason: "Reliable ops/DB reasoning at 70B scale; cost-effective for backup/DR runbooks, distinct from code Qwen and planning Claudes",
     pricing: "$0.59 in / $0.79 out per 1M tokens",
     fallback: "qwen/qwen-2.5-72b-instruct",
+  },
+  "end-user-auditor": {
+    model: "openai/gpt-4o",
+    displayName: "@end-user-auditor",
+    role: "Independent anonymous user view — leakage + claims audit",
+    reason: "Strong vision + instruction following for public-page audits; never sees docs/ or env",
+    pricing: "$2.50 in / $10.00 out per 1M tokens",
+    fallback: "openai/gpt-4o-mini",
   },
 };
 

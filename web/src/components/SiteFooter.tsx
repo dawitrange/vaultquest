@@ -62,11 +62,7 @@ export function SiteFooter() {
               Privacy
             </Link>
           </div>
-          <p className="w-full text-xs text-[var(--vq-ink-faint)] lg:text-right">
-            Impact site verification: <code className="text-[var(--vq-ink-faint)]">6c1cfdb4-889e-4703-8c10-f8a4960fb83a</code>
-            <br />
-            Not affiliated with Valve / Steam.
-          </p>
+          <p className="w-full text-xs text-[var(--vq-ink-faint)] lg:text-right">Not affiliated with Valve / Steam.</p>
         </div>
       </div>
       <div className="border-t border-[var(--vq-border)] bg-[var(--vq-bg-raised)]/35 px-4 py-3 sm:px-6">

@@ -22,7 +22,7 @@ export default function TermsPage() {
         <section><h2 className="font-semibold text-[var(--vq-ink)]">8. IP & brand</h2><p>Vaultquest marks and content belong to Vaultquest. Not affiliated with Valve / Steam. Don&apos;t imply endorsement.</p></section>
         <section><h2 className="font-semibold text-[var(--vq-ink)]">9. Disclaimers & liability</h2><p>Service as-is. To the extent permitted by law, Vaultquest limits liability per outline; does not exclude mandatory consumer rights. Lawyer to set governing law/disputes jurisdiction before scale.</p></section>
         <section><h2 className="font-semibold text-[var(--vq-ink)]">10. Termination & contact</h2><p>We may suspend/terminate for breach or fraud. Contact via <Link href="/contact" className="text-[var(--vq-teal)] hover:underline">/contact</Link> or Vault Assistant.</p></section>
-        <p className="text-xs text-[var(--vq-ink-faint)]">Based on <code>docs/agents/compliance.md §6</code>. Budget flag: lawyer review $150–400 before paid ads / large creator push.</p>
+        <p className="text-xs text-[var(--vq-ink-faint)]">Outline draft for partner review — lawyer review recommended before paid scale.</p>
       </div>
     </div>
   );
