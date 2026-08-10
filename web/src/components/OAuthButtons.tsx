@@ -1,12 +1,9 @@
 import { signIn } from "@/auth";
 
 export function OAuthButtons({ google, discord }: { google: boolean; discord: boolean }) {
+  // SSO: wire AUTH_GOOGLE_ID/SECRET + AUTH_DISCORD_ID/SECRET in web/.env + Vercel env to enable Google/Discord — no user-visible hint.
   if (!google && !discord) {
-    return (
-      <p className="mt-6 text-center text-xs text-[var(--vq-ink-faint)]">
-        Google/Discord sign-in appears after you add OAuth client IDs to <code>.env</code>.
-      </p>
-    );
+    return <div className="relative py-2 text-center text-xs text-[var(--vq-ink-faint)]">or continue with email</div>;
   }
 
   return (
