@@ -26,6 +26,7 @@ const PROMPTS: Record<AgentId, string> = {
   "profit-ai": "If payout is $1.20 and we award 100 VP ($1.00), what is margin %? One number.",
   "eng-qa": "Return a one-line TypeScript type for a ledger entry: id, userId, vp, status.",
   "db-guardian": "In 10 words, what is the Neon branching backup cadence for Vaultquest?",
+  "end-user-auditor": "List 3 checks an anon user would use to spot a scam rewards site.",
 };
 
 async function testOne(agentId: AgentId): Promise<void> {
