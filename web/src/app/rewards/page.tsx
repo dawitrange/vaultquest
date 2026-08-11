@@ -3,11 +3,12 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { RedeemButton } from "@/components/RedeemButton";
 import { getBalance } from "@/lib/ledger";
-import { SITE } from "@/lib/site";
+import { REWARD_GUIDES, SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Rewards",
   description: "Redeem Vault points for Steam credit. Manual vault fulfillment in MVP.",
+  alternates: { canonical: "/rewards" },
 };
 
 const CATALOG = [
@@ -93,6 +94,29 @@ export default async function RewardsPage() {
         </Link>
         {" "}· <Link href="/how-it-works" className="text-[var(--vq-teal)] hover:underline">How it works</Link>
       </p>
+
+      <section className="mt-14 border-t border-[var(--vq-border)] pt-10">
+        <h2 className="font-[family-name:var(--vq-font-display)] text-2xl font-semibold tracking-tight">
+          Reward guides
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm text-[var(--vq-ink-muted)]">
+          Honest pages for common searches. Live redeem catalog above is Steam-first — guides that say “not live yet”
+          mean exactly that.
+        </p>
+        <ul className="mt-6 grid gap-2 sm:grid-cols-2">
+          {REWARD_GUIDES.map((g) => (
+            <li key={g.slug}>
+              <Link
+                href={`/rewards/${g.slug}`}
+                className="flex items-center justify-between rounded-md border border-[var(--vq-border)] bg-[var(--vq-bg-raised)]/50 px-4 py-3 text-sm text-[var(--vq-ink)] hover:border-[var(--vq-teal)]/40"
+              >
+                <span>{g.title}</span>
+                <span className="text-[var(--vq-teal)]">→</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 }

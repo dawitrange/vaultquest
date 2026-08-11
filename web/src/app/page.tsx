@@ -1,12 +1,50 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { HeroRedeemDemo } from "@/components/HeroRedeemDemo";
+import { JsonLd } from "@/components/JsonLd";
 import { SocialProofBar } from "@/components/SocialProofBar";
 import { SITE } from "@/lib/site";
+
+export const metadata: Metadata = {
+  title: { absolute: `${SITE.name} | Earn Steam Credit with Honest Quests` },
+  description: SITE.promise,
+  alternates: { canonical: "/" },
+};
+
+const FAQS = [
+  {
+    q: "How do I earn on VaultQuest?",
+    a: "Create an account, pick quests on /earn (surveys, games, apps), and finish them as written. Partners confirm completion; we credit Vault points.",
+  },
+  {
+    q: "How long until I can redeem Steam credit?",
+    a: "Credits start PENDING during a partner hold (typically 3–14 days by network), then become available. Minimum redeem is about $5; MVP Steam fulfillment is 24–48h.",
+  },
+  {
+    q: "Do you use Steam code generators?",
+    a: "No. VaultQuest is partner-funded quests → points → Steam. We never ask for your Steam password and we do not run generators.",
+  },
+  {
+    q: "How do giveaways work?",
+    a: "Scheduled giveaways publish rules on /giveaways. Entries come from real activity; we do not invent fake winner feeds.",
+  },
+] as const;
+
+const FAQ_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQS.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+};
 
 export default function HomePage() {
   return (
     <>
+      <JsonLd data={FAQ_JSON_LD} />
       <section className="relative min-h-[min(88vh,860px)] overflow-hidden">
         <div className="vq-hero-media" aria-hidden>
           <Image
@@ -92,6 +130,26 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
           <Link href="/how-it-works" className="text-sm font-medium text-[var(--vq-teal)] hover:underline">
             See how it works →
+          </Link>
+        </div>
+      </section>
+
+      <section className="border-t border-[var(--vq-border)] bg-[var(--vq-bg-raised)]/40" aria-labelledby="home-faq">
+        <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+          <h2 id="home-faq" className="font-[family-name:var(--vq-font-display)] text-2xl font-semibold tracking-tight sm:text-3xl">
+            Common questions
+          </h2>
+          <p className="mt-2 text-[var(--vq-ink-muted)]">Straight answers — more detail on Proof & Rules.</p>
+          <dl className="mt-8 space-y-6">
+            {FAQS.map((f) => (
+              <div key={f.q}>
+                <dt className="font-[family-name:var(--vq-font-display)] text-lg font-semibold">{f.q}</dt>
+                <dd className="mt-1.5 text-sm leading-relaxed text-[var(--vq-ink-muted)]">{f.a}</dd>
+              </div>
+            ))}
+          </dl>
+          <Link href="/proof" className="mt-8 inline-flex text-sm font-medium text-[var(--vq-teal)] hover:underline">
+            Read Proof & Rules →
           </Link>
         </div>
       </section>
