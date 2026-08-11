@@ -52,7 +52,7 @@ export default function HowItWorksPage() {
       </ol>
 
       <p className="mt-12 text-sm text-[var(--vq-ink-faint)]">
-        Time to first redeem varies by country and offer. Anyone promising instant free $50 is lying.
+        Time to first redeem varies by country and offer.
       </p>
 
       <Link
