@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { createChatCompletion, getOpenRouterModel, isOpenRouterConfigured, type ChatMessage } from "@/lib/openrouter";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const MAX_MESSAGES = 20;
 const MAX_INPUT_CHARS = 3000;

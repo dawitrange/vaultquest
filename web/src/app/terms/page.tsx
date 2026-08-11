@@ -21,7 +21,7 @@ export default function TermsPage() {
         <section><h2 className="font-semibold text-[var(--vq-ink)]">7. Prohibited conduct</h2><p>Fraud, harassment, IP theft, scraping for abuse, reverse engineering auth, impersonating staff or Valve.</p></section>
         <section><h2 className="font-semibold text-[var(--vq-ink)]">8. IP & brand</h2><p>VaultQuest marks and content belong to VaultQuest. Not affiliated with Valve / Steam. Don&apos;t imply endorsement.</p></section>
         <section><h2 className="font-semibold text-[var(--vq-ink)]">9. Disclaimers & liability</h2><p>Service as-is. To the extent permitted by law, VaultQuest limits liability per outline; does not exclude mandatory consumer rights. Lawyer to set governing law/disputes jurisdiction before scale.</p></section>
-        <section><h2 className="font-semibold text-[var(--vq-ink)]">10. Termination & contact</h2><p>We may suspend/terminate for breach or fraud. Contact via <Link href="/contact" className="text-[var(--vq-teal)] hover:underline">/contact</Link> or Vault Assistant.</p></section>
+        <section><h2 className="font-semibold text-[var(--vq-ink)]">10. Termination & contact</h2><p>We may suspend/terminate for breach or fraud. Contact via <Link href="/contact" className="text-[var(--vq-teal)] hover:underline">/contact</Link> or <a href="mailto:support@vaultquest.io" className="text-[var(--vq-teal)] hover:underline">support@vaultquest.io</a>.</p></section>
         <p className="text-xs text-[var(--vq-ink-faint)]">Outline draft for partner review — lawyer review recommended before paid scale.</p>
       </div>
     </div>

@@ -190,7 +190,11 @@ export default function ProofPage() {
           <Link href="/contact" className="text-[var(--vq-teal)] hover:underline">
             /contact
           </Link>{" "}
-          (saved + emailed via Resend when configured) or the Vault Assistant chat (◈) on every page.
+          (saved + emailed via Resend when configured), or email{" "}
+          <a href="mailto:support@vaultquest.io" className="text-[var(--vq-teal)] hover:underline">
+            support@vaultquest.io
+          </a>
+          .
         </p>
       </section>
 
