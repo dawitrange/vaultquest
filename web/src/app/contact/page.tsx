@@ -17,8 +17,8 @@ export default async function ContactPage() {
         Support for account, redeem, and giveaway questions. Prefer email at{" "}
         <a href="mailto:support@vaultquest.io" className="text-[var(--vq-teal)] hover:underline">
           support@vaultquest.io
-        </a>{" "}
-        (→ vaultquest-support@agentmail.to) — we will never ask for your Steam password.
+        </a>
+        . We will never ask for your Steam password.
       </p>
       <ContactForm
         defaultEmail={session?.user?.email ?? undefined}
