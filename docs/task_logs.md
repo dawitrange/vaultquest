@@ -281,3 +281,18 @@ When user runs `@vault-planner get us verified`, vault-planner appends new dated
 #### Handoff — 2026-08-11 — eng-qa
 ...
 ```
+
+---
+
+### 2026-08-12 — Torox rejection → monetization inventory recovery (eng)
+
+#### Handoff — 2026-08-12 — eng (affiliate inventory)
+- **Trigger:** Torox emailed "not a good fit" — predictable for an audit-heavy wall (DAU + monthly-revenue + daily traffic audit) applied to a zero-traffic new site. Site quality is not the blocker; the real bottleneck is traffic.
+- **Did (code):** Rewrote `web/prisma/seed.ts` affiliate inventory to reflect reality and stock self-serve / no-traffic-minimum networks so `/earn` + `PARTNER_WATERFALL` + admin are ready the moment a network approves:
+  - `Torox` → `disabled` (rejected; row kept for reapply after traffic). Rotator query already filters `status = healthy`, so it fails over automatically.
+  - Added healthy inventory rows aligned to `PARTNER_WATERFALL`: `TimeWall` + `OfferDaddy` (`offerwall_backup`), `CPX Research` (`survey_wall` P2), `AdGem` (`cpe_play` P2). These are self-serve / near-instant activations suited to a solo, zero-traffic publisher.
+  - Made seed idempotent: `status` now set on every row and included in the upsert `update` block; all original slugs preserved (no orphaned rows).
+- **Verify:** `npm run db:seed` → 10 links (Torox disabled, others healthy). `npm run lint` clean. `npm run build` OK (all routes emitted). Live `GET /api/go/q-offerwall` → rotates to Lootably (primary); disabled Torox never served.
+- **Application order (unchanged plan, re-prioritized by approval ease):** self-serve first — CPX Research + BitLabs + TimeWall/AdGem → manual-but-no-traffic-min AdGate → email-review Lootably → Freecash Impact. Reapply to Torox only after real traffic.
+- **Owner-only (not code):** create publisher accounts on the self-serve networks, paste placement keys + set `POSTBACK_SECRET` (and BitLabs/ayeT HMAC secrets) on Vercel, then flip the matching links to `healthy` in `/admin`. Drive the 2020 YouTube @zakai1769 audience to vaultquest.io to build the traffic the audit-heavy walls require.
+- **Budget:** $0.

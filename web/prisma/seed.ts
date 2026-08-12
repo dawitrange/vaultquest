@@ -2,7 +2,21 @@ import { PrismaClient, AffiliateCategory, AffiliateHealth } from "@prisma/client
 
 const prisma = new PrismaClient();
 
+/**
+ * Affiliate inventory seed.
+ *
+ * `status` reflects real application state so the rotator + admin panel are
+ * honest and ready to flip on the moment a network approves us:
+ *   - healthy  → approved-or-pending network we want in rotation now
+ *   - disabled → not serving yet (rejected, or awaiting our own integration keys)
+ *
+ * Priority is ordered per docs/agents/offers-mix.md §2 + PARTNER_WATERFALL in
+ * web/src/lib/affiliates.ts. Zero-traffic / solo-publisher friendly, self-serve
+ * networks are stocked first because audit-heavy walls (e.g. Torox) reject new
+ * sites until real traffic exists.
+ */
 const SEED = [
+  // --- offerwall_primary ---
   {
     slug: "lootably-primary",
     partner: "Lootably",
@@ -12,24 +26,49 @@ const SEED = [
     status: AffiliateHealth.healthy,
     capDaily: 5000,
   },
+  // --- offerwall_backup (self-serve / instant-approval friendly) ---
   {
     slug: "torox-backup",
     partner: "Torox",
     url: "https://torox.io/",
     category: AffiliateCategory.offerwall_backup,
     priority: 2,
-    status: AffiliateHealth.healthy,
+    // Rejected 2026-08 ("not a good fit"): needs DAU / monthly revenue + daily
+    // traffic audit. Keep the row so we can reapply + re-enable after traffic.
+    status: AffiliateHealth.disabled,
     capDaily: 3000,
   },
   {
     slug: "adgate-backup",
-    partner: "AdGate",
+    partner: "AdGate Media",
     url: "https://adgatemedia.com/",
     category: AffiliateCategory.offerwall_backup,
     priority: 3,
+    // Manual 1–2 day review but NO traffic minimum — a realistic approval for us.
     status: AffiliateHealth.healthy,
     capDaily: 3000,
   },
+  {
+    slug: "timewall-backup",
+    partner: "TimeWall",
+    url: "https://timewall.io/",
+    category: AffiliateCategory.offerwall_backup,
+    priority: 4,
+    // Self-serve, no traffic minimum — one of the fastest activations for new sites.
+    status: AffiliateHealth.healthy,
+    capDaily: 2000,
+  },
+  {
+    slug: "offerdaddy-backup",
+    partner: "OfferDaddy",
+    url: "https://offerdaddy.com/",
+    category: AffiliateCategory.offerwall_backup,
+    priority: 5,
+    status: AffiliateHealth.healthy,
+    capDaily: 2000,
+  },
+
+  // --- survey_wall (low barrier, self-serve) ---
   {
     slug: "bitlabs-survey",
     partner: "BitLabs",
@@ -40,6 +79,18 @@ const SEED = [
     capDaily: 2000,
   },
   {
+    slug: "cpx-survey",
+    partner: "CPX Research",
+    url: "https://www.cpx-research.com/",
+    category: AffiliateCategory.survey_wall,
+    priority: 2,
+    // Self-serve publisher signup, near-instant — strong first survey wall.
+    status: AffiliateHealth.healthy,
+    capDaily: 2000,
+  },
+
+  // --- cpa_signup ---
+  {
     slug: "freecash-cpa",
     partner: "Freecash",
     url: "https://freecash.com/r/14APDV",
@@ -48,6 +99,8 @@ const SEED = [
     status: AffiliateHealth.healthy,
     capDaily: 1000,
   },
+
+  // --- cpe_play (mobile / playable) ---
   {
     slug: "ayet-cpe",
     partner: "ayeT Studios",
@@ -57,7 +110,17 @@ const SEED = [
     status: AffiliateHealth.healthy,
     capDaily: 2000,
   },
-];
+  {
+    slug: "adgem-cpe",
+    partner: "AdGem",
+    url: "https://adgem.com/",
+    category: AffiliateCategory.cpe_play,
+    priority: 2,
+    // Self-serve publisher onboarding, good CPI/CPE fill for mobile quests.
+    status: AffiliateHealth.healthy,
+    capDaily: 2000,
+  },
+] as const;
 
 async function main() {
   for (const row of SEED) {
@@ -69,6 +132,7 @@ async function main() {
         url: row.url,
         category: row.category,
         priority: row.priority,
+        status: row.status,
         capDaily: row.capDaily,
       },
     });
@@ -82,7 +146,7 @@ async function main() {
     });
   }
 
-  console.log("Seeded affiliate links");
+  console.log(`Seeded ${SEED.length} affiliate links`);
 }
 
 main()
