@@ -52,9 +52,9 @@ export default function ProofPage() {
         <a href="https://www.youtube.com/@zakai1769" target="_blank" rel="noreferrer" className="text-[var(--vq-teal)] hover:underline">
           @zakai1769
         </a>{" "}
-        + Facebook{" "}
+        + our{" "}
         <a href="https://www.facebook.com/Freesteamcodes21" target="_blank" rel="noreferrer" className="text-[var(--vq-teal)] hover:underline">
-          Freesteamcodes21
+          Facebook community
         </a>{" "}
         → now VaultQuest (2026).
       </div>
@@ -122,17 +122,16 @@ export default function ProofPage() {
       <section id="winners" className="mt-10 scroll-mt-24 space-y-3">
         <h2 className="font-[family-name:var(--vq-font-display)] text-xl font-semibold">4 · Winners & redemption proof</h2>
         <div className="rounded-xl border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] p-4">
-          <p className="font-[family-name:var(--vq-font-mono)] text-xs tracking-widest text-[var(--vq-teal)]">
-            LIVE FEED — REAL DATA ONLY
+          <p className="font-[family-name:var(--vq-font-mono)] text-xs tracking-widest text-[var(--vq-ink-faint)]">
+            REAL DATA ONLY — NO FABRICATED PROOF
           </p>
           <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
-            First winners publish after the first completed giveaway draw. Redacted redemption
-            confirmations may be shown with permission. We never invent proof. Until the ledger has
-            redemptions, this section states:&nbsp;
-            <strong className="text-[var(--vq-ink)]">“First winners publish after [date of first draw].”</strong>
+            We publish winners and redemption proof only after our first completed giveaway draw. Redacted
+            redemption confirmations may be shown with the winner&apos;s permission — we never invent proof or
+            fake a winner feed.
           </p>
           <p className="mt-2 text-xs text-[var(--vq-ink-faint)]">
-            Future: ledger-backed stats (total VP credited, redemptions fulfilled) replace screenshots as trust signal.
+            As the ledger fills, real stats (total VP credited, redemptions fulfilled) will replace screenshots as the trust signal.
           </p>
         </div>
       </section>
@@ -202,15 +201,15 @@ export default function ProofPage() {
           <Link href="/rewards" className="text-[var(--vq-teal)] hover:underline">
             /rewards
           </Link>
-          . Full outline drafts for publisher review live at{" "}
+. Read our full{" "}
           <Link href="/terms" className="text-[var(--vq-teal)] hover:underline">
             Terms
           </Link>{" "}
           and{" "}
           <Link href="/privacy" className="text-[var(--vq-teal)] hover:underline">
-            Privacy
-          </Link>{" "}
-          (lawyer review recommended before paid scale per compliance doc §6 — budget $150–400).
+            Privacy Policy
+          </Link>
+          .
         </p>
         <div className="flex flex-wrap gap-2 text-xs">
           <Link href="/terms" className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-3 py-1.5 hover:text-[var(--vq-ink)]">

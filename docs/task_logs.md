@@ -281,3 +281,37 @@ When user runs `@vault-planner get us verified`, vault-planner appends new dated
 #### Handoff — 2026-08-11 — eng-qa
 ...
 ```
+
+---
+
+### 2026-08-12 — Torox rejection → monetization inventory recovery (eng)
+
+#### Handoff — 2026-08-12 — eng (affiliate inventory)
+- **Trigger:** Torox emailed "not a good fit" — predictable for an audit-heavy wall (DAU + monthly-revenue + daily traffic audit) applied to a zero-traffic new site. Site quality is not the blocker; the real bottleneck is traffic.
+- **Did (code):** Rewrote `web/prisma/seed.ts` affiliate inventory to reflect reality and stock self-serve / no-traffic-minimum networks so `/earn` + `PARTNER_WATERFALL` + admin are ready the moment a network approves:
+  - `Torox` → `disabled` (rejected; row kept for reapply after traffic). Rotator query already filters `status = healthy`, so it fails over automatically.
+  - Added healthy inventory rows aligned to `PARTNER_WATERFALL`: `TimeWall` + `OfferDaddy` (`offerwall_backup`), `CPX Research` (`survey_wall` P2), `AdGem` (`cpe_play` P2). These are self-serve / near-instant activations suited to a solo, zero-traffic publisher.
+  - Made seed idempotent: `status` now set on every row and included in the upsert `update` block; all original slugs preserved (no orphaned rows).
+- **Verify:** `npm run db:seed` → 10 links (Torox disabled, others healthy). `npm run lint` clean. `npm run build` OK (all routes emitted). Live `GET /api/go/q-offerwall` → rotates to Lootably (primary); disabled Torox never served.
+- **Application order (unchanged plan, re-prioritized by approval ease):** self-serve first — CPX Research + BitLabs + TimeWall/AdGem → manual-but-no-traffic-min AdGate → email-review Lootably → Freecash Impact. Reapply to Torox only after real traffic.
+- **Owner-only (not code):** create publisher accounts on the self-serve networks, paste placement keys + set `POSTBACK_SECRET` (and BitLabs/ayeT HMAC secrets) on Vercel, then flip the matching links to `healthy` in `/admin`. Drive the 2020 YouTube @zakai1769 audience to vaultquest.io to build the traffic the audit-heavy walls require.
+- **Budget:** $0.
+
+#### Handoff — 2026-08-12 — partner-researcher (live crawl)
+- **Task:** Torox rejection analysis + easiest-approval-first waterfall for a zero-traffic solo publisher.
+- **Verdict:** Torox rejection is ~80% "no traffic to audit" (their model reviews live traffic in real time; $200 payout floor) + ~20% reward-site trust — NOT a fixable-in-code site problem. Reapply only after ~30 days of real traffic + a payment track record on an easier network.
+- **Instant / self-serve, NO traffic minimum (apply today):** CPX Research, TimeWall, Notik, CPALead, MyLead. **Fast manual review, no traffic min:** Kiwiwall (~24h, $0 payout floor), AdGate (1–2d), Adscend (1–3d), Lootably (must email contact to unblock), ayeT.
+- **Hard gotchas surfaced:** ⚠️ **BitLabs can be permanently denied with NO reapply** if you look too small — do NOT apply until you have traffic. **TheoremReach ToS forbids aggregating their surveys into a blended offerwall.** **OfferDaddy flagged non-paying since 2021 — excluded** (note: our seed still lists it as `offerwall_backup`; leave `disabled` / drop before enabling).
+- **Plugins:** apify skipped (missing MCP keys) → WebFetch/WebSearch live-crawl fallback.
+
+#### Handoff — 2026-08-12 — trust-designer (live audit) → eng fixes shipped
+- **Task:** 60-second reviewer audit of the public trust surface post-Torox.
+- **Found 2 P0 (instant-reject):** (1) signed-in `/earn` had a one-click **"Demo: credit VP"** self-payout button (`DemoCreditButton` + `demoCompleteQuestAction`, `holdDays:0`); (2) every "Start quest" redirected to a **bare partner B2B homepage** (non-functional inventory). Plus P1 leaks: `/terms`+`/privacy` labeled "Outline draft", no effective dates; `/proof` leaked "budget $150–400 / compliance doc §6" + a `[date of first draw]` placeholder under a "LIVE FEED" label; "Freesteamcodes21" brand surfaced as link text.
+- **Did (code, this PR):**
+  - Gated manual crediting behind `isDemoCreditEnabled()` (`NODE_ENV !== production` OR admin) in `web/src/lib/actions/ledger.ts`; `DemoCreditButton` now only renders when `demoEnabled` (`QuestRow` + `earn/page.tsx`). Real VP = S2S postback only.
+  - Added `getServableCategories()` in `web/src/lib/affiliates.ts`; `/earn` now shows a quest only when its category has a `healthy` link, else an honest empty state / "Not available yet" pill — no dead partner links.
+  - Set all `AffiliateLink` seed rows to `disabled` (nothing integrated yet); operator flips to `healthy` in `/admin` after real integration.
+  - `/terms` + `/privacy`: removed "Outline draft" framing, added `LEGAL_EFFECTIVE` effective/last-updated dates, added support email + neutral operator line; dropped internal lawyer/budget refs. `/proof`: removed budget/doc leak, fixed winners placeholder + "LIVE FEED" label, relabeled "Freesteamcodes21" → "Facebook community". Footer: added `© <year>` line. `site.ts`: dropped unshippable "& keys" claim.
+- **Verify:** `npm run lint` clean; `npm run build` OK; prod server (`PORT=3001 npm start`) `/earn` renders empty state with 0 `/api/go/` CTAs + 0 demo buttons; `/terms`+`/privacy` show effective dates, no "Outline draft"; `/proof` no "budget $150" / no "date of first draw".
+- **Owner-only open:** confirm legal operator entity/jurisdiction before publishing it on Privacy §1; finish Facebook/YouTube rename before reapplying; compress 2 MB hero image (P2).
+- **Budget:** $0.

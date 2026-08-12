@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LEGAL_EFFECTIVE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
@@ -10,9 +11,9 @@ export default function PrivacyPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
       <h1 className="font-[family-name:var(--vq-font-display)] text-4xl font-bold tracking-tight">Privacy Policy</h1>
-      <p className="mt-2 text-sm text-[var(--vq-ink-faint)]">Outline draft for partner review.</p>
+      <p className="mt-2 text-sm text-[var(--vq-ink-faint)]">Effective {LEGAL_EFFECTIVE}.</p>
       <div className="mt-8 space-y-6 text-sm leading-relaxed text-[var(--vq-ink-muted)]">
-        <section><h2 className="font-semibold text-[var(--vq-ink)]">1. Who we are</h2><p>VaultQuest — vaultquest.io + YouTube @zakai1769 (since 2020) + Facebook Freesteamcodes21. Contact via <Link href="/contact" className="text-[var(--vq-teal)] hover:underline">/contact</Link>.</p></section>
+        <section><h2 className="font-semibold text-[var(--vq-ink)]">1. Who we are</h2><p>VaultQuest (vaultquest.io) is an independently operated gaming-rewards site, online as a community since 2020 (YouTube @zakai1769) and rebranded to VaultQuest in 2026. Reach us any time via <Link href="/contact" className="text-[var(--vq-teal)] hover:underline">/contact</Link> or <a href="mailto:support@vaultquest.io" className="text-[var(--vq-teal)] hover:underline">support@vaultquest.io</a>.</p></section>
         <section><h2 className="font-semibold text-[var(--vq-ink)]">2. Data we collect</h2><p>Account (email, name, OAuth), usage, click/postback IDs (click_id/user_id/partner), device/IP, support messages. See <Link href="/proof" className="text-[var(--vq-teal)] hover:underline">Proof</Link> for why.</p></section>
         <section><h2 className="font-semibold text-[var(--vq-ink)]">3. Purposes</h2><p>Provide service, credit Vault Points via S2S, fraud prevention, analytics (visit→signup→first offer→redeem), marketing only where consent allows.</p></section>
         <section><h2 className="font-semibold text-[var(--vq-ink)]">4. Sharing</h2><p>Offer networks (Torox, Lootably, AdGate, BitLabs, ayeT, CPX), affiliate programs (Freecash Impact), processors (Neon Postgres, Vercel hosting, Resend email), legal requests.</p></section>
@@ -21,7 +22,8 @@ export default function PrivacyPage() {
         <section><h2 className="font-semibold text-[var(--vq-ink)]">7. Rights</h2><p>Access/delete/opt-out as applicable (CCPA/GDPR if we target those regions). Request via /contact.</p></section>
         <section><h2 className="font-semibold text-[var(--vq-ink)]">8. Children</h2><p>Not directed at under-13. Offer walls often require 18+.</p></section>
         <section><h2 className="font-semibold text-[var(--vq-ink)]">9. Transfers</h2><p>Hosting/email/partners may process in US/EU.</p></section>
-        <section><h2 className="font-semibold text-[var(--vq-ink)]">10. Changes</h2><p>We&apos;ll update this page and note effective date.</p></section>
+        <section><h2 className="font-semibold text-[var(--vq-ink)]">10. Changes</h2><p>We update this page when practices change and revise the effective date above.</p></section>
+        <p className="text-xs text-[var(--vq-ink-faint)]">Last updated {LEGAL_EFFECTIVE}.</p>
       </div>
     </div>
   );

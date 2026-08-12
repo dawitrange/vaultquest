@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { QuestRow } from "@/components/QuestRow";
-import { QUESTS } from "@/lib/affiliates";
+import { isDemoCreditEnabled } from "@/lib/actions/ledger";
+import { getServableCategories, QUESTS } from "@/lib/affiliates";
 
 export const metadata: Metadata = {
   title: "Earn",
@@ -12,6 +13,9 @@ export const metadata: Metadata = {
 export default async function EarnPage() {
   const session = await auth();
   const signedIn = Boolean(session?.user?.id);
+  const [servable, demoEnabled] = await Promise.all([getServableCategories(), isDemoCreditEnabled()]);
+  const quests = QUESTS.map((quest) => ({ quest, available: servable.has(quest.category) }));
+  const anyAvailable = quests.some((q) => q.available);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
@@ -25,13 +29,9 @@ export default async function EarnPage() {
 
       <div className="mt-6 rounded-[10px] border border-[var(--vq-border)] bg-[var(--vq-bg-raised)]/50 px-4 py-3 text-sm text-[var(--vq-ink-muted)]">
         <strong className="text-[var(--vq-ink)]">Tracked quests:</strong> Start quest creates a click ID and rotates
-        partner URLs. Partners verify your completion server-side to credit VP after their hold clears.{" "}
-        {signedIn ? (
-          <span>
-            <strong className="text-[var(--vq-ink)]">Demo: credit VP</strong> still works for local testing — real
-            credits need postbacks, not browser pixels.
-          </span>
-        ) : (
+        partner URLs. Partners verify your completion server-side to credit VP after their hold clears — browser pixels
+        alone never pay.{" "}
+        {signedIn ? null : (
           <span>
             <Link href="/signup" className="text-[var(--vq-teal)] underline decoration-[var(--vq-border-strong)] underline-offset-2 hover:decoration-[var(--vq-teal)]">
               Sign up
@@ -48,18 +48,19 @@ export default async function EarnPage() {
         <Link href="/rewards" className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-2.5 py-1 text-[var(--vq-ink-muted)] hover:text-[var(--vq-ink)]">Rewards catalog →</Link>
       </div>
 
-      {QUESTS.length === 0 ? (
+      {!anyAvailable ? (
         <div className="mt-10 rounded-xl border border-dashed border-[var(--vq-border-strong)] bg-[var(--vq-bg-raised)]/40 px-6 py-10 text-center">
           <p className="font-[family-name:var(--vq-font-display)] text-lg font-semibold">No quests available right now</p>
           <p className="mx-auto mt-2 max-w-md text-sm text-[var(--vq-ink-muted)]">
-            Partners rotate by region and cap. Check back shortly, or review{" "}
-            <Link href="/proof" className="text-[var(--vq-teal)] hover:underline">Proof & Rules</Link> for how rotation and S2S verification work. No fake offers are shown to fill this feed.
+            We only show a quest once a partner network is live and verified for your region — no dead links or fake
+            offers to fill this feed. New quests appear here as networks come online. Meanwhile, see{" "}
+            <Link href="/proof" className="text-[var(--vq-teal)] hover:underline">Proof & Rules</Link> for how rotation and S2S verification work.
           </p>
         </div>
       ) : (
         <div className="mt-10 flex flex-col gap-4">
-          {QUESTS.map((quest) => (
-            <QuestRow key={quest.id} quest={quest} signedIn={signedIn} />
+          {quests.map(({ quest, available }) => (
+            <QuestRow key={quest.id} quest={quest} signedIn={signedIn} available={available} demoEnabled={demoEnabled} />
           ))}
         </div>
       )}

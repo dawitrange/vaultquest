@@ -95,6 +95,7 @@ export function SiteFooter() {
       <div className="border-t border-[var(--vq-border)] px-4 py-4 text-center text-xs text-[var(--vq-ink-faint)] sm:px-6">
         Some links are affiliate/partner links. We may earn when you complete offers. Rewards require real tasks; time
         varies by region. <span className="text-[var(--vq-ink-muted)]">VaultQuest — YouTube since 2020 · Facebook since Dec 2020</span>
+        <span className="mt-1 block">© {new Date().getFullYear()} VaultQuest. Not affiliated with Valve / Steam.</span>
       </div>
     </footer>
   );

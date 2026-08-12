@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LEGAL_EFFECTIVE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Terms of Service",
@@ -10,7 +11,7 @@ export default function TermsPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
       <h1 className="font-[family-name:var(--vq-font-display)] text-4xl font-bold tracking-tight">Terms of Service</h1>
-      <p className="mt-2 text-sm text-[var(--vq-ink-faint)]">Outline draft for partner review — lawyer review before paid scale.</p>
+      <p className="mt-2 text-sm text-[var(--vq-ink-faint)]">Effective {LEGAL_EFFECTIVE}. These terms govern your use of VaultQuest.</p>
       <div className="mt-8 space-y-6 text-sm leading-relaxed text-[var(--vq-ink-muted)]">
         <section><h2 className="font-semibold text-[var(--vq-ink)]">1. Acceptance & eligibility</h2><p>By creating a VaultQuest account you agree to these Terms. Default 16+ (18+ where required by partner or local law). Do not target under-13. You represent eligibility info is true.</p></section>
         <section><h2 className="font-semibold text-[var(--vq-ink)]">2. Account & anti-abuse</h2><p>One person, one account. No VPN/proxy abuse on restricted offers, no emulators, no multi-account farming, no self-referrals, no device farms. See <Link href="/proof" className="text-[var(--vq-teal)] hover:underline">Proof & Rules</Link>.</p></section>
@@ -20,9 +21,9 @@ export default function TermsPage() {
         <section><h2 className="font-semibold text-[var(--vq-ink)]">6. Partners</h2><p>Offers are third-party. VaultQuest doesn&apos;t control partner content or availability. Affiliate disclosure applies. Rotation ensures you see a healthy link; inventory varies by geo/device.</p></section>
         <section><h2 className="font-semibold text-[var(--vq-ink)]">7. Prohibited conduct</h2><p>Fraud, harassment, IP theft, scraping for abuse, reverse engineering auth, impersonating staff or Valve.</p></section>
         <section><h2 className="font-semibold text-[var(--vq-ink)]">8. IP & brand</h2><p>VaultQuest marks and content belong to VaultQuest. Not affiliated with Valve / Steam. Don&apos;t imply endorsement.</p></section>
-        <section><h2 className="font-semibold text-[var(--vq-ink)]">9. Disclaimers & liability</h2><p>Service as-is. To the extent permitted by law, VaultQuest limits liability per outline; does not exclude mandatory consumer rights. Lawyer to set governing law/disputes jurisdiction before scale.</p></section>
-        <section><h2 className="font-semibold text-[var(--vq-ink)]">10. Termination & contact</h2><p>We may suspend/terminate for breach or fraud. Contact via <Link href="/contact" className="text-[var(--vq-teal)] hover:underline">/contact</Link> or Vault Assistant.</p></section>
-        <p className="text-xs text-[var(--vq-ink-faint)]">Outline draft for partner review — lawyer review recommended before paid scale.</p>
+        <section><h2 className="font-semibold text-[var(--vq-ink)]">9. Disclaimers & liability</h2><p>Service is provided as-is. To the extent permitted by law, VaultQuest limits its liability; nothing here excludes mandatory consumer rights you have under applicable law.</p></section>
+        <section><h2 className="font-semibold text-[var(--vq-ink)]">10. Termination & contact</h2><p>We may suspend/terminate for breach or fraud. Contact via <Link href="/contact" className="text-[var(--vq-teal)] hover:underline">/contact</Link> or <a href="mailto:support@vaultquest.io" className="text-[var(--vq-teal)] hover:underline">support@vaultquest.io</a>.</p></section>
+        <p className="text-xs text-[var(--vq-ink-faint)]">Last updated {LEGAL_EFFECTIVE}.</p>
       </div>
     </div>
   );
