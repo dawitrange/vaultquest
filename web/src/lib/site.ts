@@ -1,12 +1,15 @@
 export const SITE = {
   name: "VaultQuest",
   tagline: "Transparent gaming rewards",
-  promise: "Complete quests, build Vault points, unlock Steam credit & keys — or enter fair giveaways.",
+  promise: "Complete quests, build Vault points, and unlock Steam credit — or enter fair giveaways.",
   /** Canonical production origin (www). */
   url: "https://www.vaultquest.io",
   minRedeemUsd: 5,
   vpPerUsd: 100,
 } as const;
+
+/** Effective / last-updated date shown on Terms & Privacy. */
+export const LEGAL_EFFECTIVE = "August 12, 2026";
 
 export const NAV = [
   { href: "/about", label: "About" },

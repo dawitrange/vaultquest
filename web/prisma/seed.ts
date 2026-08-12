@@ -5,10 +5,12 @@ const prisma = new PrismaClient();
 /**
  * Affiliate inventory seed.
  *
- * `status` reflects real application state so the rotator + admin panel are
- * honest and ready to flip on the moment a network approves us:
- *   - healthy  → approved-or-pending network we want in rotation now
- *   - disabled → not serving yet (rejected, or awaiting our own integration keys)
+ * Every row ships `disabled`: a link only serves real traffic once the operator
+ * has (a) been approved by that network and (b) pasted a real deep-linked offer
+ * URL — then flips it to `healthy` in /admin. Shipping `healthy` rows that point
+ * at bare partner homepages creates dead "Start quest" CTAs, which reads as a
+ * broken/fake product to reviewers (a likely factor in the Torox rejection).
+ * With no healthy inventory, /earn shows an honest empty state instead.
  *
  * Priority is ordered per docs/agents/offers-mix.md §2 + PARTNER_WATERFALL in
  * web/src/lib/affiliates.ts. Zero-traffic / solo-publisher friendly, self-serve
@@ -23,7 +25,7 @@ const SEED = [
     url: "https://lootably.com/",
     category: AffiliateCategory.offerwall_primary,
     priority: 1,
-    status: AffiliateHealth.healthy,
+    status: AffiliateHealth.disabled,
     capDaily: 5000,
   },
   // --- offerwall_backup (self-serve / instant-approval friendly) ---
@@ -45,7 +47,7 @@ const SEED = [
     category: AffiliateCategory.offerwall_backup,
     priority: 3,
     // Manual 1–2 day review but NO traffic minimum — a realistic approval for us.
-    status: AffiliateHealth.healthy,
+    status: AffiliateHealth.disabled,
     capDaily: 3000,
   },
   {
@@ -55,7 +57,7 @@ const SEED = [
     category: AffiliateCategory.offerwall_backup,
     priority: 4,
     // Self-serve, no traffic minimum — one of the fastest activations for new sites.
-    status: AffiliateHealth.healthy,
+    status: AffiliateHealth.disabled,
     capDaily: 2000,
   },
   {
@@ -64,7 +66,7 @@ const SEED = [
     url: "https://offerdaddy.com/",
     category: AffiliateCategory.offerwall_backup,
     priority: 5,
-    status: AffiliateHealth.healthy,
+    status: AffiliateHealth.disabled,
     capDaily: 2000,
   },
 
@@ -75,7 +77,7 @@ const SEED = [
     url: "https://www.bitlabs.ai/",
     category: AffiliateCategory.survey_wall,
     priority: 1,
-    status: AffiliateHealth.healthy,
+    status: AffiliateHealth.disabled,
     capDaily: 2000,
   },
   {
@@ -85,7 +87,7 @@ const SEED = [
     category: AffiliateCategory.survey_wall,
     priority: 2,
     // Self-serve publisher signup, near-instant — strong first survey wall.
-    status: AffiliateHealth.healthy,
+    status: AffiliateHealth.disabled,
     capDaily: 2000,
   },
 
@@ -96,7 +98,7 @@ const SEED = [
     url: "https://freecash.com/r/14APDV",
     category: AffiliateCategory.cpa_signup,
     priority: 1,
-    status: AffiliateHealth.healthy,
+    status: AffiliateHealth.disabled,
     capDaily: 1000,
   },
 
@@ -107,7 +109,7 @@ const SEED = [
     url: "https://www.ayetstudios.com/",
     category: AffiliateCategory.cpe_play,
     priority: 1,
-    status: AffiliateHealth.healthy,
+    status: AffiliateHealth.disabled,
     capDaily: 2000,
   },
   {
@@ -117,7 +119,7 @@ const SEED = [
     category: AffiliateCategory.cpe_play,
     priority: 2,
     // Self-serve publisher onboarding, good CPI/CPE fill for mobile quests.
-    status: AffiliateHealth.healthy,
+    status: AffiliateHealth.disabled,
     capDaily: 2000,
   },
 ] as const;

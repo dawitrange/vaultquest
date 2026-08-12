@@ -250,3 +250,23 @@ export async function getWaterfallSnapshot() {
 export function getQuest(questId: string) {
   return QUESTS.find((q) => q.id === questId) ?? null;
 }
+
+/**
+ * Categories that can currently serve a real offer — i.e. the category (or a
+ * fallback category) has at least one `healthy` affiliate link. Used to gate
+ * the Earn UI so we never present a "Start quest" CTA that would dump the user
+ * on a bare partner homepage. Until a network is approved AND integrated (a real
+ * offer URL flipped to `healthy` in admin), the honest state is "no quests".
+ */
+export async function getServableCategories(): Promise<Set<AffiliateCategory>> {
+  const healthy = await prisma.affiliateLink.findMany({
+    where: { status: "healthy" as AffiliateHealth },
+    select: { category: true },
+  });
+  const healthySet = new Set(healthy.map((h) => h.category));
+  const servable = new Set<AffiliateCategory>();
+  (Object.keys(FALLBACK) as AffiliateCategory[]).forEach((cat) => {
+    if (FALLBACK[cat].some((c) => healthySet.has(c))) servable.add(cat);
+  });
+  return servable;
+}

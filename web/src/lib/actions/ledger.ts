@@ -2,11 +2,23 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
+import { requireAdmin } from "@/lib/admin";
 import { getQuest } from "@/lib/affiliates";
 import { creditEarn, requestRedeem } from "@/lib/ledger";
 import { SITE } from "@/lib/site";
 
 export type ActionState = { error?: string; ok?: boolean; message?: string };
+
+/**
+ * Manual VP crediting exists only for local/admin smoke-testing. It must never
+ * be reachable by a normal signed-in user in production, or the ledger looks
+ * like a self-payout button (instant fraud/legitimacy red flag to reviewers).
+ * Real VP is credited exclusively by verified S2S partner postbacks.
+ */
+export async function isDemoCreditEnabled(): Promise<boolean> {
+  if (process.env.NODE_ENV !== "production") return true;
+  return Boolean(await requireAdmin());
+}
 
 export async function demoCompleteQuestAction(
   _prev: ActionState,
@@ -14,6 +26,10 @@ export async function demoCompleteQuestAction(
 ): Promise<ActionState> {
   const session = await auth();
   if (!session?.user?.id) return { error: "Sign in required" };
+
+  if (!(await isDemoCreditEnabled())) {
+    return { error: "Manual crediting is disabled — VP is credited only after a verified partner completion." };
+  }
 
   const questId = String(formData.get("questId") ?? "");
   const quest = getQuest(questId);
