@@ -60,11 +60,14 @@ export default function HomePage() {
 
         <div className="relative z-[2] mx-auto flex min-h-[min(88vh,860px)] max-w-6xl flex-col justify-end px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-32">
           <div className="animate-vq-unlock max-w-xl">
-            <p className="font-[family-name:var(--vq-font-display)] text-[clamp(3rem,9vw,5.5rem)] font-extrabold leading-[0.95] tracking-tight text-[var(--vq-ink)]">
+            <p className="font-[family-name:var(--vq-font-mono)] text-xs uppercase tracking-[0.2em] text-[var(--vq-teal)]">
+              {SITE.tagline}
+            </p>
+            <p className="mt-2 font-[family-name:var(--vq-font-display)] text-[clamp(3rem,9vw,5.5rem)] font-extrabold leading-[0.95] tracking-tight text-[var(--vq-ink)]">
               {SITE.name}
             </p>
             <h1 className="mt-5 font-[family-name:var(--vq-font-display)] text-2xl font-semibold text-[var(--vq-ink)] sm:text-3xl">
-              {SITE.tagline}
+              {SITE.headline}
             </h1>
             <p className="mt-4 max-w-lg text-base text-[var(--vq-ink-muted)] sm:text-lg">{SITE.promise}</p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -107,17 +110,17 @@ export default function HomePage() {
             {
               step: "01",
               title: "Complete quests",
-              body: "Real partner offers — games, surveys, apps. Time varies. No fake generators.",
+              body: "Real partner offers — games, surveys, and apps. Pick what fits your time.",
             },
             {
               step: "02",
               title: "Build Vault points",
-              body: "Points credit when partners confirm. Pending holds protect against clawbacks.",
+              body: "Points post once the partner confirms your offer. After a short hold, they're yours to spend.",
             },
             {
               step: "03",
               title: "Unlock rewards",
-              body: `Redeem Steam credit from about $${SITE.minRedeemUsd}, or enter fair scheduled giveaways.`,
+              body: `Cash out to Steam credit from about $${SITE.minRedeemUsd}, or enter our scheduled giveaways.`,
             },
           ].map((item) => (
             <div key={item.step} className="animate-vq-tick">

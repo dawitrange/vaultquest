@@ -22,29 +22,23 @@ export default async function EarnPage() {
       <header className="max-w-2xl">
         <h1 className="font-[family-name:var(--vq-font-display)] text-4xl font-bold tracking-tight">Earn</h1>
         <p className="mt-3 text-[var(--vq-ink-muted)]">
-          Pick a quest. Partner links are wrapped and rotated if a network hits a cap or goes unhealthy. We may earn when
-          you complete offers — that funds the vault.
+          Pick a quest and start earning Vault points. Finish an offer the way it&apos;s written, the partner confirms
+          it, and your points post after a short hold — then they&apos;re yours to redeem.
         </p>
-      </header>
-
-      <div className="mt-6 rounded-[10px] border border-[var(--vq-border)] bg-[var(--vq-bg-raised)]/50 px-4 py-3 text-sm text-[var(--vq-ink-muted)]">
-        <strong className="text-[var(--vq-ink)]">Tracked quests:</strong> Start quest creates a click ID and rotates
-        partner URLs. Partners verify your completion server-side to credit VP after their hold clears — browser pixels
-        alone never pay.{" "}
         {signedIn ? null : (
-          <span>
+          <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
             <Link href="/signup" className="text-[var(--vq-teal)] underline decoration-[var(--vq-border-strong)] underline-offset-2 hover:decoration-[var(--vq-teal)]">
               Sign up
             </Link>{" "}
-            so clicks attach to your ledger. Guest clicks are tracked but can&apos;t credit without an account.
-          </span>
+            first so your completed quests credit to your account — it&apos;s free.
+          </p>
         )}
-      </div>
+      </header>
 
-      <div className="mt-4 flex flex-wrap gap-2 text-xs">
-        <span className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-2.5 py-1 text-[var(--vq-ink-faint)]">Holds 3–14 days by partner</span>
-        <span className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-2.5 py-1 text-[var(--vq-ink-faint)]">We never ask for Steam passwords</span>
-        <Link href="/proof#earnings" className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-2.5 py-1 text-[var(--vq-ink-muted)] hover:text-[var(--vq-ink)]">How holds work →</Link>
+      <div className="mt-6 flex flex-wrap gap-2 text-xs">
+        <span className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-2.5 py-1 text-[var(--vq-ink-faint)]">Points post after a 3–14 day hold</span>
+        <span className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-2.5 py-1 text-[var(--vq-ink-faint)]">Free to join</span>
+        <Link href="/proof#earnings" className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-2.5 py-1 text-[var(--vq-ink-muted)] hover:text-[var(--vq-ink)]">How tracking works →</Link>
         <Link href="/rewards" className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-2.5 py-1 text-[var(--vq-ink-muted)] hover:text-[var(--vq-ink)]">Rewards catalog →</Link>
       </div>
 
@@ -66,7 +60,7 @@ export default async function EarnPage() {
       )}
 
       <p className="mt-8 text-xs text-[var(--vq-ink-faint)]">
-        Disclosure: some quest links are affiliate/partner links — we may earn when you verify. That funds the vault.{" "}
+        Some quests are partner links — we earn a commission when you complete them, which funds your rewards.{" "}
         <Link href="/proof#disclosure" className="text-[var(--vq-ink-muted)] hover:text-[var(--vq-teal)] hover:underline">Full disclosure →</Link>
       </p>
     </div>

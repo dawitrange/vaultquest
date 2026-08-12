@@ -28,8 +28,8 @@ export default async function RewardsPage() {
       <header className="max-w-2xl">
         <h1 className="font-[family-name:var(--vq-font-display)] text-4xl font-bold tracking-tight">Rewards</h1>
         <p className="mt-3 text-[var(--vq-ink-muted)]">
-          Unlock from the vault with available Vault points. Minimum about ${SITE.minRedeemUsd}. MVP fulfillment is
-          manual from our Steam inventory (24–48h).
+          Redeem your Vault points for Steam credit. Cash out from about ${SITE.minRedeemUsd} — we send your code to
+          your VaultQuest account, usually within 24–48 hours.
         </p>
       </header>
 
@@ -65,8 +65,7 @@ export default async function RewardsPage() {
             >
               <h2 className="font-[family-name:var(--vq-font-display)] text-lg font-semibold">{item.label}</h2>
               <p className="mt-2 font-[family-name:var(--vq-font-mono)] text-sm text-[var(--vq-teal)]">{item.costVp} VP</p>
-              <p className="mt-1 text-xs text-[var(--vq-ink-faint)]">Typical delivery {item.eta} · manual vault</p>
-              <p className="mt-1 text-[11px] text-[var(--vq-ink-faint)]">We never ask for Steam passwords · code via account</p>
+              <p className="mt-1 text-xs text-[var(--vq-ink-faint)]">Code to your account · usually {item.eta}</p>
               {session?.user ? (
                 <RedeemButton sku={item.id} disabled={!canRedeem} />
               ) : (
@@ -83,8 +82,8 @@ export default async function RewardsPage() {
       </ul>
 
       <div className="mt-8 rounded-lg border border-[var(--vq-border)] bg-[var(--vq-bg-raised)]/40 px-4 py-3 text-xs text-[var(--vq-ink-muted)]">
-        Fulfillment is manual while we build automated inventory. No instant fake codes. See{" "}
-        <Link href="/proof#winners" className="text-[var(--vq-teal)] hover:underline">Proof & Rules → Winners</Link> for how real redemptions are listed.
+        Codes are delivered to your VaultQuest account — we&apos;ll never ask for your Steam password. See{" "}
+        <Link href="/proof#winners" className="text-[var(--vq-teal)] hover:underline">how redemptions are listed</Link>.
       </div>
 
       <p className="mt-4 text-sm text-[var(--vq-ink-muted)]">

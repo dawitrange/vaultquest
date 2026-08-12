@@ -9,23 +9,23 @@ export const metadata: Metadata = {
 const STEPS = [
   {
     title: "Create your account",
-    body: "Sign up with email or OAuth. We never ask for your Steam password.",
+    body: "Sign up with email or Google/Discord — free, takes about a minute.",
   },
   {
     title: "Start a quest",
-    body: "Choose offers that fit your time and region. Surveys and game offers may both appear — we won’t pretend otherwise.",
+    body: "Choose offers that fit your time and region — surveys, apps, and games.",
   },
   {
     title: "Finish the way it’s written",
-    body: "No VPN tricks, no multi-accounts. Partners ban that — and clawbacks hurt everyone.",
+    body: "Complete each offer exactly as described so the partner confirms it (one account, no VPN on restricted offers).",
   },
   {
     title: "Earn Vault points",
-    body: "Credits land as pending until the partner hold clears, then become available to spend.",
+    body: "Points post as pending until the partner’s hold clears (3–14 days), then they’re yours to spend.",
   },
   {
     title: "Redeem or enter giveaways",
-    body: "Unlock Steam credit from the vault (~$5 min) or enter fair, scheduled giveaways with published rules.",
+    body: "Cash out to Steam credit from about $5, or enter our scheduled giveaways with published rules.",
   },
 ];
 
@@ -34,7 +34,7 @@ export default function HowItWorksPage() {
     <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
       <h1 className="font-[family-name:var(--vq-font-display)] text-4xl font-bold tracking-tight">How it works</h1>
       <p className="mt-3 text-[var(--vq-ink-muted)]">
-        Generators are fake. This is slower and real: partner-funded quests → points → Steam.
+        Real quests, real Steam credit. Here&apos;s the whole path, start to finish.
       </p>
 
       <ol className="mt-12 space-y-8">
