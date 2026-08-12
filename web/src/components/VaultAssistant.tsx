@@ -136,6 +136,12 @@ export function VaultAssistant() {
     }
   }
 
+  // Never surface a broken/greyed assistant (or internal setup instructions) to
+  // end users. Only render once we've confirmed the server has an AI key
+  // (`configured === true`); while checking (`null`) or unconfigured (`false`)
+  // the launcher stays hidden.
+  if (configured !== true) return null;
+
   if (!open) {
     return (
       <button
@@ -154,9 +160,7 @@ export function VaultAssistant() {
       <div className="flex items-center justify-between gap-3 border-b border-[var(--vq-border)] bg-[var(--vq-bg-sunken)] px-4 py-3">
         <div className="min-w-0">
           <p className="font-[family-name:var(--vq-font-display)] text-sm font-bold tracking-tight">Vault Assistant</p>
-          <p className="text-xs text-[var(--vq-ink-muted)]">
-            {configured === false ? "Not configured — add OPENROUTER_API_KEY" : "Powered by OpenRouter • Transparent answers"}
-          </p>
+          <p className="text-xs text-[var(--vq-ink-muted)]">Powered by OpenRouter • Transparent answers</p>
         </div>
         <button
           type="button"
@@ -189,11 +193,6 @@ export function VaultAssistant() {
             )}
           </div>
         ))}
-        {configured === false && (
-          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-xs leading-relaxed text-amber-200/90">
-            OpenRouter key not found. Add <code className="font-mono">OPENROUTER_API_KEY</code> to <code className="font-mono">web/.env</code> and redeploy env on Vercel, then refresh.
-          </div>
-        )}
       </div>
 
       {msgs.length <= 2 && (
@@ -203,7 +202,7 @@ export function VaultAssistant() {
               key={s}
               type="button"
               onClick={() => send(s)}
-              disabled={busy || configured === false}
+              disabled={busy}
               className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-sunken)] px-2.5 py-1 text-xs text-[var(--vq-ink-muted)] hover:border-[var(--vq-teal)]/40 hover:text-[var(--vq-ink)] disabled:opacity-50"
             >
               {s}
@@ -223,14 +222,14 @@ export function VaultAssistant() {
           ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={configured === false ? "Add API key to enable…" : "Ask about quests, VP, redemptions…"}
-          disabled={busy || configured === false}
+          placeholder="Ask about quests, VP, redemptions…"
+          disabled={busy}
           maxLength={3000}
           className="min-w-0 flex-1 rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg)] px-4 py-2.5 text-sm text-[var(--vq-ink)] placeholder:text-[var(--vq-ink-faint)] focus:border-[var(--vq-teal)] focus:outline-none disabled:opacity-50"
         />
         <button
           type="submit"
-          disabled={busy || !input.trim() || configured === false}
+          disabled={busy || !input.trim()}
           className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--vq-teal)] text-[var(--vq-bg-deep)] transition hover:brightness-110 disabled:opacity-40 disabled:hover:brightness-100"
           aria-label="Send"
         >
