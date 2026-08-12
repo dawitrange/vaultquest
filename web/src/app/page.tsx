@@ -27,7 +27,7 @@ const FAQS = [
   },
   {
     q: "How do giveaways work?",
-    a: "Scheduled giveaways publish rules on /giveaways. Entries come from real activity; we do not invent fake winner feeds.",
+    a: "Scheduled giveaways publish their rules on /giveaways, and we post winners after each draw.",
   },
 ] as const;
 

@@ -60,7 +60,7 @@ export const REWARD_GUIDES = [
     title: "Steam gift cards",
     h1: "Steam gift card path via Vault points",
     description:
-      "Redeem Vault points toward Steam gift-card style wallet credit. Honest time expectations — no generators.",
+      "Redeem Vault points toward Steam gift-card style wallet credit, with clear time expectations.",
     intro:
       "People search “Steam gift card” when they want wallet credit without buying retail cards. VaultQuest funds Steam credit from partner commissions — not free generators. Expect real task time and a short verification hold.",
     bullets: [
@@ -79,7 +79,7 @@ export const REWARD_GUIDES = [
       "“Free Steam games” usually means earning wallet credit or keys through effort, not magically generating codes. On VaultQuest you complete quests, bank VP, then unlock Steam credit — or enter scheduled giveaways when those are live.",
     bullets: [
       "Steam credit from the vault can buy games on your own Steam account.",
-      "Giveaways (when scheduled) publish rules and odds on /giveaways — no fake winner feeds.",
+      "Giveaways (when scheduled) publish rules and odds on /giveaways before each draw.",
       "We never ask for your Steam password.",
     ],
   },
@@ -108,7 +108,7 @@ export const REWARD_GUIDES = [
     bullets: [
       "Check /rewards for what you can unlock now.",
       "Partner quests on /earn still earn VP regardless of future catalog adds.",
-      "No fake “Amazon codes” pages — if it is not redeemable, we say so.",
+      "We only list rewards we can actually fulfill — Amazon isn’t one yet.",
     ],
   },
   {

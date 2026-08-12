@@ -123,15 +123,14 @@ export default function ProofPage() {
         <h2 className="font-[family-name:var(--vq-font-display)] text-xl font-semibold">4 · Winners & redemption proof</h2>
         <div className="rounded-xl border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] p-4">
           <p className="font-[family-name:var(--vq-font-mono)] text-xs tracking-widest text-[var(--vq-ink-faint)]">
-            REAL DATA ONLY — NO FABRICATED PROOF
+            PUBLISHED AFTER EACH DRAW
           </p>
           <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
-            We publish winners and redemption proof only after our first completed giveaway draw. Redacted
-            redemption confirmations may be shown with the winner&apos;s permission — we never invent proof or
-            fake a winner feed.
+            Winners and redemption proof go up here after our first completed giveaway draw. With a winner&apos;s
+            permission, we&apos;ll show redacted confirmations.
           </p>
           <p className="mt-2 text-xs text-[var(--vq-ink-faint)]">
-            As the ledger fills, real stats (total VP credited, redemptions fulfilled) will replace screenshots as the trust signal.
+            As the ledger fills, this becomes live stats — total VP credited and redemptions fulfilled.
           </p>
         </div>
       </section>
