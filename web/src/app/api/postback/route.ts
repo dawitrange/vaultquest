@@ -81,28 +81,54 @@ async function handlePostback(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "hash verification failed" }, { status: 401 });
   }
 
-  const clickId = get("click_id") || get("clickId") || get("subid") || get("ext_user_id");
-  if (!clickId) {
+  const trackingId = get("click_id") || get("clickId") || get("subid") || get("ext_user_id");
+  if (!trackingId) {
     return NextResponse.json({ ok: false, error: "click_id required" }, { status: 400 });
   }
 
+  // Two crediting paths share this endpoint:
+  //  (1) per-redirect click flow (/api/go): trackingId is an OfferClick.id.
+  //  (2) embedded-wall flow (CPX / TimeWall / Notik): the wall echoes a STABLE
+  //      per-user id we put in the wall URL — there is no per-redirect click.
+  //      In that case resolve the VaultQuest user directly and credit them.
   const click = await prisma.offerClick.findUnique({
-    where: { id: clickId },
+    where: { id: trackingId },
     include: { affiliateLink: true },
   });
-  if (!click) {
-    return NextResponse.json({ ok: false, error: "unknown click_id" }, { status: 404 });
-  }
-  if (click.credited) {
-    return NextResponse.json({ ok: true, duplicate: true });
+
+  let userId: string | undefined;
+  let partnerName: string;
+  let clickId: string | null;
+  let clickQuestId: string | null | undefined;
+
+  if (click) {
+    if (click.credited) {
+      return NextResponse.json({ ok: true, duplicate: true });
+    }
+    userId = get("user_id") || get("uid") || click.userId || undefined;
+    partnerName = click.affiliateLink.partner;
+    clickId = click.id;
+    clickQuestId = click.questId;
+  } else {
+    // Wall flow: the echoed id (or an explicit user_id) is a VaultQuest user id.
+    const candidateUserId = get("user_id") || get("uid") || trackingId;
+    const user = candidateUserId
+      ? await prisma.user.findUnique({ where: { id: candidateUserId }, select: { id: true } })
+      : null;
+    if (!user) {
+      return NextResponse.json({ ok: false, error: "unknown click_id or user" }, { status: 404 });
+    }
+    userId = user.id;
+    partnerName = get("partner") || "partner wall";
+    clickId = null;
+    clickQuestId = null;
   }
 
-  const userId = get("user_id") || get("uid") || click.userId;
   if (!userId) {
     return NextResponse.json({ ok: false, error: "user_id required (click had no user)" }, { status: 400 });
   }
 
-  const questId = get("quest_id") || click.questId || undefined;
+  const questId = get("quest_id") || clickQuestId || undefined;
   const quest = questId ? getQuest(questId) : null;
 
   // vp may come as [%VALUE:CURRENCY%] / [%VAL%] / val / vp
@@ -121,7 +147,8 @@ async function handlePostback(req: NextRequest) {
   // Deduplicate on tx_id if partner sends it
   const txId = get("tx_id") || get("TX") || get("transaction_id") || "";
   if (txId) {
-    const dup = await prisma.ledgerEntry.findFirst({ where: { clickId, note: { contains: `tx=${txId}` } } });
+    // Dedup per user on the partner tx id (works for both click and wall flows).
+    const dup = await prisma.ledgerEntry.findFirst({ where: { userId, note: { contains: `tx=${txId}` } } });
     if (dup) return NextResponse.json({ ok: true, duplicate: true, tx_id: txId });
   }
 
@@ -131,8 +158,11 @@ async function handlePostback(req: NextRequest) {
 
   try {
     await prisma.$transaction(async (tx) => {
-      const fresh = await tx.offerClick.findUnique({ where: { id: clickId } });
-      if (!fresh || fresh.credited) return;
+      // Click flow: re-check + mark the click credited atomically.
+      if (clickId) {
+        const fresh = await tx.offerClick.findUnique({ where: { id: clickId } });
+        if (!fresh || fresh.credited) return;
+      }
 
       await tx.ledgerEntry.create({
         data: {
@@ -143,19 +173,21 @@ async function handlePostback(req: NextRequest) {
           availableAt,
           questId,
           clickId,
-          note: `S2S postback via ${click.affiliateLink.partner}${txId ? ` tx=${txId}` : ""}${get("hash") ? " hmac=ok" : ""}`,
+          note: `S2S postback via ${partnerName}${txId ? ` tx=${txId}` : ""}${get("hash") ? " hmac=ok" : ""}`,
         },
       });
 
-      await tx.offerClick.update({
-        where: { id: clickId },
-        data: { credited: true },
-      });
+      if (clickId) {
+        await tx.offerClick.update({
+          where: { id: clickId },
+          data: { credited: true },
+        });
+      }
     });
   } catch (e) {
     console.error("[postback]", e);
     return NextResponse.json({ ok: false, error: "credit_failed" }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, click_id: clickId, vp, user_id: userId });
+  return NextResponse.json({ ok: true, click_id: trackingId, vp, user_id: userId });
 }
