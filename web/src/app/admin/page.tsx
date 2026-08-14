@@ -6,6 +6,7 @@ import {
   CreateAffiliateForm,
   FulfillmentForm,
 } from "@/components/AdminForms";
+import { funnel } from "@/lib/analytics";
 import { requireAdmin } from "@/lib/admin";
 import { clicksTodayForLink } from "@/lib/affiliates";
 import { prisma } from "@/lib/db";
@@ -34,6 +35,9 @@ export default async function AdminPage() {
   const clickCounts = await Promise.all(links.map(async (l) => [l.id, await clicksTodayForLink(l.id)] as const));
   const clicksMap = Object.fromEntries(clickCounts);
 
+  const stats = await funnel(7);
+  const pct = (r: number | null) => (r == null ? "—" : `${Math.round(r * 100)}%`);
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6">
       <h1 className="font-[family-name:var(--vq-font-display)] text-4xl font-bold tracking-tight">Admin</h1>
@@ -41,6 +45,27 @@ export default async function AdminPage() {
         Affiliate caps, fulfillment queue, contact inbox. Postback URL:{" "}
         <code className="text-[var(--vq-teal)]">/api/postback?secret=…&click_id=…&vp=…</code>
       </p>
+
+      <section className="mt-10">
+        <h2 className="font-[family-name:var(--vq-font-display)] text-2xl font-semibold">Conversion funnel · last 7 days</h2>
+        <p className="mt-1 text-sm text-[var(--vq-ink-faint)]">
+          From the ledger (real data). Pageview/visitor traffic is in Vercel Web Analytics once enabled.
+        </p>
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+          {[
+            { label: "Offer clicks", value: String(stats.offerClicks) },
+            { label: "Earn credits", value: String(stats.earnCredits) },
+            { label: "Redemptions", value: String(stats.redemptions) },
+            { label: "Click → earn", value: pct(stats.clickToEarnRate) },
+            { label: "Earn → redeem", value: pct(stats.earnToRedeemRate) },
+          ].map((s) => (
+            <div key={s.label} className="rounded-[10px] border border-[var(--vq-border)] bg-[var(--vq-surface)] p-4">
+              <p className="text-xs uppercase tracking-wider text-[var(--vq-ink-faint)]">{s.label}</p>
+              <p className="mt-1 font-[family-name:var(--vq-font-mono)] text-2xl text-[var(--vq-teal)]">{s.value}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <section className="mt-12">
         <h2 className="font-[family-name:var(--vq-font-display)] text-2xl font-semibold">Affiliate links & caps</h2>

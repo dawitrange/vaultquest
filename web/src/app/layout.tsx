@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { IBM_Plex_Mono, Sora, Syne } from "next/font/google";
 import { JsonLd } from "@/components/JsonLd";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -103,6 +104,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </main>
         <SiteFooter />
         <VaultAssistant />
+        <Analytics />
       </body>
     </html>
   );
