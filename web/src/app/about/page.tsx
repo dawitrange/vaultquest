@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "About — Since 2020",
   description:
-    "VaultQuest is the 2026 rebuild of ZaKai (YouTube @zakai1769 + Facebook Freesteamcodes21 since 2020) — same community, transparent ledger, link rotation, no generators.",
+    "VaultQuest is the 2026 rebuild of ZaKai (YouTube @zakai1769 + Facebook Freesteamcodes21 since 2020) — same community, transparent ledger, real partner-funded rewards.",
 };
 
 const TIMELINE = [

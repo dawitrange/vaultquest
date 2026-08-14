@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 const TOC = [
   { id: "earnings", label: "How earnings work" },
-  { id: "never", label: "What we never do" },
+  { id: "never", label: "How we keep it fair" },
   { id: "giveaways", label: "Giveaway rules" },
   { id: "winners", label: "Winners & redemption proof" },
   { id: "disclosure", label: "Partner & affiliate disclosure" },
@@ -23,13 +23,13 @@ export default function ProofPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
       <p className="font-[family-name:var(--vq-font-mono)] text-xs tracking-[0.14em] text-[var(--vq-teal)]">
-        TRUST SURFACE · REBRANDED FROM ZAKAI (2020)
+        HOW VAULTQUEST WORKS · SAME TEAM SINCE 2020
       </p>
       <h1 className="mt-2 font-[family-name:var(--vq-font-display)] text-4xl font-bold tracking-tight">
         Proof & Rules
       </h1>
       <p className="mt-3 text-[var(--vq-ink-muted)]">
-        Trust over hype. Read this before earning or entering giveaways.{" "}
+        The full picture — how you earn, how payouts work, and the rules, in plain language.{" "}
         <Link href="/about" className="text-[var(--vq-teal)] hover:underline">
           Since 2020 story →
         </Link>
@@ -85,7 +85,7 @@ export default function ProofPage() {
       </section>
 
       <section id="never" className="mt-10 scroll-mt-24 space-y-3">
-        <h2 className="font-[family-name:var(--vq-font-display)] text-xl font-semibold">2 · What we never do</h2>
+        <h2 className="font-[family-name:var(--vq-font-display)] text-xl font-semibold">2 · How we keep it fair</h2>
         <ul className="list-inside list-disc space-y-1 text-[var(--vq-ink-muted)]">
           <li>Run Steam code generators or “working codes” pages</li>
           <li>Ask for your Steam password — never share it</li>
@@ -123,15 +123,14 @@ export default function ProofPage() {
         <h2 className="font-[family-name:var(--vq-font-display)] text-xl font-semibold">4 · Winners & redemption proof</h2>
         <div className="rounded-xl border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] p-4">
           <p className="font-[family-name:var(--vq-font-mono)] text-xs tracking-widest text-[var(--vq-ink-faint)]">
-            REAL DATA ONLY — NO FABRICATED PROOF
+            PUBLISHED AFTER EACH DRAW
           </p>
           <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
-            We publish winners and redemption proof only after our first completed giveaway draw. Redacted
-            redemption confirmations may be shown with the winner&apos;s permission — we never invent proof or
-            fake a winner feed.
+            Winners and redemption proof go up here after our first completed giveaway draw. With a winner&apos;s
+            permission, we&apos;ll show redacted confirmations.
           </p>
           <p className="mt-2 text-xs text-[var(--vq-ink-faint)]">
-            As the ledger fills, real stats (total VP credited, redemptions fulfilled) will replace screenshots as the trust signal.
+            As the ledger fills, this becomes live stats — total VP credited and redemptions fulfilled.
           </p>
         </div>
       </section>

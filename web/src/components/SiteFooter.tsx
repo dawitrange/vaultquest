@@ -72,23 +72,17 @@ export function SiteFooter() {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-2 text-[11px] sm:justify-between">
           <div className="flex flex-wrap items-center justify-center gap-1.5">
             <span className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-sunken)] px-2.5 py-1 font-[family-name:var(--vq-font-mono)] tracking-widest text-[var(--vq-ink-faint)]">
-              NO GENERATORS
+              PARTNER-FUNDED REWARDS
             </span>
             <span className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-sunken)] px-2.5 py-1 font-[family-name:var(--vq-font-mono)] tracking-widest text-[var(--vq-ink-faint)]">
-              NO PASSWORD ASKS
+              STEAM CREDIT FROM $5
             </span>
             <span className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-sunken)] px-2.5 py-1 font-[family-name:var(--vq-font-mono)] tracking-widest text-[var(--vq-ink-faint)]">
-              S2S VERIFIED
-            </span>
-            <span className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-sunken)] px-2.5 py-1 font-[family-name:var(--vq-font-mono)] tracking-widest text-[var(--vq-ink-faint)]">
-              LINK ROTATION
-            </span>
-            <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 font-[family-name:var(--vq-font-mono)] tracking-widest text-amber-200/80">
-              MANUAL VAULT 24–48H
+              SAME TEAM SINCE 2020
             </span>
           </div>
           <Link href="/proof" className="text-xs text-[var(--vq-ink-muted)] hover:text-[var(--vq-teal)] hover:underline">
-            How we stay transparent →
+            How it works →
           </Link>
         </div>
       </div>

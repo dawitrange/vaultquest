@@ -35,7 +35,7 @@ export function SocialProofBar() {
             Proof & Rules
           </Link>
           <span className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-sunken)] px-2.5 py-1 font-[family-name:var(--vq-font-mono)] text-[10px] tracking-widest">
-            NO GENERATORS · S2S VERIFIED · ROTATION
+            REAL QUESTS · VERIFIED PAYOUTS
           </span>
         </div>
       </div>

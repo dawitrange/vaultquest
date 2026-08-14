@@ -39,7 +39,7 @@ export default function GiveawaysPage() {
 
       <section className="mt-12">
         <h2 className="font-[family-name:var(--vq-font-display)] text-xl font-semibold">Past winners</h2>
-        <p className="mt-2 text-sm text-[var(--vq-ink-faint)]">None yet — this feed stays empty until real draws happen. No fake proof.</p>
+        <p className="mt-2 text-sm text-[var(--vq-ink-faint)]">No winners yet — this updates automatically after our first draw.</p>
       </section>
 
       <Link href="/proof" className="mt-8 inline-block text-sm text-[var(--vq-teal)] hover:underline">
