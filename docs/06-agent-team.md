@@ -2,6 +2,12 @@
 
 Local multi-agent team. All agents read `docs/00-master-brief.md`, `docs/01-brand.md`, `docs/02-research-dossier.md`, `docs/04-affiliate-constraints.md`, `docs/08-budget.md` before working.
 
+**Standing ops (2026-08-15):** weekly execution lives in **Grok Bot**, not in this 9-role table. Five standing teammates — Manager, Builder, Traffic, Yield, Scout — own the **$40k car fund**, GitHub Project `VaultQuest · Car Fund`, and Monday scoreboard. Operating system: [`docs/19-grok-bot-ops.md`](19-grok-bot-ops.md). Paste-ready first messages: [`docs/agents/grok-bots/`](agents/grok-bots/).
+
+Do **not** clone this Wave-1 roster into nine Grok Bots. Map: Master → Manager; Eng → Builder; YT/Social/SEO → Traffic; Offers → Yield; new ideas/competitors → Scout. Compliance/Brand stay as gates Manager enforces and specialists `@trust-designer` when spawned. Paid ads stay Manager-gated.
+
+Cursor specialists in [`.cursor/agents/`](../.cursor/agents/) (`@vault-planner`, `@eng-qa`, `@partner-researcher`, `@profit-ai`, `@competitor-researcher`, `@trust-designer`, `@db-guardian`, …) are **spawned workers** (cloud agent / Task), not standing Grok Bots.
+
 ## Roster
 
 | Agent | Owns | Inputs | Outputs | Starts after |
@@ -29,8 +35,10 @@ Local multi-agent team. All agents read `docs/00-master-brief.md`, `docs/01-bran
 - Ads: CAC discipline  
 - SEO: durable capture  
 
-Master resolves Product ↔ Offers conflicts using the margin rule in `00-master-brief.md`.
+Master resolves Product ↔ Offers conflicts using the margin rule in `00-master-brief.md`. On the Grok Bot company, **Manager** makes that call and records it; Builder does not ship a contested rate/hold.
 
 ## Kickoff prompts
 
-See `docs/agents/kickoffs/` after orchestration starts.
+See `docs/agents/kickoffs/` after orchestration starts (Wave-1 doc agents).
+
+Grok Bot first messages: `docs/agents/grok-bots/{manager,builder,traffic,yield,scout}.md`. Monday backup automation prompt: `docs/19-grok-bot-ops.md` §9.

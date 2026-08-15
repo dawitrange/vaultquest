@@ -40,6 +40,9 @@ Classify the user intent first, then load only the pack needed. Never skip the q
 | Meta/YT/TikTok paid tests, CAC, creative | **Marketing — Paid** | `docs/agents/marketing-ads.md`, `docs/08-budget.md` | `datadog` — CAC/LTV funnel |
 | guides, comparisons, landing SEO, IA | **Marketing — SEO** | `docs/agents/marketing-seo.md`, `docs/02-research-dossier.md` | `apify` — SERP crawl |
 | Profit ↔ user-value conflict, pack approval, arbitration | **Master** | `docs/00-master-brief.md` (margin rule), `docs/06-agent-team.md`, `docs/07-orchestration-roadmap.md` | — |
+| Grok Bot, car fund, weekly scoreboard, kanban, which bot | **Master** (Grok Bot Manager) | `docs/19-grok-bot-ops.md`, `docs/agents/grok-bots/`, `docs/ops/weekly-template.md` | GitHub Project; Cloud Agents ON |
+
+Standing weekly ops: 5 Grok Bots (Manager / Builder / Traffic / Yield / Scout) per `docs/19-grok-bot-ops.md`. `.cursor/agents/` specialists are spawned workers. Do not clone the 9 Wave-1 roles into 9 Grok Bots. North star: $40k car fund. Refuse local-PC access.
 
 > **Plugin status (audit 2026-08-09):** `.cursor/settings.json` has `agentmail`, `apify`, `datadog` `enabled: true` but no MCP entries yet. Orchestrator references intended wiring above; add MCP servers + keys when provisioned — do not block on missing keys, log `plugin-skipped: missing MCP config`.
 

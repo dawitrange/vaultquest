@@ -34,8 +34,15 @@ Use the routing table in `vaultquest.mdc` as source of truth. Shorthand:
 | "ads / Meta / CAC / creative test" | **Marketing — Paid** | `marketing-ads` + `08-budget` |
 | "SEO / guide / comparison / landing copy" | **Marketing — SEO** | `marketing-seo` + `02-research-dossier` |
 | Unclear / cross-cutting / budget approval / conflict | **Master** | `00-master-brief` (margin rule) + `06-agent-team` + `07-orchestration-roadmap` |
+| "Grok Bot / car fund / weekly scoreboard / kanban / which bot" | **Master** (Grok Bot Manager) | `19-grok-bot-ops` + `agents/grok-bots/*` + `ops/weekly-template` |
+| "spawn Builder / site PR / postback smoke" | **Eng** via Grok **Builder** | `05-platform-vision` + `affiliates.ts` + `schema.prisma` + `grok-bots/builder.md` |
+| "which offer/site pays / EPC / earn-live" | **Offers** via Grok **Yield** | `04-affiliate-constraints` + `offers-mix` + `grok-bots/yield.md` |
+| "YT / FB post / UTM / Video 01" | **Marketing** via Grok **Traffic** | `marketing-youtube` + `grok-bots/traffic.md` (earn-live gate) |
+| "new monetization idea" | **Offers** via Grok **Scout** | `offers-mix` + `grok-bots/scout.md` (does not ship) |
 
-**Plugin wiring note (audit 2026-08-09):** `agentmail`, `apify`, `datadog` are `enabled: true` in `.cursor/settings.json` with no MCP entries yet. Treat as provision-pending: reference intended wiring in routing table, log `plugin-skipped: missing MCP config` when a task would use them, do not block.
+**Standing vs spawned:** Grok Bots (5) are the weekly company (`docs/19-grok-bot-ops.md`). `.cursor/agents/` specialists are spawned per task. Wave-1 roles in `docs/06-agent-team.md` are the perspective map — do not create nine Grok Bots.
+
+**Plugin wiring note (audit 2026-08-15):** apify, agentmail, vercel, neon are in use for ops; datadog optional. Log `plugin-skipped: missing MCP config` when a task would use a server that is not ready; do not block. Grok Bot plugins are connected on the **shared Grok computer** (GitHub, Vercel, Neon, Apify, AgentMail) — see `docs/19-grok-bot-ops.md` §6. Refuse local-PC access.
 
 ## Checklist — run every turn (mirrors the 6-step turn template)
 
@@ -75,7 +82,7 @@ End every turn with this block so the next turn can resume without reloading the
 ### Handoff — <date> — <Agent>
 
 - **Task:** <one-line intent>
-- **Agent routed:** <Product|Offers|Compliance|Brand|Eng|Marketing-YT|Social|Paid|SEO|Master>
+- **Agent routed:** <Product|Offers|Compliance|Brand|Eng|Marketing-YT|Social|Paid|SEO|Master|Grok-Manager|Grok-Builder|Grok-Traffic|Grok-Yield|Grok-Scout>
 - **Docs loaded:** <list>
 - **Gate:** <gate name — pass/blocked — why>
 - **Budget:** <none | $X — cost/lift/kill — owner approved/pending>
@@ -92,9 +99,17 @@ Keep handoffs short, specific, and machine-scannable. Do not invent fake metrics
 - `.cursor/rules/vaultquest.mdc` — normative orchestrator (alwaysApply)
 - `docs/agents/main-orchestrator.md` — this runbook
 - `.cursor/settings.json` — plugin enablement (MCP entries when provisioned)
+- `docs/19-grok-bot-ops.md` — standing Grok Bot company, $40k car fund, kanban, Monday automation prompt (§9)
+- `docs/agents/grok-bots/*.md` — paste-ready Grok Bot first messages
+- `docs/ops/weekly-template.md` — Manager Monday scoreboard
+
+## Monday Cursor Automation
+
+Backup clock if Grok Bot Manager misses Monday: create at [cursor.com/automations](https://cursor.com/automations), repo `dawitrange/vaultquest`, Monday 09:00. **Paste the prompt in `docs/19-grok-bot-ops.md` §9** (do not fork a second prompt here). If the weekly file already exists that Monday, do nothing.
 
 ## Non-goals
 
 - Do not replace specialist agent docs — route to them.
 - Do not bypass gate or budget checks for speed.
 - Do not add MCP keys in repo — wire via env / MCP config when provisioned.
+- Do not grant Grok Bots local-PC access. Website / GitHub / Neon / Vercel only.
