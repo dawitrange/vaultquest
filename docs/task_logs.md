@@ -360,3 +360,4 @@ When user runs `@vault-planner get us verified`, vault-planner appends new dated
 - **Did:** MD5 already in PR. Status updated: app_id 35413 exists; wall is real; Yield has not flipped (Ethio still saving postback). Flip detector `isYieldFlippedCpxWallUrl` — no URL hardcoded in seed/admin. Live smoke on standby. Earn-live not certified.
 - **Do not:** hardcode offers./wall. path; smoke homepage; flip `/admin`; certify earn-live; merge.
 - **Next:** Ethio saves CPX postback → Yield flips `cpx-survey` → re-run `--probe-prod` → live MD5 smoke. No merge.
+- **Skill evidence:** `vault-build-check` PASS. `postback-tester --probe-prod` 20/20 PASS — STAND BY on `/api/go/q-surveys` (HTTP 307 no_link). No secrets. No live smoke.
