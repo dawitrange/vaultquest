@@ -6,7 +6,7 @@ import {
   CreateAffiliateForm,
   FulfillmentForm,
 } from "@/components/AdminForms";
-import { funnel } from "@/lib/analytics";
+import { exactFraction, funnel } from "@/lib/analytics";
 import { requireAdmin } from "@/lib/admin";
 import { clicksTodayForLink } from "@/lib/affiliates";
 import { prisma } from "@/lib/db";
@@ -36,7 +36,21 @@ export default async function AdminPage() {
   const clicksMap = Object.fromEntries(clickCounts);
 
   const stats = await funnel(7);
-  const pct = (r: number | null) => (r == null ? "—" : `${Math.round(r * 100)}%`);
+  const recentS2s = await prisma.ledgerEntry.findMany({
+    where: { kind: "EARN", note: { startsWith: "S2S postback" } },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+    select: {
+      id: true,
+      vp: true,
+      status: true,
+      availableAt: true,
+      questId: true,
+      clickId: true,
+      createdAt: true,
+      note: true,
+    },
+  });
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6">
@@ -49,15 +63,18 @@ export default async function AdminPage() {
       <section className="mt-10">
         <h2 className="font-[family-name:var(--vq-font-display)] text-2xl font-semibold">Conversion funnel · last 7 days</h2>
         <p className="mt-1 text-sm text-[var(--vq-ink-faint)]">
-          From the ledger (real data). Pageview/visitor traffic is in Vercel Web Analytics once enabled.
+          From the ledger (real data). Counts are exact — rates are fractions, not rounded percents.
+          Pageview/visitor traffic is in Vercel Web Analytics once enabled.
         </p>
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {[
             { label: "Offer clicks", value: String(stats.offerClicks) },
             { label: "Earn credits", value: String(stats.earnCredits) },
+            { label: "Pending EARN", value: String(stats.pendingEarnCredits) },
+            { label: "S2S credits", value: String(stats.s2sEarnCredits) },
             { label: "Redemptions", value: String(stats.redemptions) },
-            { label: "Click → earn", value: pct(stats.clickToEarnRate) },
-            { label: "Earn → redeem", value: pct(stats.earnToRedeemRate) },
+            { label: "Click → earn", value: exactFraction(stats.earnCredits, stats.offerClicks) },
+            { label: "Earn → redeem", value: exactFraction(stats.redemptions, stats.earnCredits) },
           ].map((s) => (
             <div key={s.label} className="rounded-[10px] border border-[var(--vq-border)] bg-[var(--vq-surface)] p-4">
               <p className="text-xs uppercase tracking-wider text-[var(--vq-ink-faint)]">{s.label}</p>
@@ -116,6 +133,32 @@ export default async function AdminPage() {
             ))
           )}
         </ul>
+      </section>
+
+      <section className="mt-14">
+        <h2 className="font-[family-name:var(--vq-font-display)] text-2xl font-semibold">S2S postback credits</h2>
+        <p className="mt-1 text-sm text-[var(--vq-ink-faint)]">
+          Ledger rows created by <code className="text-[var(--vq-teal)]">/api/postback</code> (pending VP +{" "}
+          <code>availableAt</code> from holdDays). Demo credits are excluded.
+        </p>
+        {recentS2s.length === 0 ? (
+          <p className="mt-4 text-sm text-[var(--vq-ink-faint)]">No S2S credits yet.</p>
+        ) : (
+          <ul className="mt-4 divide-y divide-[var(--vq-border)] rounded-[10px] border border-[var(--vq-border)] text-sm">
+            {recentS2s.map((row) => (
+              <li key={row.id} className="flex flex-wrap justify-between gap-2 px-4 py-3">
+                <span className="font-[family-name:var(--vq-font-mono)] text-xs">{row.id}</span>
+                <span>
+                  {row.vp} VP · {row.status}
+                  {row.availableAt ? ` · available ${row.availableAt.toISOString()}` : ""}
+                  {row.questId ? ` · ${row.questId}` : ""}
+                  {row.note?.includes("tx=") ? " · has tx_id" : ""}
+                  {row.note?.includes("hmac=ok") ? " · hmac=ok" : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="mt-14">

@@ -1,0 +1,521 @@
+/**
+ * postback-smoke.ts — issue #15 click → pending VP tester
+ *
+ * Never prints secret values. Refuses to send POSTBACK_SECRET / HMAC to
+ * vaultquest.io (use --probe-prod for public checks only).
+ *
+ * Usage (from web/):
+ *   npx tsx scripts/postback-smoke.ts --help
+ *   npx tsx scripts/postback-smoke.ts --probe-prod
+ *   npx tsx scripts/postback-smoke.ts --base-url http://localhost:3000
+ *
+ * Required env for live credit cases (names only — set locally, never commit):
+ *   POSTBACK_SECRET
+ *   BITLABS_APP_SECRET  (or AYET_HMAC_SECRET) — HMAC cases
+ *   DATABASE_URL        — OfferClick + ledger + funnel checks
+ *   POSTBACK_SMOKE_ALLOW_DB=1 — required to upsert the first-party smoke link
+ */
+import crypto from "crypto";
+import fs from "fs";
+import path from "path";
+import {
+  HMAC_SECRET_ENV_NAMES,
+  isForbiddenProdSmokeTarget,
+  signPostbackUrl,
+  stripHashParam,
+  verifyPostbackHash,
+} from "../src/lib/postback";
+
+type CaseResult = { name: string; pass: boolean; detail: string };
+
+const PROD_ORIGIN = "https://www.vaultquest.io";
+const SMOKE_SLUG = "vq-smoke-first-party";
+const SMOKE_URL = "https://www.vaultquest.io/proof";
+const SMOKE_QUEST = "q-offerwall";
+const SMOKE_HOLD_DAYS = 7;
+const SMOKE_VP = 500;
+
+function loadEnvFile(filePath: string) {
+  if (!fs.existsSync(filePath)) return;
+  const text = fs.readFileSync(filePath, "utf8");
+  for (const line of text.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq < 1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    let value = trimmed.slice(eq + 1).trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    if (key && process.env[key] == null) process.env[key] = value;
+  }
+}
+
+function envSet(name: string): boolean {
+  return Boolean(process.env[name]?.trim());
+}
+
+function redactUrl(raw: string): string {
+  try {
+    const url = new URL(raw);
+    for (const key of [...url.searchParams.keys()]) {
+      if (/secret|hash|password|token|key/i.test(key)) url.searchParams.set(key, "REDACTED");
+    }
+    return url.toString();
+  } catch {
+    return "[unparseable-url]";
+  }
+}
+
+function firstHmacSecret(): string | undefined {
+  for (const name of HMAC_SECRET_ENV_NAMES) {
+    const v = process.env[name]?.trim();
+    if (v) return v;
+  }
+  return undefined;
+}
+
+function parseArgs(argv: string[]) {
+  const out = {
+    help: false,
+    probeProd: false,
+    requireLive: false,
+    seedLocal: false,
+    baseUrl: "http://localhost:3000",
+  };
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === "--help" || a === "-Help" || a === "-h") out.help = true;
+    else if (a === "--probe-prod") out.probeProd = true;
+    else if (a === "--require-live") out.requireLive = true;
+    else if (a === "--seed-local") out.seedLocal = true;
+    else if (a === "--base-url" || a === "-BaseUrl") out.baseUrl = argv[++i] ?? out.baseUrl;
+    else if (/^https?:\/\//.test(a)) out.baseUrl = a;
+  }
+  return out;
+}
+
+function printHelp() {
+  console.log(`postback-tester / postback-smoke — click → pending VP
+
+Cases:
+  1. Offline HMAC unit (strip hash, SHA1 + SHA256, fail-closed, no server)
+  2. Missing / wrong secret → 401 or 503
+  3. /api/go test click creates OfferClick (first-party smoke link, not a partner URL)
+  4. Valid signed postback → 200 + hash=ok + ledger PENDING + availableAt from holdDays
+  5. Duplicate tx_id → HTTP 200 {ok:true, duplicate:true}
+  6. Bad hash → 401
+  7. Admin last-7d funnel quoted as exact counts / fractions (never rounded up)
+
+Usage:
+  bash .cursor/skills/postback-tester/scripts/test.sh --help
+  bash .cursor/skills/postback-tester/scripts/test.sh --probe-prod
+  bash .cursor/skills/postback-tester/scripts/test.sh http://localhost:3000
+
+Env required for live credit (names only — never commit values):
+  POSTBACK_SECRET
+  BITLABS_APP_SECRET or AYET_HMAC_SECRET
+  DATABASE_URL
+  POSTBACK_SMOKE_ALLOW_DB=1   (with --seed-local; localhost only)
+
+Constraints:
+  Never sends secrets to vaultquest.io. --probe-prod is public 401/503 + /earn only.
+  Smoke AffiliateLink URL is first-party ${SMOKE_URL} — not a live partner placement.
+`);
+}
+
+async function fetchJson(url: string, init?: RequestInit): Promise<{ status: number; json: Record<string, unknown> }> {
+  const res = await fetch(url, { ...init, redirect: "manual" });
+  let json: Record<string, unknown> = {};
+  const text = await res.text();
+  try {
+    json = text ? (JSON.parse(text) as Record<string, unknown>) : {};
+  } catch {
+    json = { raw: text.slice(0, 120) };
+  }
+  return { status: res.status, json };
+}
+
+async function probeProd(): Promise<CaseResult[]> {
+  const results: CaseResult[] = [];
+  const pb = await fetchJson(`${PROD_ORIGIN}/api/postback`);
+  const secretConfigured = pb.status === 401 && pb.json.error === "unauthorized";
+  const missing = pb.status === 503;
+  results.push({
+    name: "prod POSTBACK_SECRET gate (no secret sent)",
+    pass: secretConfigured || missing,
+    detail: secretConfigured
+      ? "HTTP 401 unauthorized — POSTBACK_SECRET is configured on Vercel (value unknown to this runner)"
+      : missing
+        ? "HTTP 503 — POSTBACK_SECRET not configured"
+        : `unexpected HTTP ${pb.status}`,
+  });
+
+  const goOffer = await fetch(`${PROD_ORIGIN}/api/go/${SMOKE_QUEST}`, { redirect: "manual" });
+  const loc = goOffer.headers.get("location") ?? "";
+  results.push({
+    name: "prod /api/go/q-offerwall",
+    pass: goOffer.status === 307 || goOffer.status === 302,
+    detail: loc.includes("error=no_link")
+      ? "307 → /earn?error=no_link (no healthy offerwall inventory — #13 reseed)"
+      : `HTTP ${goOffer.status} location=${loc.split("?")[0] || "(none)"}`,
+  });
+
+  const earn = await fetch(`${PROD_ORIGIN}/earn`);
+  const html = await earn.text();
+  const freecashCta = html.includes("/api/go/q-freecash");
+  const offerwallBlocked = html.includes("Not available yet");
+  results.push({
+    name: "prod /earn CTAs (no extra click created)",
+    pass: earn.ok,
+    detail: freecashCta
+      ? `q-freecash Start quest is live; offerwall still empty=${offerwallBlocked}. Do not invent partner URLs.`
+      : "q-freecash CTA not in HTML",
+  });
+
+  return results;
+}
+
+function offlineHmacCases(): CaseResult[] {
+  const results: CaseResult[] = [];
+  const localSecret = "unit-hmac-not-a-prod-secret";
+  const base = "http://localhost:3000/api/postback?secret=x&click_id=c1&vp=500";
+  const sha1 = signPostbackUrl(base, localSecret, "sha1");
+  const sha256 = signPostbackUrl(base, localSecret, "sha256");
+  const signed = `${base}&hash=${sha1}`;
+
+  results.push({
+    name: "stripHashParam leaves urlWithoutHash",
+    pass: stripHashParam(signed) === base,
+    detail: stripHashParam(signed) === base ? "ok" : "strip mismatch",
+  });
+
+  const v1 = verifyPostbackHash({ url: signed, hash: sha1, secrets: [localSecret] });
+  results.push({
+    name: "valid SHA1 HMAC",
+    pass: v1.ok && v1.matched === "sha1",
+    detail: v1.ok ? `matched=${v1.matched}` : v1.reason ?? "fail",
+  });
+
+  const v256 = verifyPostbackHash({ url: `${base}&hash=${sha256}`, hash: sha256, secrets: [localSecret] });
+  results.push({
+    name: "valid SHA256 HMAC fallback",
+    pass: v256.ok && v256.matched === "sha256",
+    detail: v256.ok ? `matched=${v256.matched}` : v256.reason ?? "fail",
+  });
+
+  const bad = verifyPostbackHash({ url: `${base}&hash=deadbeef`, hash: "deadbeef", secrets: [localSecret] });
+  results.push({
+    name: "bad hash rejected",
+    pass: !bad.ok,
+    detail: bad.reason ?? "expected reject",
+  });
+
+  const closed = verifyPostbackHash({ url: signed, hash: sha1, secrets: [undefined] });
+  results.push({
+    name: "fail-closed when HMAC secret missing",
+    pass: !closed.ok && closed.reason === "hmac secret not configured",
+    detail: closed.reason ?? "expected fail-closed",
+  });
+
+  const unsigned = verifyPostbackHash({ url: base, hash: null, secrets: [undefined] });
+  results.push({
+    name: "unsigned callback allowed (POSTBACK_SECRET gate only)",
+    pass: unsigned.ok,
+    detail: "no hash param → skip HMAC",
+  });
+
+  return results;
+}
+
+async function seedSmokeInventory(): Promise<{ userId: string; detail: string }> {
+  if (process.env.POSTBACK_SMOKE_ALLOW_DB !== "1") {
+    throw new Error("refusing DB seed: set POSTBACK_SMOKE_ALLOW_DB=1 (localhost only)");
+  }
+  const { prisma } = await import("../src/lib/db");
+  const email = `postback-smoke@vaultquest.invalid`;
+  const user = await prisma.user.upsert({
+    where: { email },
+    create: { email, name: "Postback smoke", role: "USER" },
+    update: {},
+  });
+  await prisma.affiliateLink.upsert({
+    where: { slug: SMOKE_SLUG },
+    create: {
+      slug: SMOKE_SLUG,
+      partner: "VaultQuest smoke",
+      url: SMOKE_URL,
+      category: "offerwall_primary",
+      priority: 99,
+      status: "healthy",
+      capDaily: 50,
+    },
+    update: {
+      url: SMOKE_URL,
+      status: "healthy",
+      partner: "VaultQuest smoke",
+    },
+  });
+  return { userId: user.id, detail: `user=${user.id} link=${SMOKE_SLUG} url=first-party /proof` };
+}
+
+async function liveCases(baseUrl: string): Promise<CaseResult[]> {
+  const results: CaseResult[] = [];
+  const origin = baseUrl.replace(/\/$/, "");
+
+  if (isForbiddenProdSmokeTarget(origin)) {
+    results.push({
+      name: "refuse secret-bearing prod requests",
+      pass: true,
+      detail: "blocked — use --probe-prod (no secrets) until Ethio provides a local/stage target",
+    });
+    return results;
+  }
+
+  const missing = await fetchJson(`${origin}/api/postback`);
+  results.push({
+    name: "missing secret",
+    pass: missing.status === 401 || missing.status === 503,
+    detail: `HTTP ${missing.status} error=${String(missing.json.error ?? "")}`,
+  });
+
+  const postbackSecret = process.env.POSTBACK_SECRET?.trim();
+  const hmacSecret = firstHmacSecret();
+  if (!postbackSecret) {
+    results.push({
+      name: "live credit cases",
+      pass: false,
+      detail: "BLOCKED — POSTBACK_SECRET not set in this environment (name required; value never logged)",
+    });
+    return results;
+  }
+  if (!hmacSecret) {
+    results.push({
+      name: "HMAC secret present",
+      pass: false,
+      detail: "BLOCKED — set BITLABS_APP_SECRET or AYET_HMAC_SECRET for signed cases (names only)",
+    });
+    return results;
+  }
+  if (!process.env.DATABASE_URL) {
+    results.push({
+      name: "DATABASE_URL",
+      pass: false,
+      detail: "BLOCKED — DATABASE_URL required to create OfferClick + read ledger/funnel",
+    });
+    return results;
+  }
+
+  let userId: string;
+  try {
+    const seeded = await seedSmokeInventory();
+    userId = seeded.userId;
+    results.push({ name: "seed first-party smoke link", pass: true, detail: seeded.detail });
+  } catch (e) {
+    results.push({
+      name: "seed first-party smoke link",
+      pass: false,
+      detail: e instanceof Error ? e.message : "seed failed",
+    });
+    return results;
+  }
+
+  const go = await fetch(`${origin}/api/go/${SMOKE_QUEST}`, { redirect: "manual" });
+  const loc = go.headers.get("location") ?? "";
+  const clickId = new URL(loc, origin).searchParams.get("click_id") ?? "";
+  const clickOk = (go.status === 307 || go.status === 302) && Boolean(clickId) && loc.startsWith(SMOKE_URL);
+  results.push({
+    name: "/api/go creates OfferClick",
+    pass: clickOk,
+    detail: clickOk
+      ? `click_id=${clickId} → first-party /proof`
+      : `HTTP ${go.status} loc=${redactUrl(loc) || "(none)"}`,
+  });
+  if (!clickOk) return results;
+
+  const { prisma } = await import("../src/lib/db");
+  const clickRow = await prisma.offerClick.findUnique({ where: { id: clickId } });
+  results.push({
+    name: "OfferClick row exists",
+    pass: Boolean(clickRow && clickRow.questId === SMOKE_QUEST && !clickRow.credited),
+    detail: clickRow ? `id=${clickRow.id} quest=${clickRow.questId} credited=${clickRow.credited}` : "missing row",
+  });
+
+  const txId = `smoke-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
+  const unsigned = new URL(`${origin}/api/postback`);
+  unsigned.searchParams.set("secret", postbackSecret);
+  unsigned.searchParams.set("click_id", clickId);
+  unsigned.searchParams.set("user_id", userId);
+  unsigned.searchParams.set("quest_id", SMOKE_QUEST);
+  unsigned.searchParams.set("vp", String(SMOKE_VP));
+  unsigned.searchParams.set("tx_id", txId);
+  const urlWithoutHash = unsigned.toString();
+  const hash = signPostbackUrl(urlWithoutHash, hmacSecret, "sha1");
+  const signed = `${urlWithoutHash}&hash=${hash}`;
+
+  const credit = await fetchJson(signed);
+  const hashOk = credit.json.hash === "ok";
+  results.push({
+    name: "valid signed postback",
+    pass: credit.status === 200 && credit.json.ok === true && hashOk && credit.json.duplicate !== true,
+    detail: `HTTP ${credit.status} ok=${String(credit.json.ok)} hash=${String(credit.json.hash ?? "")} tx_id=${txId}`,
+  });
+
+  const ledger = await prisma.ledgerEntry.findFirst({
+    where: { userId, note: { contains: `tx=${txId}` } },
+  });
+  const availableAt = ledger?.availableAt ? new Date(ledger.availableAt) : null;
+  const expectedMs = SMOKE_HOLD_DAYS * 86400000;
+  const delta = availableAt ? Math.abs(availableAt.getTime() - (Date.now() + expectedMs)) : Infinity;
+  const holdOk = Boolean(
+    ledger &&
+      ledger.status === "PENDING" &&
+      ledger.vp === SMOKE_VP &&
+      availableAt &&
+      delta < 120000,
+  );
+  results.push({
+    name: "ledger pending VP + availableAt from holdDays",
+    pass: holdOk,
+    detail: ledger
+      ? `id=${ledger.id} status=${ledger.status} vp=${ledger.vp} availableAt=${availableAt?.toISOString() ?? "null"} holdDays=${SMOKE_HOLD_DAYS}`
+      : "no ledger row",
+  });
+
+  const dup = await fetchJson(signed);
+  results.push({
+    name: "duplicate tx_id",
+    pass: dup.status === 200 && dup.json.ok === true && dup.json.duplicate === true,
+    detail: `HTTP ${dup.status} ${JSON.stringify({ ok: dup.json.ok, duplicate: dup.json.duplicate })}`,
+  });
+
+  const badHashUrl = `${urlWithoutHash}&hash=${"f".repeat(40)}`;
+  const bad = await fetchJson(badHashUrl);
+  results.push({
+    name: "bad hash",
+    pass: bad.status === 401,
+    detail: `HTTP ${bad.status} error=${String(bad.json.error ?? "")}`,
+  });
+
+  const { exactFraction, funnel } = await import("../src/lib/analytics");
+  const stats = await funnel(7);
+  const quote = [
+    `Offer clicks=${stats.offerClicks}`,
+    `Earn credits=${stats.earnCredits}`,
+    `Pending EARN=${stats.pendingEarnCredits}`,
+    `S2S credits=${stats.s2sEarnCredits}`,
+    `Redemptions=${stats.redemptions}`,
+    `Click → earn ${exactFraction(stats.earnCredits, stats.offerClicks)}`,
+    `Earn → redeem ${exactFraction(stats.redemptions, stats.earnCredits)}`,
+  ].join(" · ");
+  results.push({
+    name: "admin last-7d funnel (exact, not rounded)",
+    pass: stats.s2sEarnCredits >= 1 && stats.pendingEarnCredits >= 1,
+    detail: quote,
+  });
+
+  return results;
+}
+
+function printTable(results: CaseResult[]) {
+  console.log("");
+  console.log("CASE".padEnd(56), "RESULT", "DETAIL");
+  console.log("-".repeat(100));
+  for (const r of results) {
+    console.log(r.name.slice(0, 56).padEnd(56), r.pass ? "PASS" : "FAIL", r.detail);
+  }
+  const failed = results.filter((r) => !r.pass).length;
+  console.log("-".repeat(100));
+  console.log(`${results.length - failed}/${results.length} passed`);
+  return failed === 0;
+}
+
+async function main() {
+  loadEnvFile(path.resolve(__dirname, "../.env"));
+  loadEnvFile(path.resolve(process.cwd(), ".env"));
+  loadEnvFile(path.resolve(process.cwd(), "web/.env"));
+
+  const args = parseArgs(process.argv.slice(2));
+  if (args.help) {
+    printHelp();
+    process.exit(0);
+  }
+  if (args.seedLocal) {
+    if (isForbiddenProdSmokeTarget(args.baseUrl)) {
+      console.error("[postback-smoke] refuse --seed-local against vaultquest.io");
+      process.exit(1);
+    }
+    process.env.POSTBACK_SMOKE_ALLOW_DB = "1";
+  }
+
+  if (!fs.existsSync(path.resolve(process.cwd(), ".cursor/mcp.json")) && !fs.existsSync(path.resolve(__dirname, "../../.cursor/mcp.json"))) {
+    console.log("plugin-skipped: missing MCP config (datadog)");
+  } else {
+    try {
+      const mcp = fs.readFileSync(
+        fs.existsSync(path.resolve(process.cwd(), ".cursor/mcp.json"))
+          ? path.resolve(process.cwd(), ".cursor/mcp.json")
+          : path.resolve(__dirname, "../../.cursor/mcp.json"),
+        "utf8",
+      );
+      if (!mcp.includes("datadog")) console.log("plugin-skipped: missing MCP config (datadog)");
+    } catch {
+      console.log("plugin-skipped: missing MCP config (datadog)");
+    }
+  }
+
+  const results: CaseResult[] = [...offlineHmacCases()];
+
+  if (args.probeProd || args.requireLive === false) {
+    try {
+      results.push(...(await probeProd()));
+    } catch (e) {
+      results.push({
+        name: "prod probe",
+        pass: false,
+        detail: e instanceof Error ? e.message : "probe failed",
+      });
+    }
+  }
+
+  const origin = args.baseUrl.replace(/\/$/, "");
+  let serverUp = false;
+  if (!isForbiddenProdSmokeTarget(origin)) {
+    try {
+      const ping = await fetch(`${origin}/api/postback`, { redirect: "manual" });
+      serverUp = ping.status > 0;
+    } catch {
+      serverUp = false;
+    }
+  }
+
+  if (args.requireLive && !serverUp) {
+    results.push({ name: "dev server", pass: false, detail: `not reachable at ${origin}` });
+  } else if (serverUp && !isForbiddenProdSmokeTarget(origin)) {
+    if (args.seedLocal || process.env.POSTBACK_SMOKE_ALLOW_DB === "1") {
+      results.push(...(await liveCases(origin)));
+    } else {
+      results.push({
+        name: "live credit cases",
+        pass: true,
+        detail: "SKIPPED — pass --seed-local and POSTBACK_SMOKE_ALLOW_DB=1 on localhost (never against prod)",
+      });
+    }
+  } else if (!serverUp) {
+    results.push({
+      name: "live credit cases",
+      pass: !args.requireLive,
+      detail: `SKIPPED — no server at ${origin}. Start web + set env names, then re-run.`,
+    });
+  }
+
+  const ok = printTable(results);
+  if (!ok) process.exit(1);
+  console.log("PASS — postback-smoke");
+}
+
+main().catch((e) => {
+  console.error("[postback-smoke] FAIL", e instanceof Error ? e.message : "error");
+  process.exit(1);
+});

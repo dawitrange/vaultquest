@@ -1,8 +1,8 @@
-import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { LedgerKind, LedgerStatus } from "@prisma/client";
 import { getQuest } from "@/lib/affiliates";
 import { prisma } from "@/lib/db";
+import { HMAC_SECRET_ENV_NAMES, verifyPostbackHash } from "@/lib/postback";
 
 /**
  * S2S postback endpoint for offerwall partners.
@@ -12,29 +12,6 @@ import { prisma } from "@/lib/db";
  *           hash = HEX(SHA1_HMAC(full_url_without_hash, BITLABS_APP_SECRET))
  * ayeT:     same pattern with AYET_HMAC_SECRET if set
  */
-
-function verifyHash(
-  req: NextRequest,
-  secrets: Array<string | undefined>,
-): { ok: boolean; reason?: string } {
-  const hash = req.nextUrl.searchParams.get("hash");
-  if (!hash) return { ok: true };
-  const candidates = secrets.filter(Boolean) as string[];
-  if (candidates.length === 0) return { ok: true };
-  const full = req.nextUrl.toString();
-  const stripped = full.replace(/&hash=[^&]*/, "").replace(/\?hash=[^&]*&?/, (m) => (m.endsWith("&") ? "?" : ""));
-  const urlWithoutHash = stripped.replace(/\?$/, "");
-  for (const secret of candidates) {
-    const expected = crypto.createHmac("sha1", secret).update(urlWithoutHash).digest("hex");
-    if (expected === hash.toLowerCase() || expected.toLowerCase() === hash.toLowerCase()) {
-      return { ok: true };
-    }
-    // Also try SHA256 for networks that use it
-    const expected256 = crypto.createHmac("sha256", secret).update(urlWithoutHash).digest("hex");
-    if (expected256 === hash.toLowerCase()) return { ok: true };
-  }
-  return { ok: false, reason: "hash mismatch" };
-}
 
 export async function GET(req: NextRequest) {
   return handlePostback(req);
@@ -69,17 +46,19 @@ async function handlePostback(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
-  // BitLabs / ayeT HMAC validation when hash param present
-  const hashCheck = verifyHash(req, [
-    process.env.BITLABS_APP_SECRET,
-    process.env.BITLABS_SECRET,
-    process.env.AYET_HMAC_SECRET,
-    process.env.AYET_SECRET,
-  ]);
+  // BitLabs / ayeT HMAC validation when hash param present (query or body).
+  // Fail-closed: hash without a configured partner HMAC secret is 401.
+  const hashParam = get("hash");
+  const hashCheck = verifyPostbackHash({
+    url: req.nextUrl.toString(),
+    hash: hashParam || null,
+    secrets: HMAC_SECRET_ENV_NAMES.map((name) => process.env[name]),
+  });
   if (!hashCheck.ok) {
-    console.warn("[postback] hash verification failed", req.nextUrl.toString());
+    console.warn("[postback] hash verification failed", hashCheck.reason ?? "mismatch");
     return NextResponse.json({ ok: false, error: "hash verification failed" }, { status: 401 });
   }
+  const hashOk = Boolean(hashParam && hashCheck.ok);
 
   const trackingId = get("click_id") || get("clickId") || get("subid") || get("ext_user_id");
   if (!trackingId) {
@@ -156,12 +135,13 @@ async function handlePostback(req: NextRequest) {
   const holdDays = Number.isFinite(holdDaysRaw) ? holdDaysRaw : 3;
   const availableAt = holdDays > 0 ? new Date(Date.now() + holdDays * 86400000) : null;
 
+  let credited = false;
   try {
-    await prisma.$transaction(async (tx) => {
+    credited = await prisma.$transaction(async (tx) => {
       // Click flow: re-check + mark the click credited atomically.
       if (clickId) {
         const fresh = await tx.offerClick.findUnique({ where: { id: clickId } });
-        if (!fresh || fresh.credited) return;
+        if (!fresh || fresh.credited) return false;
       }
 
       await tx.ledgerEntry.create({
@@ -173,7 +153,7 @@ async function handlePostback(req: NextRequest) {
           availableAt,
           questId,
           clickId,
-          note: `S2S postback via ${partnerName}${txId ? ` tx=${txId}` : ""}${get("hash") ? " hmac=ok" : ""}`,
+          note: `S2S postback via ${partnerName}${txId ? ` tx=${txId}` : ""}${hashOk ? " hmac=ok" : ""}`,
         },
       });
 
@@ -183,11 +163,23 @@ async function handlePostback(req: NextRequest) {
           data: { credited: true },
         });
       }
+      return true;
     });
   } catch (e) {
-    console.error("[postback]", e);
+    console.error("[postback] credit_failed");
     return NextResponse.json({ ok: false, error: "credit_failed" }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, click_id: trackingId, vp, user_id: userId });
+  if (!credited) {
+    return NextResponse.json({ ok: true, duplicate: true, ...(txId ? { tx_id: txId } : {}) });
+  }
+
+  return NextResponse.json({
+    ok: true,
+    click_id: trackingId,
+    vp,
+    user_id: userId,
+    ...(hashOk ? { hash: "ok" } : {}),
+    ...(txId ? { tx_id: txId } : {}),
+  });
 }
