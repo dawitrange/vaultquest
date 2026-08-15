@@ -315,3 +315,22 @@ When user runs `@vault-planner get us verified`, vault-planner appends new dated
 - **Verify:** `npm run lint` clean; `npm run build` OK; prod server (`PORT=3001 npm start`) `/earn` renders empty state with 0 `/api/go/` CTAs + 0 demo buttons; `/terms`+`/privacy` show effective dates, no "Outline draft"; `/proof` no "budget $150" / no "date of first draw".
 - **Owner-only open:** confirm legal operator entity/jurisdiction before publishing it on Privacy §1; finish Facebook/YouTube rename before reapplying; compress 2 MB hero image (P2).
 - **Budget:** $0.
+
+---
+
+### 2026-08-15 — issue #15 production postback smoke (@eng-qa)
+
+#### Handoff — 2026-08-15 — eng-qa
+- **Task:** Production postback smoke (click → pending VP) — GitHub #15 / PR #20
+- **Docs loaded:** `00-master-brief`, `01-brand`, `04-affiliate-constraints`, `product-prd`, `18-launch-orchestration`, `05-platform-vision`, `schema.prisma`, `affiliates.ts`, `api/postback`, `admin/page.tsx`. Missing from this checkout: `docs/19-grok-bot-ops.md`, `docs/ops/kanban-seed.md`, `docs/agents/grok-bots/builder.md`.
+- **Gate:** Engineering MVP in progress — pass. Paid ads still blocked. #13/#14 owner-blocked (not touched).
+- **Budget:** none
+- **Plugins used/skipped:** datadog — skipped: missing MCP config; Vercel MCP — skipped: needsAuth; Neon — used (read prod + isolated branch write for local smoke only)
+- **Did:**
+  - Replaced stub `postback-tester` with `web/scripts/postback-smoke.ts` (offline HMAC, `--probe-prod` no secrets, `--seed-local` first-party `/proof` click → signed postback).
+  - Fail-closed HMAC when `hash=` present and no `BITLABS_*`/`AYET_*` secret; response `hash: "ok"`; admin last-7d exact fractions + Pending EARN + S2S tiles.
+  - Skills: `vault-build-check` PASS (32 routes incl. `/api/admin/funnel`); `postback-tester --help` + `--probe-prod` 10/10; `--seed-local` 18/18 on isolated Neon branch.
+  - Local/branch smoke (not prod): click `cmsv0tg430001jsoy5459rqbc` → ledger `cmsv0tg5t0003jsoyq0d1wf8h` PENDING 500 VP `availableAt=2026-08-22T23:42:20.938Z` (holdDays=7) → duplicate `{ok:true,duplicate:true}` → branch funnel **Offer clicks=132 · Earn credits=2 · Pending EARN=1 · S2S credits=1 · Redemptions=1 · Click → earn 2 / 132 · Earn → redeem 1 / 2**.
+  - Prod last-7d (exact, unchanged by smoke): **Offer clicks=131 · Earn credits=1 · Pending EARN=0 · S2S credits=0 · Redemptions=1 · Click → earn 1 / 131 · Earn → redeem 1 / 1**. Probe click `cmsv0lyky0001jx04hqjbe6uy` (anon, uncredited). `POSTBACK_SECRET` is set (401). No S2S pending on prod.
+- **Next:** Ethio sets partner HMAC env names on Vercel if unset; #13 reseed healthy wall URLs; signed-in prod click + partner/test postback. Re-run tester `--probe-prod` then quote `/admin` tiles. Do not merge until owner reviews.
+- **Open:** Prod credit blocked on Ethio-owned `POSTBACK_SECRET` value + partner HMAC values + #13/#14. Vercel MCP unauthenticated so HMAC env presence unknown. Isolated Neon branch `issue-15-postback-smoke` can be deleted by owner.
