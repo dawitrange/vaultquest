@@ -29,17 +29,18 @@ Flags: `--help` prints cases without calling; `--probe-prod` public prod checks 
 5. Duplicate `tx_id` → expects HTTP 200 `{ok:true, duplicate:true}`
 6. Missing secret → expects 401 or 503
 7. Ledger PENDING + `availableAt` from quest `holdDays`; admin last-7d quoted as exact counts/fractions
-8. AdGate macros `{s1}` / `{points}` / `{payout}` / `{conversion_id}`; refuse marketing homepages (`adgatemedia.com/`)
-9. CPX `secure_hash` MD5 is **not** verified — tester flags this and the route returns 501. Do not smoke CPX unless asked.
+8. Refuse marketing homepages (`adgatemedia.com/`, `www.cpx-research.com/`)
+9. **CPX MD5 `secure_hash` is not verified** — route returns 501 `cpx_md5_not_implemented` + `safe:false`. A CPX credit is **not safe** until that check exists.
 10. Reports PASS/FAIL per case. `--help` needs no server. Live credit needs localhost + env names below.
 
-## AdGate production smoke (Yield + Ethio)
-Target: `adgate-backup`. Still **disabled** at `https://adgatemedia.com/` (homepage). Do **not** smoke that URL.
-1. Ethio pastes a real AdGate Rewards wall/embed URL and confirms `POSTBACK_SECRET` on Vercel.
-2. Yield flips `/admin` (`url` + `healthy`). Do not invent the wall URL here.
-3. Prefer AdGate **Test Mode** convert-on-click if available.
-4. Then: signed-in click → `/api/postback` with template (secret is a placeholder, never commit a value):
-   `https://vaultquest.io/api/postback?secret=…&click_id={s1}&user_id={s1}&vp={points}&payout_usd={payout}&tx_id={conversion_id}&partner=adgate`
+## Yield target: CPX (AdGate stalled)
+
+- **AdGate** (`adgate-backup`) is **stalled (under review)**. Do not smoke `https://adgatemedia.com/`.
+- **Next network: CPX** (`cpx-survey`). Still **disabled** at `https://www.cpx-research.com/` (homepage). Do **not** smoke that URL. Do **not** flip `/admin`.
+- When Ethio sends a real `offers.cpx-research.com` or `wall.cpx-research.com` URL **with his app_id**, **Yield** writes the `/admin` flip. Do not invent that URL here.
+- `POSTBACK_SECRET` is already set on Vercel. That gate alone is **not** enough for CPX.
+- **GAP (required call-out):** `/api/postback` does **not** verify CPX MD5 `secure_hash`. Do not treat a CPX credit as safe until that check exists.
+- Freecash path + duplicate smoke is **not Yield** and **not earn-live**.
 
 ## Env names required for live credit (never commit or log values)
 - `POSTBACK_SECRET`
@@ -57,4 +58,4 @@ Target: `adgate-backup`. Still **disabled** at `https://adgatemedia.com/` (homep
 - Never sends real secrets to prod; use local env.
 - Stage-only — do not trigger live network callbacks.
 - Smoke AffiliateLink is first-party `https://www.vaultquest.io/proof` — do not invent partner placement URLs.
-- Never smoke `adgatemedia.com/` or other marketing homepages. Stay on AdGate; do not switch to CPX unless asked.
+- Never smoke marketing homepages. Never flip `/admin`. Never invent a CPX wall URL.

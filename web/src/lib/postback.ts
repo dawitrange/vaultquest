@@ -75,6 +75,16 @@ export const ADGATE_POSTBACK_TEMPLATE =
   "https://vaultquest.io/api/postback?secret=…&click_id={s1}&user_id={s1}&vp={points}&payout_usd={payout}&tx_id={conversion_id}&partner=adgate";
 
 export const ADGATE_SLUG = "adgate-backup";
+export const CPX_SLUG = "cpx-survey";
+
+/** Hosts Yield will accept once Ethio pastes a real wall URL + app_id. Do not invent the path. */
+export const CPX_ALLOWED_WALL_HOSTS = ["offers.cpx-research.com", "wall.cpx-research.com"] as const;
+
+/** Apex/www marketing sites — never smoke or serve, any path. */
+const MARKETING_SITE_HOSTS = new Set([
+  "www.cpx-research.com",
+  "cpx-research.com",
+]);
 
 /** Seed / marketing homepages — never smoke or serve these as "Start quest". */
 const MARKETING_HOMEPAGE_HOSTS = new Set([
@@ -90,8 +100,6 @@ const MARKETING_HOMEPAGE_HOSTS = new Set([
   "www.offerdaddy.com",
   "www.bitlabs.ai",
   "bitlabs.ai",
-  "www.cpx-research.com",
-  "cpx-research.com",
   "www.ayetstudios.com",
   "ayetstudios.com",
   "adgem.com",
@@ -102,6 +110,7 @@ export function isMarketingHomepageUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
     const host = parsed.hostname.toLowerCase();
+    if (MARKETING_SITE_HOSTS.has(host)) return true;
     const path = parsed.pathname.replace(/\/+$/, "") || "/";
     if (!MARKETING_HOMEPAGE_HOSTS.has(host)) return false;
     return path === "/" || path === "/index.html" || path === "/index.php";
@@ -110,12 +119,28 @@ export function isMarketingHomepageUrl(url: string): boolean {
   }
 }
 
+export function isAllowedCpxWallHost(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return (CPX_ALLOWED_WALL_HOSTS as readonly string[]).includes(host);
+  } catch {
+    return false;
+  }
+}
+
 /**
- * CPX posts MD5 `secure_hash`. This route does not verify it yet.
- * Do not run a CPX smoke until that check exists. Do not switch target to CPX
- * unless Yield/Ethio ask.
+ * CPX posts MD5 `secure_hash`. This route does **not** verify it.
+ * Yield: CPX is the next network, but a CPX credit is NOT safe until this
+ * check exists. Keep refusing CPX callbacks (HTTP 501) until then.
+ * Do not invent offers.cpx-research.com / wall.cpx-research.com paths.
+ * Do not flip `cpx-survey` — Yield writes that /admin flip after Ethio's URL+app_id.
  */
 export const CPX_SECURE_HASH_VERIFIED = false;
+
+/** False until MD5 secure_hash is implemented. Do not treat CPX ledger rows as earn-live. */
+export function isCpxCreditSafe(): boolean {
+  return CPX_SECURE_HASH_VERIFIED;
+}
 
 export const CLICK_ID_ALIASES = ["click_id", "clickId", "subid", "ext_user_id", "s1"] as const;
 export const USER_ID_ALIASES = ["user_id", "uid", "s1"] as const;

@@ -26,7 +26,7 @@ export async function GET(
   }
 
   // Never send users (or smoke) at a partner marketing homepage.
-  // Yield flips adgate-backup only after Ethio pastes a real Rewards wall/embed URL.
+  // Yield flips cpx-survey only after Ethio pastes offers./wall.cpx-research.com + app_id.
   if (isMarketingHomepageUrl(started.link.url)) {
     return NextResponse.redirect(new URL("/earn?error=no_link", _req.url));
   }

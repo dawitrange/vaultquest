@@ -19,13 +19,16 @@ import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import {
-  ADGATE_POSTBACK_TEMPLATE,
   ADGATE_SLUG,
   CLICK_ID_ALIASES,
+  CPX_ALLOWED_WALL_HOSTS,
   CPX_SECURE_HASH_VERIFIED,
+  CPX_SLUG,
   HMAC_SECRET_ENV_NAMES,
   TX_ID_ALIASES,
   firstAlias,
+  isAllowedCpxWallHost,
+  isCpxCreditSafe,
   isForbiddenProdSmokeTarget,
   isMarketingHomepageUrl,
   signPostbackUrl,
@@ -114,16 +117,19 @@ Cases:
   5. Duplicate tx_id → HTTP 200 {ok:true, duplicate:true}
   6. Bad hash → 401
   7. Admin last-7d funnel quoted as exact counts / fractions (never rounded up)
-  8. AdGate macros {s1}/{points}/{payout}/{conversion_id} + refuse marketing homepages
-  9. CPX MD5 secure_hash flagged unimplemented (do not smoke CPX)
+  8. Refuse marketing homepages (adgatemedia.com/, www.cpx-research.com/)
+  9. CPX MD5 secure_hash NOT verified — HTTP 501; CPX credit is NOT safe
 
-Target network: AdGate. ${ADGATE_SLUG} stays disabled at https://adgatemedia.com/ until
-Ethio sends a real Rewards wall/embed URL and confirms POSTBACK_SECRET on Vercel.
-Yield then flips url + healthy in /admin. Use AdGate Test Mode (convert-on-click),
-not a live wall, if they have a test toggle. Do NOT smoke a marketing homepage.
+Target network: CPX (${CPX_SLUG}). AdGate (${ADGATE_SLUG}) is stalled (under review).
+${CPX_SLUG} stays disabled at https://www.cpx-research.com/ until Ethio sends a real
+${CPX_ALLOWED_WALL_HOSTS[0]} or ${CPX_ALLOWED_WALL_HOSTS[1]} URL with his app_id.
+Yield then writes the /admin flip. Do not flip /admin here. Do not invent that URL.
+Do NOT smoke a marketing homepage. Freecash path+duplicate is not Yield and not earn-live.
 
-AdGate postback template (secret is a placeholder — never commit a real value):
-  ${ADGATE_POSTBACK_TEMPLATE}
+GAP (must be called out before any CPX credit is treated as safe):
+  /api/postback does not verify CPX MD5 secure_hash (CPX_SECURE_HASH_VERIFIED=false).
+  POSTBACK_SECRET is already set — that alone is not enough. Do not treat a CPX
+  credit as safe until the MD5 check exists.
 
 Usage:
   bash .cursor/skills/postback-tester/scripts/test.sh --help
@@ -139,7 +145,7 @@ Env required for live credit (names only — never commit values):
 Constraints:
   Never sends secrets to vaultquest.io. --probe-prod is public 401/503 + /earn only.
   Smoke AffiliateLink URL is first-party ${SMOKE_URL} — not a live partner placement.
-  Never invent an AdGate wall URL. Do not switch to CPX unless asked.
+  Never invent a CPX wall URL. Do not flip /admin.
 `);
 }
 
@@ -185,26 +191,34 @@ async function probeProd(): Promise<CaseResult[]> {
   const freecashCta = html.includes("/api/go/q-freecash");
   const offerwallBlocked = html.includes("Not available yet");
   results.push({
-    name: "prod /earn CTAs (no extra click created)",
+    name: "prod /earn Freecash CTA is not earn-live",
     pass: earn.ok,
     detail: freecashCta
-      ? `q-freecash Start quest is live; offerwall still empty=${offerwallBlocked}. Do not invent partner URLs.`
+      ? `q-freecash Start quest is present; offerwall empty=${offerwallBlocked}. Freecash path+duplicate is NOT Yield and NOT earn-live.`
       : "q-freecash CTA not in HTML",
   });
 
   results.push({
-    name: "AdGate smoke blocker (no homepage, no invented wall URL)",
+    name: "AdGate stalled (under review)",
     pass: true,
-    detail:
-      `${ADGATE_SLUG} is still disabled at https://adgatemedia.com/ (marketing homepage). ` +
-      "BLOCKED until Ethio sends a real AdGate Rewards wall/embed URL and confirms POSTBACK_SECRET on Vercel; " +
-      "Yield then flips url+healthy in /admin. Use AdGate Test Mode convert-on-click if available.",
+    detail: `${ADGATE_SLUG} remains disabled at https://adgatemedia.com/. Not the Yield target. Do not smoke the homepage.`,
   });
 
   results.push({
-    name: "CPX fallback flagged (MD5 secure_hash not verified)",
-    pass: !CPX_SECURE_HASH_VERIFIED,
-    detail: "CPX_SECURE_HASH_VERIFIED=false — do not smoke CPX; stay on AdGate unless asked.",
+    name: "CPX next — wait for Ethio wall URL; no /admin flip",
+    pass: true,
+    detail:
+      `${CPX_SLUG} stays disabled at https://www.cpx-research.com/. ` +
+      `BLOCKED until Ethio sends a real ${CPX_ALLOWED_WALL_HOSTS.join(" or ")} URL with his app_id. ` +
+      "Yield writes the /admin flip. Do not invent the URL. Do not flip /admin.",
+  });
+
+  results.push({
+    name: "CPX MD5 secure_hash not verified — credit NOT safe",
+    pass: !CPX_SECURE_HASH_VERIFIED && !isCpxCreditSafe(),
+    detail:
+      "GAP: /api/postback does not verify CPX MD5 secure_hash (CPX_SECURE_HASH_VERIFIED=false). " +
+      "POSTBACK_SECRET is set — not enough. HTTP 501 until the check exists. Do not treat a CPX credit as safe.",
   });
 
   return results;
@@ -268,9 +282,16 @@ function offlineHmacCases(): CaseResult[] {
   });
 
   results.push({
-    name: "refuse AdGate marketing homepage",
-    pass: isMarketingHomepageUrl("https://adgatemedia.com/") && !isMarketingHomepageUrl(SMOKE_URL),
-    detail: "adgatemedia.com/ blocked; first-party /proof allowed",
+    name: "refuse marketing homepages (AdGate + CPX apex)",
+    pass:
+      isMarketingHomepageUrl("https://adgatemedia.com/") &&
+      isMarketingHomepageUrl("https://www.cpx-research.com/") &&
+      isMarketingHomepageUrl("https://www.cpx-research.com/publishers") &&
+      !isMarketingHomepageUrl(SMOKE_URL) &&
+      !isAllowedCpxWallHost("https://www.cpx-research.com/") &&
+      isAllowedCpxWallHost("https://offers.cpx-research.com/") &&
+      isAllowedCpxWallHost("https://wall.cpx-research.com/"),
+    detail: "apex/www CPX + AdGate homepage blocked; offers./wall. hosts allowed when Ethio pastes a real URL",
   });
 
   return results;
@@ -472,7 +493,7 @@ async function liveCases(baseUrl: string): Promise<CaseResult[]> {
     where: { userId, note: { contains: `tx=${adgateTx}` } },
   });
   results.push({
-    name: "AdGate-shaped postback (s1/points/payout/conversion_id)",
+    name: "alias wiring postback (not earn-live / not Yield)",
     pass:
       adgate.status === 200 &&
       adgate.json.ok === true &&
@@ -485,9 +506,9 @@ async function liveCases(baseUrl: string): Promise<CaseResult[]> {
     `${origin}/api/postback?secret=${encodeURIComponent(postbackSecret)}&click_id=${encodeURIComponent(userId)}&vp=10&partner=cpx&secure_hash=deadbeef`,
   );
   results.push({
-    name: "CPX refused until MD5 secure_hash is implemented",
-    pass: cpx.status === 501 && cpx.json.error === "cpx_md5_not_implemented",
-    detail: `HTTP ${cpx.status} error=${String(cpx.json.error ?? "")}`,
+    name: "CPX refused — MD5 gap; credit not safe",
+    pass: cpx.status === 501 && cpx.json.error === "cpx_md5_not_implemented" && cpx.json.safe === false,
+    detail: `HTTP ${cpx.status} error=${String(cpx.json.error ?? "")} safe=${String(cpx.json.safe)}`,
   });
 
   const { exactFraction, funnel } = await import("../src/lib/analytics");

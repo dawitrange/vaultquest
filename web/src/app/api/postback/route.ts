@@ -22,7 +22,10 @@ import {
  * BitLabs:  GET /api/postback?secret=...&click_id=...&vp=...&hash=HEX_SHA1_HMAC
  *           hash = HEX(SHA1_HMAC(full_url_without_hash, BITLABS_APP_SECRET))
  * ayeT:     same pattern with AYET_HMAC_SECRET if set
- * CPX:      MD5 secure_hash is NOT verified (CPX_SECURE_HASH_VERIFIED=false) — refuse those callbacks
+ * CPX:      next Yield network. MD5 secure_hash is NOT verified
+ *           (CPX_SECURE_HASH_VERIFIED=false). Callbacks are refused (501).
+ *           A CPX credit is NOT safe until that check exists. Do not flip
+ *           cpx-survey — Yield writes /admin after Ethio's wall URL + app_id.
  */
 
 export async function GET(req: NextRequest) {
@@ -58,11 +61,17 @@ async function handlePostback(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
-  // CPX MD5 secure_hash is not implemented — do not credit or smoke CPX yet.
+  // CPX MD5 secure_hash is not implemented. POSTBACK_SECRET alone is not enough
+  // to treat a CPX credit as safe — refuse until the check exists.
   const partnerHint = get("partner").toLowerCase();
   if (!CPX_SECURE_HASH_VERIFIED && (get("secure_hash") || partnerHint === "cpx")) {
     return NextResponse.json(
-      { ok: false, error: "cpx_md5_not_implemented", partner: "cpx" },
+      {
+        ok: false,
+        error: "cpx_md5_not_implemented",
+        partner: "cpx",
+        safe: false,
+      },
       { status: 501 },
     );
   }

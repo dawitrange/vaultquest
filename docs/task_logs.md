@@ -340,3 +340,9 @@ When user runs `@vault-planner get us verified`, vault-planner appends new dated
 - **Did:** AdGate macros `{s1}` `{points}` `{payout}` `{conversion_id}` aliased; `/api/go` sets `s1` (user); marketing homepages (incl. `adgatemedia.com/`) refused in rotator + `/api/go`; CPX `secure_hash` → 501 `cpx_md5_not_implemented`; admin shows AdGate template with `secret=…` placeholder; tester documents exact blocker: `adgate-backup` still disabled homepage until Ethio wall URL + `POSTBACK_SECRET` confirm, then Yield `/admin` flip; use AdGate Test Mode if available.
 - **Do not:** smoke `https://adgatemedia.com/`; invent a Rewards URL; switch to CPX; put secrets in the PR.
 - **Next:** wait for Ethio wall/embed URL + Vercel secret confirm → Yield flip → Test Mode click → postback → pending VP. No merge.
+
+#### Handoff — 2026-08-15 — eng-qa (Yield: AdGate stalled, CPX next)
+- **Task:** #15 retarget CPX; flag MD5 gap; no homepage; no /admin flip
+- **Did:** AdGate marked stalled. CPX (`cpx-survey`) is next — wait for Ethio `offers.cpx-research.com` or `wall.cpx-research.com` + app_id; Yield writes the flip. Apex/www CPX hosts treated as marketing (any path). `/api/postback` still refuses CPX (`501` `cpx_md5_not_implemented` `safe:false`) because MD5 `secure_hash` is **not** verified — CPX credit is **not safe**. `POSTBACK_SECRET` already set; not enough. Freecash CTA labeled not Yield / not earn-live. Admin banner calls out the MD5 gap. No invented URL. No /admin flip.
+- **Do not:** smoke `www.cpx-research.com` or `adgatemedia.com/`; invent a wall URL; flip `cpx-survey`; treat a CPX credit as safe; merge.
+- **Next:** Ethio wall URL + app_id → Yield `/admin` flip → implement MD5 before any CPX credit is earn-live. No merge.

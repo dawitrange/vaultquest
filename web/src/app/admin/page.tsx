@@ -11,9 +11,11 @@ import { requireAdmin } from "@/lib/admin";
 import { clicksTodayForLink } from "@/lib/affiliates";
 import { prisma } from "@/lib/db";
 import {
-  ADGATE_POSTBACK_TEMPLATE,
   ADGATE_SLUG,
+  CPX_ALLOWED_WALL_HOSTS,
   CPX_SECURE_HASH_VERIFIED,
+  CPX_SLUG,
+  isCpxCreditSafe,
   isMarketingHomepageUrl,
 } from "@/lib/postback";
 
@@ -63,11 +65,17 @@ export default async function AdminPage() {
       <h1 className="font-[family-name:var(--vq-font-display)] text-4xl font-bold tracking-tight">Admin</h1>
       <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
         Affiliate caps, fulfillment queue, contact inbox. Do not flip a homepage URL to{" "}
-        <code>healthy</code>. AdGate postback template (secret is a placeholder):{" "}
-        <code className="break-all text-[var(--vq-teal)]">{ADGATE_POSTBACK_TEMPLATE}</code>
-        {CPX_SECURE_HASH_VERIFIED ? null : (
-          <span className="mt-1 block text-xs text-[var(--vq-ink-faint)]">
-            CPX MD5 <code>secure_hash</code> is not verified — do not smoke CPX.
+        <code>healthy</code>. AdGate is stalled (under review). Next network is CPX (
+        <code>{CPX_SLUG}</code>) — Yield writes that flip only after Ethio pastes a real{" "}
+        <code>{CPX_ALLOWED_WALL_HOSTS[0]}</code> or <code>{CPX_ALLOWED_WALL_HOSTS[1]}</code> URL
+        with his app_id. Freecash is not earn-live.
+        {isCpxCreditSafe() && CPX_SECURE_HASH_VERIFIED ? null : (
+          <span className="mt-2 block rounded-[8px] border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-3 py-2 text-xs text-[var(--vq-ink)]">
+            <strong>CPX credit is not safe.</strong> <code>/api/postback</code> does not verify
+            CPX MD5 <code>secure_hash</code> (<code>CPX_SECURE_HASH_VERIFIED=false</code>).
+            Callbacks with <code>secure_hash</code> or <code>partner=cpx</code> return HTTP 501.
+            Do not treat a CPX ledger row as earn-live until that check exists.{" "}
+            <code>POSTBACK_SECRET</code> is already set — that gate alone is not enough.
           </span>
         )}
       </p>
@@ -106,8 +114,12 @@ export default async function AdminPage() {
                 Clicks today: {clicksMap[link.id] ?? 0}
                 {link.capDaily != null ? ` / ${link.capDaily}` : ""}
                 {isMarketingHomepageUrl(link.url)
-                  ? ` · homepage — keep ${link.slug === ADGATE_SLUG ? "adgate-backup " : ""}disabled until a real wall/embed URL`
+                  ? ` · homepage — keep ${link.slug} disabled (do not flip /admin)`
                   : ""}
+                {link.slug === CPX_SLUG
+                  ? " · wait for Ethio offers./wall.cpx-research.com + app_id; Yield flips"
+                  : ""}
+                {link.slug === ADGATE_SLUG ? " · AdGate stalled (under review)" : ""}
               </p>
               <AffiliateEditForm link={link} />
             </div>
