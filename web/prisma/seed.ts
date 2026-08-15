@@ -90,7 +90,7 @@ const SEED = [
     // Marketing homepage. Do NOT flip healthy. Yield writes the /admin flip
     // only after Ethio pastes a real offers.cpx-research.com or
     // wall.cpx-research.com URL with his app_id. Never invent that URL.
-    // /api/postback does not verify CPX MD5 secure_hash — credits are not safe.
+    // MD5 hook is ready on /api/postback; earn-live is not certified.
     status: AffiliateHealth.disabled,
     capDaily: 2000,
   },

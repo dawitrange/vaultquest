@@ -11,7 +11,7 @@ if ($Help) {
   Write-Host "postback-tester — HMAC + click → pending VP smoke (issue #15)"
   Write-Host "Cases: offline HMAC, prod probe (no secrets), optional localhost live credit"
   Write-Host "Usage: pwsh .cursor/skills/postback-tester/scripts/test.ps1 [-Help] [-ProbeProd] [-SeedLocal] [-BaseUrl http://localhost:3000]"
-  Write-Host "Env names (never commit values): POSTBACK_SECRET, BITLABS_APP_SECRET or AYET_HMAC_SECRET, DATABASE_URL"
+  Write-Host "Env names (never commit values): POSTBACK_SECRET, BITLABS_APP_SECRET or AYET_HMAC_SECRET, CPX_SECURE_HASH, DATABASE_URL"
   Write-Host "Never sends secrets to vaultquest.io. --help needs no server."
   if (Test-Path "web/scripts/postback-smoke.ts") {
     Push-Location web

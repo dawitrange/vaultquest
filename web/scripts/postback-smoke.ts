@@ -22,7 +22,9 @@ import {
   ADGATE_SLUG,
   CLICK_ID_ALIASES,
   CPX_ALLOWED_WALL_HOSTS,
-  CPX_SECURE_HASH_VERIFIED,
+  CPX_EARN_LIVE_CERTIFIED,
+  CPX_MD5_HOOK_READY,
+  CPX_SECURE_HASH_ENV_NAMES,
   CPX_SLUG,
   HMAC_SECRET_ENV_NAMES,
   TX_ID_ALIASES,
@@ -31,8 +33,11 @@ import {
   isCpxCreditSafe,
   isForbiddenProdSmokeTarget,
   isMarketingHomepageUrl,
+  signCpxPostbackHash,
+  signCpxWallHash,
   signPostbackUrl,
   stripHashParam,
+  verifyCpxSecureHash,
   verifyPostbackHash,
 } from "../src/lib/postback";
 
@@ -86,6 +91,14 @@ function firstHmacSecret(): string | undefined {
   return undefined;
 }
 
+function firstCpxSecret(): string | undefined {
+  for (const name of CPX_SECURE_HASH_ENV_NAMES) {
+    const v = process.env[name]?.trim();
+    if (v) return v;
+  }
+  return undefined;
+}
+
 function parseArgs(argv: string[]) {
   const out = {
     help: false,
@@ -118,18 +131,18 @@ Cases:
   6. Bad hash → 401
   7. Admin last-7d funnel quoted as exact counts / fractions (never rounded up)
   8. Refuse marketing homepages (adgatemedia.com/, www.cpx-research.com/)
-  9. CPX MD5 secure_hash NOT verified — HTTP 501; CPX credit is NOT safe
+  9. CPX MD5 hook: md5(trans_id-CPX_SECURE_HASH) fail-closed; earn-live NOT certified
 
 Target network: CPX (${CPX_SLUG}). AdGate (${ADGATE_SLUG}) is stalled (under review).
 ${CPX_SLUG} stays disabled at https://www.cpx-research.com/ until Ethio sends a real
 ${CPX_ALLOWED_WALL_HOSTS[0]} or ${CPX_ALLOWED_WALL_HOSTS[1]} URL with his app_id.
 Yield then writes the /admin flip. Do not flip /admin here. Do not invent that URL.
 Do NOT smoke a marketing homepage. Freecash path+duplicate is not Yield and not earn-live.
+WIP stays 2/3. Do not certify earn-live.
 
-GAP (must be called out before any CPX credit is treated as safe):
-  /api/postback does not verify CPX MD5 secure_hash (CPX_SECURE_HASH_VERIFIED=false).
-  POSTBACK_SECRET is already set — that alone is not enough. Do not treat a CPX
-  credit as safe until the MD5 check exists.
+CPX MD5 hook is ready on /api/postback. POSTBACK_SECRET is already set — not enough.
+When Yield flips a real wall URL, smoke with MD5 as the route requires.
+Until then do not smoke production against a homepage.
 
 Usage:
   bash .cursor/skills/postback-tester/scripts/test.sh --help
@@ -139,6 +152,7 @@ Usage:
 Env required for live credit (names only — never commit values):
   POSTBACK_SECRET
   BITLABS_APP_SECRET or AYET_HMAC_SECRET
+  CPX_SECURE_HASH (or CPX_APP_SECRET) — CPX MD5 cases
   DATABASE_URL
   POSTBACK_SMOKE_ALLOW_DB=1   (with --seed-local; localhost only)
 
@@ -214,11 +228,11 @@ async function probeProd(): Promise<CaseResult[]> {
   });
 
   results.push({
-    name: "CPX MD5 secure_hash not verified — credit NOT safe",
-    pass: !CPX_SECURE_HASH_VERIFIED && !isCpxCreditSafe(),
+    name: "CPX MD5 hook ready — earn-live NOT certified",
+    pass: CPX_MD5_HOOK_READY && !CPX_EARN_LIVE_CERTIFIED && !isCpxCreditSafe(),
     detail:
-      "GAP: /api/postback does not verify CPX MD5 secure_hash (CPX_SECURE_HASH_VERIFIED=false). " +
-      "POSTBACK_SECRET is set — not enough. HTTP 501 until the check exists. Do not treat a CPX credit as safe.",
+      "Hook ready: md5(trans_id-CPX_SECURE_HASH). Earn-live not certified. " +
+      "Do not smoke a homepage. Yield flips after a real offers./wall. URL + app_id.",
   });
 
   return results;
@@ -292,6 +306,56 @@ function offlineHmacCases(): CaseResult[] {
       isAllowedCpxWallHost("https://offers.cpx-research.com/") &&
       isAllowedCpxWallHost("https://wall.cpx-research.com/"),
     detail: "apex/www CPX + AdGate homepage blocked; offers./wall. hosts allowed when Ethio pastes a real URL",
+  });
+
+  const cpxUnitSecret = "unit-cpx-not-a-prod-secret";
+  const transId = "cpx-trans-1001";
+  const goodMd5 = signCpxPostbackHash(transId, cpxUnitSecret);
+  const wallMd5 = signCpxWallHash("user-ext-9", cpxUnitSecret);
+  const vCpx = verifyCpxSecureHash({
+    transId,
+    providedHash: goodMd5,
+    secrets: [cpxUnitSecret],
+  });
+  results.push({
+    name: "CPX MD5 postback md5(trans_id-secret)",
+    pass: vCpx.ok && goodMd5.length === 32,
+    detail: vCpx.ok ? "hook ready" : vCpx.reason ?? "fail",
+  });
+  results.push({
+    name: "CPX MD5 wall helper md5(ext_user_id-secret)",
+    pass: wallMd5.length === 32 && wallMd5 !== goodMd5,
+    detail: "outbound helper only — do not invent a wall URL",
+  });
+  const badCpx = verifyCpxSecureHash({
+    transId,
+    providedHash: "deadbeef",
+    secrets: [cpxUnitSecret],
+  });
+  results.push({
+    name: "CPX MD5 bad hash rejected",
+    pass: !badCpx.ok && badCpx.reason === "cpx secure_hash mismatch",
+    detail: badCpx.reason ?? "expected reject",
+  });
+  const closedCpx = verifyCpxSecureHash({
+    transId,
+    providedHash: goodMd5,
+    secrets: [undefined],
+  });
+  results.push({
+    name: "CPX MD5 fail-closed when secret missing",
+    pass: !closedCpx.ok && closedCpx.reason === "cpx secure hash secret not configured",
+    detail: closedCpx.reason ?? "expected fail-closed",
+  });
+  const missingTx = verifyCpxSecureHash({
+    transId: "",
+    providedHash: goodMd5,
+    secrets: [cpxUnitSecret],
+  });
+  results.push({
+    name: "CPX MD5 fail-closed when trans_id missing",
+    pass: !missingTx.ok && missingTx.reason === "cpx trans_id missing",
+    detail: missingTx.reason ?? "expected fail-closed",
   });
 
   return results;
@@ -502,14 +566,55 @@ async function liveCases(baseUrl: string): Promise<CaseResult[]> {
     detail: `HTTP ${adgate.status} tx_id=${adgateTx} ledger=${adgateLedger?.id ?? "none"} status=${adgateLedger?.status ?? "none"}`,
   });
 
-  const cpx = await fetchJson(
-    `${origin}/api/postback?secret=${encodeURIComponent(postbackSecret)}&click_id=${encodeURIComponent(userId)}&vp=10&partner=cpx&secure_hash=deadbeef`,
+  const cpxBad = await fetchJson(
+    `${origin}/api/postback?secret=${encodeURIComponent(postbackSecret)}&user_id=${encodeURIComponent(userId)}&click_id=${encodeURIComponent(userId)}&vp=10&partner=cpx&trans_id=cpx-bad&secure_hash=deadbeef`,
   );
   results.push({
-    name: "CPX refused — MD5 gap; credit not safe",
-    pass: cpx.status === 501 && cpx.json.error === "cpx_md5_not_implemented" && cpx.json.safe === false,
-    detail: `HTTP ${cpx.status} error=${String(cpx.json.error ?? "")} safe=${String(cpx.json.safe)}`,
+    name: "CPX bad MD5 fail-closed (not earn-live)",
+    pass: cpxBad.status === 401 && cpxBad.json.error === "cpx_secure_hash_failed" && cpxBad.json.safe === false,
+    detail: `HTTP ${cpxBad.status} error=${String(cpxBad.json.error ?? "")} reason=${String(cpxBad.json.reason ?? "")}`,
   });
+
+  const cpxSecret = firstCpxSecret();
+  if (!cpxSecret) {
+    results.push({
+      name: "CPX valid MD5 live credit",
+      pass: true,
+      detail:
+        "SKIPPED — set CPX_SECURE_HASH locally to exercise the happy path. Hook is unit-tested. Earn-live not certified.",
+    });
+  } else {
+    const cpxTx = `cpx-smoke-${Date.now()}`;
+    const cpxHash = signCpxPostbackHash(cpxTx, cpxSecret);
+    const cpxUrl = new URL(`${origin}/api/postback`);
+    cpxUrl.searchParams.set("secret", postbackSecret);
+    cpxUrl.searchParams.set("user_id", userId);
+    cpxUrl.searchParams.set("click_id", userId);
+    cpxUrl.searchParams.set("vp", "25");
+    cpxUrl.searchParams.set("partner", "cpx");
+    cpxUrl.searchParams.set("trans_id", cpxTx);
+    cpxUrl.searchParams.set("hash", cpxHash);
+    const cpxOk = await fetchJson(cpxUrl.toString());
+    const cpxLedger = await prisma.ledgerEntry.findFirst({
+      where: { userId, note: { contains: `tx=${cpxTx}` } },
+    });
+    results.push({
+      name: "CPX valid MD5 live credit (localhost only)",
+      pass:
+        cpxOk.status === 200 &&
+        cpxOk.json.ok === true &&
+        cpxOk.json.cpx_md5 === "ok" &&
+        cpxLedger?.status === "PENDING" &&
+        Boolean(cpxLedger.availableAt),
+      detail: `HTTP ${cpxOk.status} cpx_md5=${String(cpxOk.json.cpx_md5 ?? "")} ledger=${cpxLedger?.id ?? "none"} — not earn-live`,
+    });
+    const cpxDup = await fetchJson(cpxUrl.toString());
+    results.push({
+      name: "CPX duplicate trans_id",
+      pass: cpxDup.status === 200 && cpxDup.json.ok === true && cpxDup.json.duplicate === true,
+      detail: `HTTP ${cpxDup.status} duplicate=${String(cpxDup.json.duplicate)}`,
+    });
+  }
 
   const { exactFraction, funnel } = await import("../src/lib/analytics");
   const stats = await funnel(7);

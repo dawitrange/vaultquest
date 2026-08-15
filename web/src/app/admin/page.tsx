@@ -13,9 +13,11 @@ import { prisma } from "@/lib/db";
 import {
   ADGATE_SLUG,
   CPX_ALLOWED_WALL_HOSTS,
-  CPX_SECURE_HASH_VERIFIED,
+  CPX_EARN_LIVE_CERTIFIED,
+  CPX_MD5_HOOK_READY,
+  CPX_POSTBACK_TEMPLATE,
   CPX_SLUG,
-  isCpxCreditSafe,
+  cpxSecureHashEnvConfigured,
   isMarketingHomepageUrl,
 } from "@/lib/postback";
 
@@ -68,14 +70,19 @@ export default async function AdminPage() {
         <code>healthy</code>. AdGate is stalled (under review). Next network is CPX (
         <code>{CPX_SLUG}</code>) — Yield writes that flip only after Ethio pastes a real{" "}
         <code>{CPX_ALLOWED_WALL_HOSTS[0]}</code> or <code>{CPX_ALLOWED_WALL_HOSTS[1]}</code> URL
-        with his app_id. Freecash is not earn-live.
-        {isCpxCreditSafe() && CPX_SECURE_HASH_VERIFIED ? null : (
+        with his app_id. Freecash is not earn-live. WIP stays 2/3 — do not certify earn-live.
+        {CPX_EARN_LIVE_CERTIFIED ? null : (
           <span className="mt-2 block rounded-[8px] border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-3 py-2 text-xs text-[var(--vq-ink)]">
-            <strong>CPX credit is not safe.</strong> <code>/api/postback</code> does not verify
-            CPX MD5 <code>secure_hash</code> (<code>CPX_SECURE_HASH_VERIFIED=false</code>).
-            Callbacks with <code>secure_hash</code> or <code>partner=cpx</code> return HTTP 501.
-            Do not treat a CPX ledger row as earn-live until that check exists.{" "}
+            <strong>Earn-live is not certified.</strong> CPX MD5 hook is{" "}
+            {CPX_MD5_HOOK_READY ? "ready" : "missing"}:{" "}
+            <code>md5(trans_id-CPX_SECURE_HASH)</code> vs <code>hash</code>/<code>secure_hash</code>.
+            Runtime <code>CPX_SECURE_HASH</code>:{" "}
+            {cpxSecureHashEnvConfigured() ? "configured" : "missing"} (name only).{" "}
             <code>POSTBACK_SECRET</code> is already set — that gate alone is not enough.
+            Do not invent a wall URL. Do not flip <code>{CPX_SLUG}</code>.
+            <span className="mt-2 block break-all font-[family-name:var(--vq-font-mono)] text-[10px] text-[var(--vq-ink-muted)]">
+              {CPX_POSTBACK_TEMPLATE}
+            </span>
           </span>
         )}
       </p>
@@ -181,6 +188,7 @@ export default async function AdminPage() {
                   {row.questId ? ` · ${row.questId}` : ""}
                   {row.note?.includes("tx=") ? " · has tx_id" : ""}
                   {row.note?.includes("hmac=ok") ? " · hmac=ok" : ""}
+                  {row.note?.includes("cpx_md5=ok") ? " · cpx_md5=ok" : ""}
                 </span>
               </li>
             ))}

@@ -4,13 +4,15 @@ import { getQuest } from "@/lib/affiliates";
 import { prisma } from "@/lib/db";
 import {
   CLICK_ID_ALIASES,
-  CPX_SECURE_HASH_VERIFIED,
+  CPX_SECURE_HASH_ENV_NAMES,
   HMAC_SECRET_ENV_NAMES,
   PAYOUT_ALIASES,
   TX_ID_ALIASES,
   USER_ID_ALIASES,
   VP_ALIASES,
   firstAlias,
+  isCpxPostbackRequest,
+  verifyCpxSecureHash,
   verifyPostbackHash,
 } from "@/lib/postback";
 
@@ -22,10 +24,9 @@ import {
  * BitLabs:  GET /api/postback?secret=...&click_id=...&vp=...&hash=HEX_SHA1_HMAC
  *           hash = HEX(SHA1_HMAC(full_url_without_hash, BITLABS_APP_SECRET))
  * ayeT:     same pattern with AYET_HMAC_SECRET if set
- * CPX:      next Yield network. MD5 secure_hash is NOT verified
- *           (CPX_SECURE_HASH_VERIFIED=false). Callbacks are refused (501).
- *           A CPX credit is NOT safe until that check exists. Do not flip
- *           cpx-survey — Yield writes /admin after Ethio's wall URL + app_id.
+ * CPX:      md5(`${trans_id}-${CPX_SECURE_HASH}`) vs hash/secure_hash.
+ *           Fail-closed. Hook ready ≠ earn-live. Do not flip cpx-survey —
+ *           Yield writes /admin after Ethio's wall URL + app_id.
  */
 
 export async function GET(req: NextRequest) {
@@ -61,24 +62,37 @@ async function handlePostback(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
-  // CPX MD5 secure_hash is not implemented. POSTBACK_SECRET alone is not enough
-  // to treat a CPX credit as safe — refuse until the check exists.
   const partnerHint = get("partner").toLowerCase();
-  if (!CPX_SECURE_HASH_VERIFIED && (get("secure_hash") || partnerHint === "cpx")) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: "cpx_md5_not_implemented",
-        partner: "cpx",
-        safe: false,
-      },
-      { status: 501 },
-    );
+  const cpxProvidedHash = get("secure_hash") || (partnerHint === "cpx" ? get("hash") : "");
+  const cpxRequest = isCpxPostbackRequest(partnerHint, get("secure_hash"));
+  let cpxMd5Ok = false;
+
+  if (cpxRequest) {
+    // Fail-closed MD5. POSTBACK_SECRET alone is not enough for CPX.
+    const cpxCheck = verifyCpxSecureHash({
+      transId: firstAlias(get, TX_ID_ALIASES),
+      providedHash: cpxProvidedHash,
+      secrets: CPX_SECURE_HASH_ENV_NAMES.map((name) => process.env[name]),
+    });
+    if (!cpxCheck.ok) {
+      console.warn("[postback] cpx secure_hash failed", cpxCheck.reason ?? "mismatch");
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "cpx_secure_hash_failed",
+          reason: cpxCheck.reason,
+          partner: "cpx",
+          safe: false,
+        },
+        { status: 401 },
+      );
+    }
+    cpxMd5Ok = true;
   }
 
-  // BitLabs / ayeT HMAC validation when hash param present (query or body).
+  // BitLabs / ayeT HMAC when hash= is present and this is not a CPX MD5 callback.
   // Fail-closed: hash without a configured partner HMAC secret is 401.
-  const hashParam = get("hash");
+  const hashParam = cpxRequest ? "" : get("hash");
   const hashCheck = verifyPostbackHash({
     url: req.nextUrl.toString(),
     hash: hashParam || null,
@@ -183,7 +197,7 @@ async function handlePostback(req: NextRequest) {
           availableAt,
           questId,
           clickId,
-          note: `S2S postback via ${partnerName}${txId ? ` tx=${txId}` : ""}${hashOk ? " hmac=ok" : ""}`,
+          note: `S2S postback via ${partnerName}${txId ? ` tx=${txId}` : ""}${hashOk ? " hmac=ok" : ""}${cpxMd5Ok ? " cpx_md5=ok" : ""}`,
         },
       });
 
@@ -210,6 +224,7 @@ async function handlePostback(req: NextRequest) {
     vp,
     user_id: userId,
     ...(hashOk ? { hash: "ok" } : {}),
+    ...(cpxMd5Ok ? { cpx_md5: "ok", hash: "ok" } : {}),
     ...(txId ? { tx_id: txId } : {}),
   });
 }

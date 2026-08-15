@@ -1,6 +1,6 @@
 ---
 name: postback-tester
-description: Tests Vaultquest /api/postback HMAC validation (BitLabs SHA1, ayeT) and tx deduplication. Use when postback or ledger integration needs verification.
+description: Tests Vaultquest /api/postback HMAC validation (BitLabs SHA1, ayeT), CPX MD5 secure_hash, and tx deduplication. Use when postback or ledger integration needs verification.
 ---
 
 # postback-tester
@@ -8,7 +8,7 @@ description: Tests Vaultquest /api/postback HMAC validation (BitLabs SHA1, ayeT)
 Exercises `GET|POST /api/postback` with signed and unsigned callbacks, plus click → pending VP. Invoked by @eng-qa.
 
 ## When to use
-After changes to `web/src/app/api/postback/route.ts`, `web/src/lib/postback.ts`, `web/src/lib/db.ts` ledger, or env `POSTBACK_SECRET` / `BITLABS_APP_SECRET` / `AYET_HMAC_SECRET`.
+After changes to `web/src/app/api/postback/route.ts`, `web/src/lib/postback.ts`, `web/src/lib/db.ts` ledger, or env `POSTBACK_SECRET` / `BITLABS_APP_SECRET` / `AYET_HMAC_SECRET` / `CPX_SECURE_HASH`.
 
 ## How to run
 ```bash
@@ -30,7 +30,7 @@ Flags: `--help` prints cases without calling; `--probe-prod` public prod checks 
 6. Missing secret → expects 401 or 503
 7. Ledger PENDING + `availableAt` from quest `holdDays`; admin last-7d quoted as exact counts/fractions
 8. Refuse marketing homepages (`adgatemedia.com/`, `www.cpx-research.com/`)
-9. **CPX MD5 `secure_hash` is not verified** — route returns 501 `cpx_md5_not_implemented` + `safe:false`. A CPX credit is **not safe** until that check exists.
+9. **CPX MD5 hook:** `md5(trans_id-CPX_SECURE_HASH)` vs `hash`/`secure_hash`. Fail-closed if secret, trans_id, or hash missing/mismatch. Live happy path only on localhost when `CPX_SECURE_HASH` is set. Earn-live is **not** certified.
 10. Reports PASS/FAIL per case. `--help` needs no server. Live credit needs localhost + env names below.
 
 ## Yield target: CPX (AdGate stalled)
@@ -38,13 +38,15 @@ Flags: `--help` prints cases without calling; `--probe-prod` public prod checks 
 - **AdGate** (`adgate-backup`) is **stalled (under review)**. Do not smoke `https://adgatemedia.com/`.
 - **Next network: CPX** (`cpx-survey`). Still **disabled** at `https://www.cpx-research.com/` (homepage). Do **not** smoke that URL. Do **not** flip `/admin`.
 - When Ethio sends a real `offers.cpx-research.com` or `wall.cpx-research.com` URL **with his app_id**, **Yield** writes the `/admin` flip. Do not invent that URL here.
-- `POSTBACK_SECRET` is already set on Vercel. That gate alone is **not** enough for CPX.
-- **GAP (required call-out):** `/api/postback` does **not** verify CPX MD5 `secure_hash`. Do not treat a CPX credit as safe until that check exists.
+- After that flip, smoke with MD5 as `/api/postback` requires. Until then, do not smoke production against a homepage.
+- `POSTBACK_SECRET` is already set on Vercel. That gate alone is **not** enough for CPX — also need `CPX_SECURE_HASH`.
+- **Hook ready ≠ earn-live.** WIP stays 2/3. Do not certify earn-live.
 - Freecash path + duplicate smoke is **not Yield** and **not earn-live**.
 
 ## Env names required for live credit (never commit or log values)
 - `POSTBACK_SECRET`
 - `BITLABS_APP_SECRET` or `AYET_HMAC_SECRET` (partner HMAC)
+- `CPX_SECURE_HASH` or `CPX_APP_SECRET` (CPX MD5)
 - `DATABASE_URL` (local or Neon **branch**, not a prod write)
 - `POSTBACK_SMOKE_ALLOW_DB=1` (set by `--seed-local`)
 

@@ -347,3 +347,9 @@ When user runs `@vault-planner get us verified`, vault-planner appends new dated
 - **Do not:** smoke `www.cpx-research.com` or `adgatemedia.com/`; invent a wall URL; flip `cpx-survey`; treat a CPX credit as safe; merge.
 - **Next:** Ethio wall URL + app_id → Yield `/admin` flip → implement MD5 before any CPX credit is earn-live. No merge.
 - **Skill evidence (2026-08-15 CPX retarget):** `vault-build-check` PASS (32 routes). `postback-tester --probe-prod` 15/15 PASS (MD5 gap flagged; AdGate stalled; Freecash not earn-live; no secrets sent). `--seed-local` skipped — no localhost server this run.
+
+#### Handoff — 2026-08-15 — eng-qa (Manager: CPX MD5 is #15 scope)
+- **Task:** Implement tested CPX MD5 hook on `/api/postback` in PR #20. No invented URL. Do not certify earn-live. WIP stays 2/3.
+- **Did:** `verifyCpxSecureHash` = `md5(trans_id-CPX_SECURE_HASH)` fail-closed; wall helper `md5(ext_user_id-secret)` unit-tested only. Route 401 `cpx_secure_hash_failed` on mismatch/missing secret. Admin banner: hook ready, earn-live not certified. Tester offline + localhost live MD5. No `/admin` flip. No homepage smoke. No secrets in PR.
+- **Do not:** invent offers./wall. URL; smoke `www.cpx-research.com`; certify earn-live; merge.
+- **Next:** Ethio wall URL + app_id → Yield `/admin` flip → smoke MD5 as the route requires. No merge.

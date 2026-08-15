@@ -129,24 +129,82 @@ export function isAllowedCpxWallHost(url: string): boolean {
 }
 
 /**
- * CPX posts MD5 `secure_hash`. This route does **not** verify it.
- * Yield: CPX is the next network, but a CPX credit is NOT safe until this
- * check exists. Keep refusing CPX callbacks (HTTP 501) until then.
- * Do not invent offers.cpx-research.com / wall.cpx-research.com paths.
- * Do not flip `cpx-survey` — Yield writes that /admin flip after Ethio's URL+app_id.
+ * CPX MD5 hook (issue #15 scope). Official publisher formulas:
+ *   postback inbound: md5(`${trans_id}-${app_secure_hash}`)
+ *   wall/API outbound: md5(`${ext_user_id}-${app_secure_hash}`)
+ * Env name: CPX_SECURE_HASH (or CPX_APP_SECRET). Never commit the value.
+ * Hook ready ≠ earn-live. Do not invent offers./wall. paths. Yield flips
+ * `cpx-survey` only after Ethio pastes a real wall URL + app_id.
  */
-export const CPX_SECURE_HASH_VERIFIED = false;
+export const CPX_MD5_HOOK_READY = true;
+export const CPX_EARN_LIVE_CERTIFIED = false;
+export const CPX_SECURE_HASH_ENV_NAMES = ["CPX_SECURE_HASH", "CPX_APP_SECRET"] as const;
 
-/** False until MD5 secure_hash is implemented. Do not treat CPX ledger rows as earn-live. */
+/** Placeholder-only publisher postback. `{secure_hash}` is CPX's md5(trans_id-secret) macro. */
+export const CPX_POSTBACK_TEMPLATE =
+  "https://vaultquest.io/api/postback?secret=…&user_id={user_id}&trans_id={trans_id}&vp={amount_local}&payout_usd={amount_usd}&status={status}&hash={secure_hash}&partner=cpx";
+
+export function md5Hex(payload: string): string {
+  return crypto.createHash("md5").update(payload).digest("hex");
+}
+
+export function signCpxPostbackHash(transId: string, appSecureHash: string): string {
+  return md5Hex(`${transId}-${appSecureHash}`);
+}
+
+/** Wall/API helper only. Do not call this to invent a placement URL. */
+export function signCpxWallHash(extUserId: string, appSecureHash: string): string {
+  return md5Hex(`${extUserId}-${appSecureHash}`);
+}
+
+function timingSafeEqualHex(leftHex: string, rightHex: string): boolean {
+  const left = Buffer.from(leftHex.toLowerCase(), "utf8");
+  const right = Buffer.from(rightHex.toLowerCase(), "utf8");
+  if (left.length !== right.length) return false;
+  return crypto.timingSafeEqual(left, right);
+}
+
+export function isCpxPostbackRequest(partner: string, secureHash: string): boolean {
+  return partner.trim().toLowerCase() === "cpx" || Boolean(secureHash.trim());
+}
+
+/**
+ * Fail-closed CPX postback check. Requires trans_id + hash/secure_hash + env secret.
+ */
+export function verifyCpxSecureHash(args: {
+  transId: string | null | undefined;
+  providedHash: string | null | undefined;
+  secrets: Array<string | undefined>;
+}): { ok: boolean; reason?: string } {
+  const provided = args.providedHash?.trim();
+  if (!provided) return { ok: false, reason: "cpx secure_hash missing" };
+  const transId = args.transId?.trim();
+  if (!transId) return { ok: false, reason: "cpx trans_id missing" };
+  const candidates = args.secrets.filter((s): s is string => Boolean(s?.trim()));
+  if (candidates.length === 0) {
+    return { ok: false, reason: "cpx secure hash secret not configured" };
+  }
+  const want = provided.toLowerCase();
+  for (const secret of candidates) {
+    if (timingSafeEqualHex(signCpxPostbackHash(transId, secret), want)) return { ok: true };
+  }
+  return { ok: false, reason: "cpx secure_hash mismatch" };
+}
+
+export function cpxSecureHashEnvConfigured(): boolean {
+  return CPX_SECURE_HASH_ENV_NAMES.some((name) => Boolean(process.env[name]?.trim()));
+}
+
+/** False until Yield flips a real offers./wall. URL. Hook ready is not earn-live. */
 export function isCpxCreditSafe(): boolean {
-  return CPX_SECURE_HASH_VERIFIED;
+  return CPX_EARN_LIVE_CERTIFIED;
 }
 
 export const CLICK_ID_ALIASES = ["click_id", "clickId", "subid", "ext_user_id", "s1"] as const;
 export const USER_ID_ALIASES = ["user_id", "uid", "s1"] as const;
-export const TX_ID_ALIASES = ["tx_id", "TX", "transaction_id", "conversion_id"] as const;
-export const VP_ALIASES = ["vp", "points", "val", "VAL", "VALUE"] as const;
-export const PAYOUT_ALIASES = ["payout_usd", "payout", "RAW", "USD"] as const;
+export const TX_ID_ALIASES = ["trans_id", "tx_id", "TX", "transaction_id", "conversion_id"] as const;
+export const VP_ALIASES = ["vp", "points", "amount_local", "val", "VAL", "VALUE"] as const;
+export const PAYOUT_ALIASES = ["payout_usd", "amount_usd", "payout", "RAW", "USD"] as const;
 
 export function firstAlias(get: (key: string) => string, keys: readonly string[]): string {
   for (const key of keys) {

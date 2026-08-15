@@ -11,7 +11,7 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-Help" || "${1:-}" == "-h" ]]; then
   echo "  bash .cursor/skills/postback-tester/scripts/test.sh [--help]"
   echo "  bash .cursor/skills/postback-tester/scripts/test.sh --probe-prod"
   echo "  bash .cursor/skills/postback-tester/scripts/test.sh --seed-local http://localhost:3000"
-  echo "Env names (never commit values): POSTBACK_SECRET, BITLABS_APP_SECRET or AYET_HMAC_SECRET, DATABASE_URL"
+  echo "Env names (never commit values): POSTBACK_SECRET, BITLABS_APP_SECRET or AYET_HMAC_SECRET, CPX_SECURE_HASH, DATABASE_URL"
   echo "Never sends secrets to vaultquest.io."
   if [[ -d web/node_modules && -f web/scripts/postback-smoke.ts ]]; then
     (cd web && npx tsx scripts/postback-smoke.ts --help)
