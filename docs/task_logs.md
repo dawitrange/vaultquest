@@ -334,3 +334,9 @@ When user runs `@vault-planner get us verified`, vault-planner appends new dated
   - Prod last-7d (exact, unchanged by smoke): **Offer clicks=131 · Earn credits=1 · Pending EARN=0 · S2S credits=0 · Redemptions=1 · Click → earn 1 / 131 · Earn → redeem 1 / 1**. Probe click `cmsv0lyky0001jx04hqjbe6uy` (anon, uncredited). `POSTBACK_SECRET` is set (401). No S2S pending on prod.
 - **Next:** Ethio sets partner HMAC env names on Vercel if unset; #13 reseed healthy wall URLs; signed-in prod click + partner/test postback. Re-run tester `--probe-prod` then quote `/admin` tiles. Do not merge until owner reviews.
 - **Open:** Prod credit blocked on Ethio-owned `POSTBACK_SECRET` value + partner HMAC values + #13/#14. Vercel MCP unauthenticated so HMAC env presence unknown. Isolated Neon branch `issue-15-postback-smoke` can be deleted by owner.
+
+#### Handoff — 2026-08-15 — eng-qa (Yield AdGate coordination)
+- **Task:** #15 smoke stays on AdGate; no homepage; no invented wall URL; CPX MD5 flagged
+- **Did:** AdGate macros `{s1}` `{points}` `{payout}` `{conversion_id}` aliased; `/api/go` sets `s1` (user); marketing homepages (incl. `adgatemedia.com/`) refused in rotator + `/api/go`; CPX `secure_hash` → 501 `cpx_md5_not_implemented`; admin shows AdGate template with `secret=…` placeholder; tester documents exact blocker: `adgate-backup` still disabled homepage until Ethio wall URL + `POSTBACK_SECRET` confirm, then Yield `/admin` flip; use AdGate Test Mode if available.
+- **Do not:** smoke `https://adgatemedia.com/`; invent a Rewards URL; switch to CPX; put secrets in the PR.
+- **Next:** wait for Ethio wall/embed URL + Vercel secret confirm → Yield flip → Test Mode click → postback → pending VP. No merge.

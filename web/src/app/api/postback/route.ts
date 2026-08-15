@@ -2,15 +2,27 @@ import { NextRequest, NextResponse } from "next/server";
 import { LedgerKind, LedgerStatus } from "@prisma/client";
 import { getQuest } from "@/lib/affiliates";
 import { prisma } from "@/lib/db";
-import { HMAC_SECRET_ENV_NAMES, verifyPostbackHash } from "@/lib/postback";
+import {
+  CLICK_ID_ALIASES,
+  CPX_SECURE_HASH_VERIFIED,
+  HMAC_SECRET_ENV_NAMES,
+  PAYOUT_ALIASES,
+  TX_ID_ALIASES,
+  USER_ID_ALIASES,
+  VP_ALIASES,
+  firstAlias,
+  verifyPostbackHash,
+} from "@/lib/postback";
 
 /**
  * S2S postback endpoint for offerwall partners.
  *
  * Generic:  GET /api/postback?secret=...&click_id=...&vp=150
+ * AdGate:   ADGATE_POSTBACK_TEMPLATE (macros {s1} {points} {payout} {conversion_id})
  * BitLabs:  GET /api/postback?secret=...&click_id=...&vp=...&hash=HEX_SHA1_HMAC
  *           hash = HEX(SHA1_HMAC(full_url_without_hash, BITLABS_APP_SECRET))
  * ayeT:     same pattern with AYET_HMAC_SECRET if set
+ * CPX:      MD5 secure_hash is NOT verified (CPX_SECURE_HASH_VERIFIED=false) — refuse those callbacks
  */
 
 export async function GET(req: NextRequest) {
@@ -46,6 +58,15 @@ async function handlePostback(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
+  // CPX MD5 secure_hash is not implemented — do not credit or smoke CPX yet.
+  const partnerHint = get("partner").toLowerCase();
+  if (!CPX_SECURE_HASH_VERIFIED && (get("secure_hash") || partnerHint === "cpx")) {
+    return NextResponse.json(
+      { ok: false, error: "cpx_md5_not_implemented", partner: "cpx" },
+      { status: 501 },
+    );
+  }
+
   // BitLabs / ayeT HMAC validation when hash param present (query or body).
   // Fail-closed: hash without a configured partner HMAC secret is 401.
   const hashParam = get("hash");
@@ -60,7 +81,7 @@ async function handlePostback(req: NextRequest) {
   }
   const hashOk = Boolean(hashParam && hashCheck.ok);
 
-  const trackingId = get("click_id") || get("clickId") || get("subid") || get("ext_user_id");
+  const trackingId = firstAlias(get, CLICK_ID_ALIASES);
   if (!trackingId) {
     return NextResponse.json({ ok: false, error: "click_id required" }, { status: 400 });
   }
@@ -84,13 +105,13 @@ async function handlePostback(req: NextRequest) {
     if (click.credited) {
       return NextResponse.json({ ok: true, duplicate: true });
     }
-    userId = get("user_id") || get("uid") || click.userId || undefined;
+    userId = firstAlias(get, USER_ID_ALIASES) || click.userId || undefined;
     partnerName = click.affiliateLink.partner;
     clickId = click.id;
     clickQuestId = click.questId;
   } else {
     // Wall flow: the echoed id (or an explicit user_id) is a VaultQuest user id.
-    const candidateUserId = get("user_id") || get("uid") || trackingId;
+    const candidateUserId = firstAlias(get, USER_ID_ALIASES) || trackingId;
     const user = candidateUserId
       ? await prisma.user.findUnique({ where: { id: candidateUserId }, select: { id: true } })
       : null;
@@ -111,9 +132,9 @@ async function handlePostback(req: NextRequest) {
   const quest = questId ? getQuest(questId) : null;
 
   // vp may come as [%VALUE:CURRENCY%] / [%VAL%] / val / vp
-  let vp = Number(get("vp") || get("points") || get("val") || get("VAL") || get("VALUE") || "");
+  let vp = Number(firstAlias(get, VP_ALIASES) || "");
   if (!Number.isFinite(vp) || vp <= 0) {
-    const payoutUsd = Number(get("payout_usd") || get("payout") || get("RAW") || get("USD") || "");
+    const payoutUsd = Number(firstAlias(get, PAYOUT_ALIASES) || "");
     if (Number.isFinite(payoutUsd) && payoutUsd > 0) {
       vp = Math.max(1, Math.floor(payoutUsd * 100 * 0.7));
     } else if (quest) {
@@ -124,7 +145,7 @@ async function handlePostback(req: NextRequest) {
   }
 
   // Deduplicate on tx_id if partner sends it
-  const txId = get("tx_id") || get("TX") || get("transaction_id") || "";
+  const txId = firstAlias(get, TX_ID_ALIASES);
   if (txId) {
     // Dedup per user on the partner tx id (works for both click and wall flows).
     const dup = await prisma.ledgerEntry.findFirst({ where: { userId, note: { contains: `tx=${txId}` } } });

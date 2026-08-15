@@ -19,8 +19,15 @@ import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import {
+  ADGATE_POSTBACK_TEMPLATE,
+  ADGATE_SLUG,
+  CLICK_ID_ALIASES,
+  CPX_SECURE_HASH_VERIFIED,
   HMAC_SECRET_ENV_NAMES,
+  TX_ID_ALIASES,
+  firstAlias,
   isForbiddenProdSmokeTarget,
+  isMarketingHomepageUrl,
   signPostbackUrl,
   stripHashParam,
   verifyPostbackHash,
@@ -107,6 +114,16 @@ Cases:
   5. Duplicate tx_id → HTTP 200 {ok:true, duplicate:true}
   6. Bad hash → 401
   7. Admin last-7d funnel quoted as exact counts / fractions (never rounded up)
+  8. AdGate macros {s1}/{points}/{payout}/{conversion_id} + refuse marketing homepages
+  9. CPX MD5 secure_hash flagged unimplemented (do not smoke CPX)
+
+Target network: AdGate. ${ADGATE_SLUG} stays disabled at https://adgatemedia.com/ until
+Ethio sends a real Rewards wall/embed URL and confirms POSTBACK_SECRET on Vercel.
+Yield then flips url + healthy in /admin. Use AdGate Test Mode (convert-on-click),
+not a live wall, if they have a test toggle. Do NOT smoke a marketing homepage.
+
+AdGate postback template (secret is a placeholder — never commit a real value):
+  ${ADGATE_POSTBACK_TEMPLATE}
 
 Usage:
   bash .cursor/skills/postback-tester/scripts/test.sh --help
@@ -122,6 +139,7 @@ Env required for live credit (names only — never commit values):
 Constraints:
   Never sends secrets to vaultquest.io. --probe-prod is public 401/503 + /earn only.
   Smoke AffiliateLink URL is first-party ${SMOKE_URL} — not a live partner placement.
+  Never invent an AdGate wall URL. Do not switch to CPX unless asked.
 `);
 }
 
@@ -172,6 +190,21 @@ async function probeProd(): Promise<CaseResult[]> {
     detail: freecashCta
       ? `q-freecash Start quest is live; offerwall still empty=${offerwallBlocked}. Do not invent partner URLs.`
       : "q-freecash CTA not in HTML",
+  });
+
+  results.push({
+    name: "AdGate smoke blocker (no homepage, no invented wall URL)",
+    pass: true,
+    detail:
+      `${ADGATE_SLUG} is still disabled at https://adgatemedia.com/ (marketing homepage). ` +
+      "BLOCKED until Ethio sends a real AdGate Rewards wall/embed URL and confirms POSTBACK_SECRET on Vercel; " +
+      "Yield then flips url+healthy in /admin. Use AdGate Test Mode convert-on-click if available.",
+  });
+
+  results.push({
+    name: "CPX fallback flagged (MD5 secure_hash not verified)",
+    pass: !CPX_SECURE_HASH_VERIFIED,
+    detail: "CPX_SECURE_HASH_VERIFIED=false — do not smoke CPX; stay on AdGate unless asked.",
   });
 
   return results;
@@ -226,12 +259,29 @@ function offlineHmacCases(): CaseResult[] {
     detail: "no hash param → skip HMAC",
   });
 
+  const bag: Record<string, string> = { s1: "user-1", conversion_id: "conv-9", points: "80" };
+  const get = (k: string) => bag[k] ?? "";
+  results.push({
+    name: "AdGate aliases s1 + conversion_id",
+    pass: firstAlias(get, CLICK_ID_ALIASES) === "user-1" && firstAlias(get, TX_ID_ALIASES) === "conv-9",
+    detail: "s1→click_id, conversion_id→tx_id",
+  });
+
+  results.push({
+    name: "refuse AdGate marketing homepage",
+    pass: isMarketingHomepageUrl("https://adgatemedia.com/") && !isMarketingHomepageUrl(SMOKE_URL),
+    detail: "adgatemedia.com/ blocked; first-party /proof allowed",
+  });
+
   return results;
 }
 
 async function seedSmokeInventory(): Promise<{ userId: string; detail: string }> {
   if (process.env.POSTBACK_SMOKE_ALLOW_DB !== "1") {
     throw new Error("refusing DB seed: set POSTBACK_SMOKE_ALLOW_DB=1 (localhost only)");
+  }
+  if (isMarketingHomepageUrl(SMOKE_URL)) {
+    throw new Error("refusing smoke seed: destination is a marketing homepage");
   }
   const { prisma } = await import("../src/lib/db");
   const email = `postback-smoke@vaultquest.invalid`;
@@ -323,13 +373,24 @@ async function liveCases(baseUrl: string): Promise<CaseResult[]> {
 
   const go = await fetch(`${origin}/api/go/${SMOKE_QUEST}`, { redirect: "manual" });
   const loc = go.headers.get("location") ?? "";
-  const clickId = new URL(loc, origin).searchParams.get("click_id") ?? "";
-  const clickOk = (go.status === 307 || go.status === 302) && Boolean(clickId) && loc.startsWith(SMOKE_URL);
+  if (loc && isMarketingHomepageUrl(loc)) {
+    results.push({
+      name: "/api/go creates OfferClick",
+      pass: false,
+      detail: "BLOCKED — destination is a marketing homepage; will not smoke",
+    });
+    return results;
+  }
+  const goUrl = loc ? new URL(loc, origin) : null;
+  const clickId = goUrl?.searchParams.get("click_id") ?? "";
+  const s1 = goUrl?.searchParams.get("s1") ?? "";
+  const clickOk =
+    (go.status === 307 || go.status === 302) && Boolean(clickId) && loc.startsWith(SMOKE_URL) && Boolean(s1);
   results.push({
     name: "/api/go creates OfferClick",
     pass: clickOk,
     detail: clickOk
-      ? `click_id=${clickId} → first-party /proof`
+      ? `click_id=${clickId} s1=${s1} → first-party /proof`
       : `HTTP ${go.status} loc=${redactUrl(loc) || "(none)"}`,
   });
   if (!clickOk) return results;
@@ -396,6 +457,37 @@ async function liveCases(baseUrl: string): Promise<CaseResult[]> {
     name: "bad hash",
     pass: bad.status === 401,
     detail: `HTTP ${bad.status} error=${String(bad.json.error ?? "")}`,
+  });
+
+  const adgateTx = `adgate-smoke-${Date.now()}`;
+  const adgateUrl = new URL(`${origin}/api/postback`);
+  adgateUrl.searchParams.set("secret", postbackSecret);
+  adgateUrl.searchParams.set("s1", userId);
+  adgateUrl.searchParams.set("points", "80");
+  adgateUrl.searchParams.set("payout", "1.15");
+  adgateUrl.searchParams.set("conversion_id", adgateTx);
+  adgateUrl.searchParams.set("partner", "adgate");
+  const adgate = await fetchJson(adgateUrl.toString());
+  const adgateLedger = await prisma.ledgerEntry.findFirst({
+    where: { userId, note: { contains: `tx=${adgateTx}` } },
+  });
+  results.push({
+    name: "AdGate-shaped postback (s1/points/payout/conversion_id)",
+    pass:
+      adgate.status === 200 &&
+      adgate.json.ok === true &&
+      adgateLedger?.status === "PENDING" &&
+      Boolean(adgateLedger.availableAt),
+    detail: `HTTP ${adgate.status} tx_id=${adgateTx} ledger=${adgateLedger?.id ?? "none"} status=${adgateLedger?.status ?? "none"}`,
+  });
+
+  const cpx = await fetchJson(
+    `${origin}/api/postback?secret=${encodeURIComponent(postbackSecret)}&click_id=${encodeURIComponent(userId)}&vp=10&partner=cpx&secure_hash=deadbeef`,
+  );
+  results.push({
+    name: "CPX refused until MD5 secure_hash is implemented",
+    pass: cpx.status === 501 && cpx.json.error === "cpx_md5_not_implemented",
+    detail: `HTTP ${cpx.status} error=${String(cpx.json.error ?? "")}`,
   });
 
   const { exactFraction, funnel } = await import("../src/lib/analytics");

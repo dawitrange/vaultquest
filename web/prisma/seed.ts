@@ -46,7 +46,8 @@ const SEED = [
     url: "https://adgatemedia.com/",
     category: AffiliateCategory.offerwall_backup,
     priority: 3,
-    // Manual 1–2 day review but NO traffic minimum — a realistic approval for us.
+    // Marketing homepage — do NOT flip healthy until Ethio pastes a real
+    // AdGate Rewards wall/embed URL. Yield writes that /admin flip. Never invent it.
     status: AffiliateHealth.disabled,
     capDaily: 3000,
   },

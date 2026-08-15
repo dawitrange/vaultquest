@@ -29,7 +29,17 @@ Flags: `--help` prints cases without calling; `--probe-prod` public prod checks 
 5. Duplicate `tx_id` → expects HTTP 200 `{ok:true, duplicate:true}`
 6. Missing secret → expects 401 or 503
 7. Ledger PENDING + `availableAt` from quest `holdDays`; admin last-7d quoted as exact counts/fractions
-8. Reports PASS/FAIL per case. `--help` needs no server. Live credit needs localhost + env names below.
+8. AdGate macros `{s1}` / `{points}` / `{payout}` / `{conversion_id}`; refuse marketing homepages (`adgatemedia.com/`)
+9. CPX `secure_hash` MD5 is **not** verified — tester flags this and the route returns 501. Do not smoke CPX unless asked.
+10. Reports PASS/FAIL per case. `--help` needs no server. Live credit needs localhost + env names below.
+
+## AdGate production smoke (Yield + Ethio)
+Target: `adgate-backup`. Still **disabled** at `https://adgatemedia.com/` (homepage). Do **not** smoke that URL.
+1. Ethio pastes a real AdGate Rewards wall/embed URL and confirms `POSTBACK_SECRET` on Vercel.
+2. Yield flips `/admin` (`url` + `healthy`). Do not invent the wall URL here.
+3. Prefer AdGate **Test Mode** convert-on-click if available.
+4. Then: signed-in click → `/api/postback` with template (secret is a placeholder, never commit a value):
+   `https://vaultquest.io/api/postback?secret=…&click_id={s1}&user_id={s1}&vp={points}&payout_usd={payout}&tx_id={conversion_id}&partner=adgate`
 
 ## Env names required for live credit (never commit or log values)
 - `POSTBACK_SECRET`
@@ -47,3 +57,4 @@ Flags: `--help` prints cases without calling; `--probe-prod` public prod checks 
 - Never sends real secrets to prod; use local env.
 - Stage-only — do not trigger live network callbacks.
 - Smoke AffiliateLink is first-party `https://www.vaultquest.io/proof` — do not invent partner placement URLs.
+- Never smoke `adgatemedia.com/` or other marketing homepages. Stay on AdGate; do not switch to CPX unless asked.

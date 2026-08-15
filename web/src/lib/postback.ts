@@ -65,3 +65,68 @@ export const HMAC_SECRET_ENV_NAMES = [
   "AYET_HMAC_SECRET",
   "AYET_SECRET",
 ] as const;
+
+/**
+ * Official AdGate Rewards macros (docs.prodegeads.com): {s1} user, {points},
+ * {payout}, {conversion_id}. Secret in the template is a placeholder — never
+ * commit a real POSTBACK_SECRET.
+ */
+export const ADGATE_POSTBACK_TEMPLATE =
+  "https://vaultquest.io/api/postback?secret=…&click_id={s1}&user_id={s1}&vp={points}&payout_usd={payout}&tx_id={conversion_id}&partner=adgate";
+
+export const ADGATE_SLUG = "adgate-backup";
+
+/** Seed / marketing homepages — never smoke or serve these as "Start quest". */
+const MARKETING_HOMEPAGE_HOSTS = new Set([
+  "adgatemedia.com",
+  "www.adgatemedia.com",
+  "lootably.com",
+  "www.lootably.com",
+  "torox.io",
+  "www.torox.io",
+  "timewall.io",
+  "www.timewall.io",
+  "offerdaddy.com",
+  "www.offerdaddy.com",
+  "www.bitlabs.ai",
+  "bitlabs.ai",
+  "www.cpx-research.com",
+  "cpx-research.com",
+  "www.ayetstudios.com",
+  "ayetstudios.com",
+  "adgem.com",
+  "www.adgem.com",
+]);
+
+export function isMarketingHomepageUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.toLowerCase();
+    const path = parsed.pathname.replace(/\/+$/, "") || "/";
+    if (!MARKETING_HOMEPAGE_HOSTS.has(host)) return false;
+    return path === "/" || path === "/index.html" || path === "/index.php";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * CPX posts MD5 `secure_hash`. This route does not verify it yet.
+ * Do not run a CPX smoke until that check exists. Do not switch target to CPX
+ * unless Yield/Ethio ask.
+ */
+export const CPX_SECURE_HASH_VERIFIED = false;
+
+export const CLICK_ID_ALIASES = ["click_id", "clickId", "subid", "ext_user_id", "s1"] as const;
+export const USER_ID_ALIASES = ["user_id", "uid", "s1"] as const;
+export const TX_ID_ALIASES = ["tx_id", "TX", "transaction_id", "conversion_id"] as const;
+export const VP_ALIASES = ["vp", "points", "val", "VAL", "VALUE"] as const;
+export const PAYOUT_ALIASES = ["payout_usd", "payout", "RAW", "USD"] as const;
+
+export function firstAlias(get: (key: string) => string, keys: readonly string[]): string {
+  for (const key of keys) {
+    const value = get(key);
+    if (value) return value;
+  }
+  return "";
+}

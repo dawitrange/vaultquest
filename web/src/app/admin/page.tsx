@@ -10,6 +10,12 @@ import { exactFraction, funnel } from "@/lib/analytics";
 import { requireAdmin } from "@/lib/admin";
 import { clicksTodayForLink } from "@/lib/affiliates";
 import { prisma } from "@/lib/db";
+import {
+  ADGATE_POSTBACK_TEMPLATE,
+  ADGATE_SLUG,
+  CPX_SECURE_HASH_VERIFIED,
+  isMarketingHomepageUrl,
+} from "@/lib/postback";
 
 export const metadata: Metadata = { title: "Admin" };
 
@@ -56,8 +62,14 @@ export default async function AdminPage() {
     <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6">
       <h1 className="font-[family-name:var(--vq-font-display)] text-4xl font-bold tracking-tight">Admin</h1>
       <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
-        Affiliate caps, fulfillment queue, contact inbox. Postback URL:{" "}
-        <code className="text-[var(--vq-teal)]">/api/postback?secret=…&click_id=…&vp=…</code>
+        Affiliate caps, fulfillment queue, contact inbox. Do not flip a homepage URL to{" "}
+        <code>healthy</code>. AdGate postback template (secret is a placeholder):{" "}
+        <code className="break-all text-[var(--vq-teal)]">{ADGATE_POSTBACK_TEMPLATE}</code>
+        {CPX_SECURE_HASH_VERIFIED ? null : (
+          <span className="mt-1 block text-xs text-[var(--vq-ink-faint)]">
+            CPX MD5 <code>secure_hash</code> is not verified — do not smoke CPX.
+          </span>
+        )}
       </p>
 
       <section className="mt-10">
@@ -93,6 +105,9 @@ export default async function AdminPage() {
               <p className="mb-1 font-[family-name:var(--vq-font-mono)] text-xs text-[var(--vq-ink-faint)]">
                 Clicks today: {clicksMap[link.id] ?? 0}
                 {link.capDaily != null ? ` / ${link.capDaily}` : ""}
+                {isMarketingHomepageUrl(link.url)
+                  ? ` · homepage — keep ${link.slug === ADGATE_SLUG ? "adgate-backup " : ""}disabled until a real wall/embed URL`
+                  : ""}
               </p>
               <AffiliateEditForm link={link} />
             </div>
