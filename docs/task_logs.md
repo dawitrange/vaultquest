@@ -353,3 +353,4 @@ When user runs `@vault-planner get us verified`, vault-planner appends new dated
 - **Did:** `verifyCpxSecureHash` = `md5(trans_id-CPX_SECURE_HASH)` fail-closed; wall helper `md5(ext_user_id-secret)` unit-tested only. Route 401 `cpx_secure_hash_failed` on mismatch/missing secret. Admin banner: hook ready, earn-live not certified. Tester offline + localhost live MD5. No `/admin` flip. No homepage smoke. No secrets in PR.
 - **Do not:** invent offers./wall. URL; smoke `www.cpx-research.com`; certify earn-live; merge.
 - **Next:** Ethio wall URL + app_id → Yield `/admin` flip → smoke MD5 as the route requires. No merge.
+- **Skill evidence:** `vault-build-check` PASS (32 routes). `postback-tester --probe-prod` 20/20 PASS (no secrets). `--seed-local` 32/32 PASS on isolated Neon branch `issue-15-postback-smoke` (first-party `/proof` only): CPX bad MD5 → 401; valid MD5 → `cpx_md5=ok` PENDING (not earn-live). Prod last-7d unchanged: 131 / 1 / 0 / 0 / 1.
