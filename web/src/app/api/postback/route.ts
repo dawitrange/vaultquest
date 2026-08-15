@@ -25,8 +25,8 @@ import {
  *           hash = HEX(SHA1_HMAC(full_url_without_hash, BITLABS_APP_SECRET))
  * ayeT:     same pattern with AYET_HMAC_SECRET if set
  * CPX:      md5(`${trans_id}-${CPX_SECURE_HASH}`) vs hash/secure_hash.
- *           Fail-closed. Hook ready ≠ earn-live. Do not flip cpx-survey —
- *           Yield writes /admin after Ethio's wall URL + app_id.
+ *           Fail-closed. Hook ready ≠ earn-live. app_id 35413 exists; wall
+ *           is real. Yield has not flipped — waiting on Ethio to save postback.
  */
 
 export async function GET(req: NextRequest) {

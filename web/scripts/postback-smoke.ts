@@ -22,6 +22,7 @@ import {
   ADGATE_SLUG,
   CLICK_ID_ALIASES,
   CPX_ALLOWED_WALL_HOSTS,
+  CPX_APP_ID,
   CPX_EARN_LIVE_CERTIFIED,
   CPX_MD5_HOOK_READY,
   CPX_SECURE_HASH_ENV_NAMES,
@@ -33,6 +34,7 @@ import {
   isCpxCreditSafe,
   isForbiddenProdSmokeTarget,
   isMarketingHomepageUrl,
+  isYieldFlippedCpxWallUrl,
   signCpxPostbackHash,
   signCpxWallHash,
   signPostbackUrl,
@@ -134,15 +136,14 @@ Cases:
   9. CPX MD5 hook: md5(trans_id-CPX_SECURE_HASH) fail-closed; earn-live NOT certified
 
 Target network: CPX (${CPX_SLUG}). AdGate (${ADGATE_SLUG}) is stalled (under review).
-${CPX_SLUG} stays disabled at https://www.cpx-research.com/ until Ethio sends a real
-${CPX_ALLOWED_WALL_HOSTS[0]} or ${CPX_ALLOWED_WALL_HOSTS[1]} URL with his app_id.
-Yield then writes the /admin flip. Do not flip /admin here. Do not invent that URL.
+app_id ${CPX_APP_ID} exists; the wall is real. Yield has NOT flipped /admin
+(waiting on Ethio to save postback). Stand by on live smoke. Smoke only after
+Yield flips ${CPX_SLUG}. Do not hardcode a ${CPX_ALLOWED_WALL_HOSTS[0]} path.
 Do NOT smoke a marketing homepage. Freecash path+duplicate is not Yield and not earn-live.
 WIP stays 2/3. Do not certify earn-live.
 
 CPX MD5 hook is ready on /api/postback. POSTBACK_SECRET is already set — not enough.
-When Yield flips a real wall URL, smoke with MD5 as the route requires.
-Until then do not smoke production against a homepage.
+After the flip, re-run --probe-prod then smoke with MD5 as the route requires.
 
 Usage:
   bash .cursor/skills/postback-tester/scripts/test.sh --help
@@ -218,21 +219,27 @@ async function probeProd(): Promise<CaseResult[]> {
     detail: `${ADGATE_SLUG} remains disabled at https://adgatemedia.com/. Not the Yield target. Do not smoke the homepage.`,
   });
 
+  const surveysGo = await fetch(`${PROD_ORIGIN}/api/go/q-surveys`, { redirect: "manual" });
+  const surveysLoc = surveysGo.headers.get("location") ?? "";
+  const surveysAbs = surveysLoc ? new URL(surveysLoc, PROD_ORIGIN).toString() : "";
+  const surveysFlipped = Boolean(surveysAbs && isYieldFlippedCpxWallUrl(surveysAbs));
+  const surveysStandby = surveysLoc.includes("error=no_link") || isMarketingHomepageUrl(surveysAbs);
   results.push({
-    name: "CPX next — wait for Ethio wall URL; no /admin flip",
-    pass: true,
-    detail:
-      `${CPX_SLUG} stays disabled at https://www.cpx-research.com/. ` +
-      `BLOCKED until Ethio sends a real ${CPX_ALLOWED_WALL_HOSTS.join(" or ")} URL with his app_id. ` +
-      "Yield writes the /admin flip. Do not invent the URL. Do not flip /admin.",
+    name: "CPX live smoke standby — wait for Yield /admin flip",
+    pass: surveysStandby || surveysFlipped || surveysGo.status === 307 || surveysGo.status === 302,
+    detail: surveysFlipped
+      ? "FLIP DETECTED on /api/go/q-surveys — --probe-prod does not smoke; run live MD5 smoke next"
+      : surveysStandby
+        ? `STAND BY. app_id ${CPX_APP_ID} exists; wall is real; Yield has not flipped ${CPX_SLUG} (Ethio still saving postback). HTTP ${surveysGo.status}`
+        : `HTTP ${surveysGo.status} loc=${surveysLoc.split("?")[0] || "(none)"} — not flipped, not smoked`,
   });
 
   results.push({
     name: "CPX MD5 hook ready — earn-live NOT certified",
     pass: CPX_MD5_HOOK_READY && !CPX_EARN_LIVE_CERTIFIED && !isCpxCreditSafe(),
     detail:
-      "Hook ready: md5(trans_id-CPX_SECURE_HASH). Earn-live not certified. " +
-      "Do not smoke a homepage. Yield flips after a real offers./wall. URL + app_id.",
+      `Hook ready: md5(trans_id-CPX_SECURE_HASH). app_id ${CPX_APP_ID} exists. ` +
+      "Earn-live not certified. Smoke only after Yield flips cpx-survey.",
   });
 
   return results;
@@ -304,8 +311,11 @@ function offlineHmacCases(): CaseResult[] {
       !isMarketingHomepageUrl(SMOKE_URL) &&
       !isAllowedCpxWallHost("https://www.cpx-research.com/") &&
       isAllowedCpxWallHost("https://offers.cpx-research.com/") &&
-      isAllowedCpxWallHost("https://wall.cpx-research.com/"),
-    detail: "apex/www CPX + AdGate homepage blocked; offers./wall. hosts allowed when Ethio pastes a real URL",
+      isAllowedCpxWallHost("https://wall.cpx-research.com/") &&
+      !isYieldFlippedCpxWallUrl("https://www.cpx-research.com/") &&
+      !isYieldFlippedCpxWallUrl("https://offers.cpx-research.com/") &&
+      !isYieldFlippedCpxWallUrl(`https://offers.cpx-research.com/index.php?app_id=not-${CPX_APP_ID}`),
+    detail: "apex/www CPX + AdGate homepage blocked; flip detector requires allowed host + app_id 35413",
   });
 
   const cpxUnitSecret = "unit-cpx-not-a-prod-secret";

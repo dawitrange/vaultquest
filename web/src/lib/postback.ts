@@ -77,7 +77,10 @@ export const ADGATE_POSTBACK_TEMPLATE =
 export const ADGATE_SLUG = "adgate-backup";
 export const CPX_SLUG = "cpx-survey";
 
-/** Hosts Yield will accept once Ethio pastes a real wall URL + app_id. Do not invent the path. */
+/** Manager 2026-08-15: app_id exists. Not a wall URL — do not concatenate a placement. */
+export const CPX_APP_ID = "35413";
+
+/** Hosts Yield will accept when flipping /admin. Do not invent or hardcode the path. */
 export const CPX_ALLOWED_WALL_HOSTS = ["offers.cpx-research.com", "wall.cpx-research.com"] as const;
 
 /** Apex/www marketing sites — never smoke or serve, any path. */
@@ -129,12 +132,26 @@ export function isAllowedCpxWallHost(url: string): boolean {
 }
 
 /**
+ * True only after Yield pastes a real offers./wall. URL that already includes
+ * app_id 35413. Does not build or return a URL. Live smoke stays on standby
+ * until /admin flip.
+ */
+export function isYieldFlippedCpxWallUrl(url: string): boolean {
+  if (isMarketingHomepageUrl(url) || !isAllowedCpxWallHost(url)) return false;
+  try {
+    return new URL(url).searchParams.get("app_id") === CPX_APP_ID;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * CPX MD5 hook (issue #15 scope). Official publisher formulas:
  *   postback inbound: md5(`${trans_id}-${app_secure_hash}`)
  *   wall/API outbound: md5(`${ext_user_id}-${app_secure_hash}`)
  * Env name: CPX_SECURE_HASH (or CPX_APP_SECRET). Never commit the value.
- * Hook ready ≠ earn-live. Do not invent offers./wall. paths. Yield flips
- * `cpx-survey` only after Ethio pastes a real wall URL + app_id.
+ * Hook ready ≠ earn-live. app_id 35413 exists; wall is real. Yield has not
+ * flipped /admin (waiting on Ethio to save postback). Do not hardcode a URL.
  */
 export const CPX_MD5_HOOK_READY = true;
 export const CPX_EARN_LIVE_CERTIFIED = false;

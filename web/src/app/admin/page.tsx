@@ -13,6 +13,7 @@ import { prisma } from "@/lib/db";
 import {
   ADGATE_SLUG,
   CPX_ALLOWED_WALL_HOSTS,
+  CPX_APP_ID,
   CPX_EARN_LIVE_CERTIFIED,
   CPX_MD5_HOOK_READY,
   CPX_POSTBACK_TEMPLATE,
@@ -67,19 +68,21 @@ export default async function AdminPage() {
       <h1 className="font-[family-name:var(--vq-font-display)] text-4xl font-bold tracking-tight">Admin</h1>
       <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
         Affiliate caps, fulfillment queue, contact inbox. Do not flip a homepage URL to{" "}
-        <code>healthy</code>. AdGate is stalled (under review). Next network is CPX (
-        <code>{CPX_SLUG}</code>) — Yield writes that flip only after Ethio pastes a real{" "}
-        <code>{CPX_ALLOWED_WALL_HOSTS[0]}</code> or <code>{CPX_ALLOWED_WALL_HOSTS[1]}</code> URL
-        with his app_id. Freecash is not earn-live. WIP stays 2/3 — do not certify earn-live.
+        <code>healthy</code>. AdGate is stalled (under review). CPX app_id{" "}
+        <code>{CPX_APP_ID}</code> exists and the wall is real. Yield has{" "}
+        <strong>not</strong> flipped <code>{CPX_SLUG}</code> — waiting on Ethio to save
+        postback. Stand by on live smoke. Hosts Yield will paste:{" "}
+        <code>{CPX_ALLOWED_WALL_HOSTS[0]}</code> / <code>{CPX_ALLOWED_WALL_HOSTS[1]}</code>.
+        Do not hardcode that URL here. Freecash is not earn-live. WIP stays 2/3.
         {CPX_EARN_LIVE_CERTIFIED ? null : (
           <span className="mt-2 block rounded-[8px] border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-3 py-2 text-xs text-[var(--vq-ink)]">
-            <strong>Earn-live is not certified.</strong> CPX MD5 hook is{" "}
-            {CPX_MD5_HOOK_READY ? "ready" : "missing"}:{" "}
+            <strong>Earn-live is not certified. Live smoke is on standby.</strong> CPX MD5 hook
+            is {CPX_MD5_HOOK_READY ? "ready" : "missing"}:{" "}
             <code>md5(trans_id-CPX_SECURE_HASH)</code> vs <code>hash</code>/<code>secure_hash</code>.
             Runtime <code>CPX_SECURE_HASH</code>:{" "}
             {cpxSecureHashEnvConfigured() ? "configured" : "missing"} (name only).{" "}
             <code>POSTBACK_SECRET</code> is already set — that gate alone is not enough.
-            Do not invent a wall URL. Do not flip <code>{CPX_SLUG}</code>.
+            Smoke only after Yield flips <code>{CPX_SLUG}</code>.
             <span className="mt-2 block break-all font-[family-name:var(--vq-font-mono)] text-[10px] text-[var(--vq-ink-muted)]">
               {CPX_POSTBACK_TEMPLATE}
             </span>
@@ -124,7 +127,7 @@ export default async function AdminPage() {
                   ? ` · homepage — keep ${link.slug} disabled (do not flip /admin)`
                   : ""}
                 {link.slug === CPX_SLUG
-                  ? " · wait for Ethio offers./wall.cpx-research.com + app_id; Yield flips"
+                  ? ` · app_id ${CPX_APP_ID} exists; wall real; Yield has not flipped — wait for Ethio postback save`
                   : ""}
                 {link.slug === ADGATE_SLUG ? " · AdGate stalled (under review)" : ""}
               </p>

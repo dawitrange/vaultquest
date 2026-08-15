@@ -30,16 +30,18 @@ Flags: `--help` prints cases without calling; `--probe-prod` public prod checks 
 6. Missing secret → expects 401 or 503
 7. Ledger PENDING + `availableAt` from quest `holdDays`; admin last-7d quoted as exact counts/fractions
 8. Refuse marketing homepages (`adgatemedia.com/`, `www.cpx-research.com/`)
-9. **CPX MD5 hook:** `md5(trans_id-CPX_SECURE_HASH)` vs `hash`/`secure_hash`. Fail-closed if secret, trans_id, or hash missing/mismatch. Live happy path only on localhost when `CPX_SECURE_HASH` is set. Earn-live is **not** certified.
-10. Reports PASS/FAIL per case. `--help` needs no server. Live credit needs localhost + env names below.
+9. **CPX MD5 hook:** `md5(trans_id-CPX_SECURE_HASH)` vs `hash`/`secure_hash`. Fail-closed. Live happy path only on localhost when `CPX_SECURE_HASH` is set.
+10. Flip detector: `isYieldFlippedCpxWallUrl` (allowed host + `app_id=35413`). `--probe-prod` watches `/api/go/q-surveys` and **stands by** until Yield flips. Does not smoke a homepage. Does not hardcode a wall URL.
+11. Reports PASS/FAIL per case. `--help` needs no server. Live credit needs localhost + env names below.
 
-## Yield target: CPX (AdGate stalled)
+## Yield target: CPX (stand by)
 
 - **AdGate** (`adgate-backup`) is **stalled (under review)**. Do not smoke `https://adgatemedia.com/`.
-- **Next network: CPX** (`cpx-survey`). Still **disabled** at `https://www.cpx-research.com/` (homepage). Do **not** smoke that URL. Do **not** flip `/admin`.
-- When Ethio sends a real `offers.cpx-research.com` or `wall.cpx-research.com` URL **with his app_id**, **Yield** writes the `/admin` flip. Do not invent that URL here.
-- After that flip, smoke with MD5 as `/api/postback` requires. Until then, do not smoke production against a homepage.
-- `POSTBACK_SECRET` is already set on Vercel. That gate alone is **not** enough for CPX — also need `CPX_SECURE_HASH`.
+- **CPX** (`cpx-survey`): app_id **35413** exists; the wall URL is real. **Yield has not flipped `/admin`** (waiting on Ethio to save postback).
+- **Stand by on live smoke.** Smoke only after Yield flips `cpx-survey`.
+- Do **not** invent or hardcode an `offers.` / `wall.` path. Do **not** smoke `https://www.cpx-research.com/`.
+- After the flip, re-run `--probe-prod` (should report FLIP DETECTED) then smoke with MD5 as `/api/postback` requires.
+- `POSTBACK_SECRET` is already set. Also need `CPX_SECURE_HASH` for MD5.
 - **Hook ready ≠ earn-live.** WIP stays 2/3. Do not certify earn-live.
 - Freecash path + duplicate smoke is **not Yield** and **not earn-live**.
 
@@ -60,4 +62,4 @@ Flags: `--help` prints cases without calling; `--probe-prod` public prod checks 
 - Never sends real secrets to prod; use local env.
 - Stage-only — do not trigger live network callbacks.
 - Smoke AffiliateLink is first-party `https://www.vaultquest.io/proof` — do not invent partner placement URLs.
-- Never smoke marketing homepages. Never flip `/admin`. Never invent a CPX wall URL.
+- Never smoke marketing homepages. Never flip `/admin`. Never hardcode a CPX wall URL.
