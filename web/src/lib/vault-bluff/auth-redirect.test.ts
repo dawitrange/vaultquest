@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   authHintFromFormData,
   authHintFromValue,
+  loginPathForPage,
   pathFromAuthHint,
 } from "../auth-redirect";
 
@@ -13,6 +14,8 @@ test("play auth hint survives login and signup filtering", () => {
   const formData = new FormData();
   formData.set("from", "play");
   assert.equal(authHintFromFormData(formData), "play");
+  assert.equal(loginPathForPage("/play"), "/login?from=play");
+  assert.equal(loginPathForPage("/earn"), "/login");
 });
 
 test("unknown auth hints still fail closed to account", () => {

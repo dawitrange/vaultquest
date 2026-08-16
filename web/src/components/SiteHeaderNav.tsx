@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { loginPathForPage } from "@/lib/auth-redirect";
 import { NAV } from "@/lib/site";
 
 export function SiteHeaderNav({ email, isAdmin }: { email: string | null; isAdmin?: boolean }) {
   const pathname = usePathname();
+  const signInHref = loginPathForPage(pathname);
   const [open, setOpen] = useState(false);
 
   return (
@@ -43,7 +45,7 @@ export function SiteHeaderNav({ email, isAdmin }: { email: string | null; isAdmi
             {email}
           </Link>
         ) : (
-          <Link href="/login" className="hidden text-sm text-[var(--vq-ink-muted)] hover:text-[var(--vq-ink)] sm:inline">
+          <Link href={signInHref} className="hidden text-sm text-[var(--vq-ink-muted)] hover:text-[var(--vq-ink)] sm:inline">
             Sign in
           </Link>
         )}
@@ -92,7 +94,7 @@ export function SiteHeaderNav({ email, isAdmin }: { email: string | null; isAdmi
             ) : null}
             <li>
               <Link
-                href={email ? "/account" : "/login"}
+                href={email ? "/account" : signInHref}
                 className="block px-2 py-2 text-[var(--vq-ink-muted)]"
                 onClick={() => setOpen(false)}
               >

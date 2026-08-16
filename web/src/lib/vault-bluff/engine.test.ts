@@ -107,6 +107,30 @@ test("placement is immutable after behavior commands", () => {
   assert.equal(next.rounds[0]?.keyCase, keyCase);
 });
 
+test("bot chooser decision is exposed safely when the human is Keeper", () => {
+  let state = startMatch({ seed: "bot-choice-visible", persona: "ANALYST", now: START });
+  state = applyCommand(state, {
+    kind: "ACK_INSPECTION",
+    now: "2026-08-16T12:00:01.000Z",
+  });
+  for (let answerIndex = 0; answerIndex < 2; answerIndex += 1) {
+    const round = state.rounds.at(-1)!;
+    const question = round.questions[round.responses.length]!;
+    state = applyCommand(state, {
+      kind: "ANSWER_QUESTION",
+      answer: APPROVED_ANSWERS[question][0]!,
+      confidence: "UNSURE",
+      recommendation: "KEEP",
+      now: `2026-08-16T12:00:0${answerIndex + 2}.000Z`,
+    });
+  }
+  const dto = toSafeSessionDto(state);
+  assert.equal(dto.currentRound.humanRole, "KEEPER");
+  assert.equal(dto.currentRound.phase, "ROUND_REVEAL");
+  assert.ok(dto.currentRound.choice === "KEEP" || dto.currentRound.choice === "TAKE");
+  assert.ok(dto.currentRound.keyCase);
+});
+
 test("server deadline rejects stale commands without mutating state", () => {
   const state = startMatch({ seed: "expired", persona: "ANALYST", now: START });
   const original = structuredClone(state);

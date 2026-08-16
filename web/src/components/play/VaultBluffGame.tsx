@@ -429,6 +429,26 @@ export function VaultBluffGame({
 
         {round.phase === "ROUND_REVEAL" ? (
           <section aria-labelledby="reveal-title">
+            {round.humanRole === "KEEPER" && round.choice ? (
+              <div
+                aria-live="polite"
+                className="mb-4 rounded-[10px] border border-[var(--vq-border-strong)] bg-[var(--vq-surface)] p-5"
+              >
+                <p className="font-[family-name:var(--vq-font-mono)] text-xs uppercase tracking-wider text-[var(--vq-teal)]">
+                  Bot decision
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold">
+                  {round.choice === "KEEP"
+                    ? `${persona.name} kept bot Case B`
+                    : `${persona.name} took your Case A`}
+                </h2>
+                <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
+                  {round.choice === "KEEP"
+                    ? "The bot finished the round holding its original case."
+                    : "The bot swapped and finished the round holding your original case."}
+                </p>
+              </div>
+            ) : null}
             <div className="rounded-[10px] border border-[var(--vq-brass-dim)] bg-[var(--vq-bg-sunken)] p-5">
               <StageLabel>Key reveal</StageLabel>
               <h2 id="reveal-title" className="mt-2 text-3xl font-semibold">
