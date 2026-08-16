@@ -34,3 +34,5 @@ Master resolves Product ↔ Offers conflicts using the margin rule in `00-master
 ## Kickoff prompts
 
 See `docs/agents/kickoffs/` after orchestration starts.
+
+**Overnight / unattended:** paste `docs/20-overnight-manager.md` §2 into a new Cursor Agent chat after `/poteto-mode`. That is the pstack activation slash (`/potato` is not a command).

@@ -91,10 +91,11 @@ Keep handoffs short, specific, and machine-scannable. Do not invent fake metrics
 
 - `.cursor/rules/vaultquest.mdc` — normative orchestrator (alwaysApply)
 - `docs/agents/main-orchestrator.md` — this runbook
+- `docs/20-overnight-manager.md` — unattended Manager paste (`/poteto-mode` + pstack Orchestrate / Autopilot-full) when Ethio is asleep
 - `.cursor/settings.json` — plugin enablement (MCP entries when provisioned)
 
 ## Non-goals
 
 - Do not replace specialist agent docs — route to them.
-- Do not bypass gate or budget checks for speed.
+- Do not bypass claims, margin, or fake-proof rules for speed. Paid-ads timing follows the 2026-08-16 owner override in `docs/20-overnight-manager.md`.
 - Do not add MCP keys in repo — wire via env / MCP config when provisioned.
