@@ -24,6 +24,7 @@ Preconditions:
 - **Open proof.** GET `/proof`. HTTP 200. Heading **Proof & Rules**.
 - **TOC.** Page contains **How earnings work** and **Partner & affiliate disclosure** (or the TOC labels from `web/src/app/proof/page.tsx`).
 - **Banned scan.** No `working codes`, no steam password form. Generator mentioned only as something we do **not** do (negative mention is allowed; a product CTA for generators is not).
+- **Next step.** After the rules, a real CTA: **Sign up** (`/signup`) or **See quests** (`/earn`). No invented winners, pending-VP counts, or “we’re live” badge.
 - **Legal.** GET `/terms` and `/privacy` → 200.
 - **Proof.** Save `artifacts/proof-claims/proof.html` and a short `result.txt`.
 

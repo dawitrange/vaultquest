@@ -86,16 +86,17 @@ export default function ProofPage() {
 
       <section id="never" className="mt-10 scroll-mt-24 space-y-3">
         <h2 className="font-[family-name:var(--vq-font-display)] text-xl font-semibold">2 · How we keep it fair</h2>
+        <p className="text-[var(--vq-ink-muted)]">We do not:</p>
         <ul className="list-inside list-disc space-y-1 text-[var(--vq-ink-muted)]">
-          <li>Run Steam code generators or “working codes” pages</li>
-          <li>Ask for your Steam password — never share it</li>
-          <li>Claim “no survey” when surveys/offers exist</li>
-          <li>Promise guaranteed $ amounts or instant free $50</li>
-          <li>Gate rewards behind manual email or contact-form steps</li>
-          <li>Publish fake winner feeds, fake counters, or stock “PROOF” badges</li>
-          <li>Coach VPNs, emulators, multi-accounts, or self-referrals</li>
+          <li>run Steam code generators or &quot;working codes&quot; pages</li>
+          <li>ask for your Steam password</li>
+          <li>claim &quot;no survey&quot; when surveys or offers exist</li>
+          <li>promise guaranteed dollar amounts or instant free $50</li>
+          <li>gate rewards behind manual email or contact-form steps</li>
+          <li>publish fake winner feeds, fake counters, or stock proof badges</li>
+          <li>coach VPNs, emulators, multi-accounts, or self-referrals</li>
         </ul>
-        <p className="text-xs text-[var(--vq-ink-faint)]">See our sourcing and claims policy for what we never show.</p>
+        <p className="text-xs text-[var(--vq-ink-faint)]">Same list as our claims policy.</p>
       </section>
 
       <section id="giveaways" className="mt-10 scroll-mt-24 space-y-3">
@@ -130,7 +131,7 @@ export default function ProofPage() {
             permission, we&apos;ll show redacted confirmations.
           </p>
           <p className="mt-2 text-xs text-[var(--vq-ink-faint)]">
-            As the ledger fills, this becomes live stats — total VP credited and redemptions fulfilled.
+            Empty on purpose. We do not invent names, screenshots, or pending-VP counts.
           </p>
         </div>
       </section>
@@ -225,6 +226,26 @@ export default function ProofPage() {
           Age gate: default 16+; offer walls / surveys enforce their own (often 18+). We don&apos;t target under-13. Geo:
           offers vary by region — &ldquo;not available in your region&rdquo; shown when applicable.
         </p>
+      </section>
+
+      <section className="mt-12 border-t border-[var(--vq-border)] pt-8">
+        <p className="text-[var(--vq-ink-muted)]">
+          If the rules make sense, make an account or pick a listed quest.
+        </p>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <Link
+            href="/signup"
+            className="inline-flex rounded-md bg-[var(--vq-teal)] px-5 py-3 text-sm font-semibold text-[var(--vq-bg-deep)] hover:bg-[var(--vq-teal-dim)] hover:text-white"
+          >
+            Sign up
+          </Link>
+          <Link
+            href="/earn"
+            className="inline-flex rounded-md border border-[var(--vq-border-strong)] px-5 py-3 text-sm font-semibold text-[var(--vq-ink)] hover:border-[var(--vq-teal)] hover:text-[var(--vq-teal)]"
+          >
+            See quests
+          </Link>
+        </div>
       </section>
     </div>
   );

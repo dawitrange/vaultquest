@@ -28,9 +28,31 @@ export default async function RewardsPage() {
       <header className="max-w-2xl">
         <h1 className="font-[family-name:var(--vq-font-display)] text-4xl font-bold tracking-tight">Rewards</h1>
         <p className="mt-3 text-[var(--vq-ink-muted)]">
-          Redeem your Vault points for Steam credit. Cash out from about ${SITE.minRedeemUsd} — we send your code to
-          your VaultQuest account, usually within 24–48 hours.
+          Unlock Steam credit from the vault. About ${SITE.minRedeemUsd} minimum. We send the code to your
+          VaultQuest account, usually within 24–48 hours.
         </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          {!session?.user ? (
+            <Link
+              href="/signup?from=rewards"
+              className="inline-flex rounded-md bg-[var(--vq-teal)] px-5 py-3 text-sm font-semibold text-[var(--vq-bg-deep)] hover:bg-[var(--vq-teal-dim)] hover:text-white"
+            >
+              Sign up
+            </Link>
+          ) : null}
+          <Link
+            href="/earn"
+            className="inline-flex rounded-md border border-[var(--vq-border-strong)] px-5 py-3 text-sm font-semibold text-[var(--vq-ink)] hover:border-[var(--vq-teal)] hover:text-[var(--vq-teal)]"
+          >
+            See quests
+          </Link>
+          <Link
+            href="/proof"
+            className="inline-flex px-2 py-3 text-sm text-[var(--vq-teal)] hover:underline"
+          >
+            Proof
+          </Link>
+        </div>
       </header>
 
       <div className="mt-6 flex flex-wrap items-end justify-between gap-4 rounded-[10px] border border-[var(--vq-border)] bg-[var(--vq-bg-raised)]/50 px-4 py-4">
@@ -70,10 +92,10 @@ export default async function RewardsPage() {
                 <RedeemButton sku={item.id} disabled={!canRedeem} />
               ) : (
                 <Link
-                  href="/login"
+                  href="/signup?from=rewards"
                   className="mt-6 block rounded-md border border-[var(--vq-border)] px-3 py-2 text-center text-sm text-[var(--vq-ink-muted)] hover:border-[var(--vq-teal)]/30 hover:text-[var(--vq-ink)]"
                 >
-                  Sign in to unlock
+                  Sign up
                 </Link>
               )}
             </li>
@@ -89,9 +111,16 @@ export default async function RewardsPage() {
       <p className="mt-4 text-sm text-[var(--vq-ink-muted)]">
         Need points first?{" "}
         <Link href="/earn" className="text-[var(--vq-teal)] hover:underline">
-          Browse earn quests
+          See quests
         </Link>
-        {" "}· <Link href="/how-it-works" className="text-[var(--vq-teal)] hover:underline">How it works</Link>
+        {" · "}
+        <Link href="/how-it-works" className="text-[var(--vq-teal)] hover:underline">
+          How it works
+        </Link>
+        {" · "}
+        <Link href="/proof" className="text-[var(--vq-teal)] hover:underline">
+          Proof
+        </Link>
       </p>
 
       <section className="mt-14 border-t border-[var(--vq-border)] pt-10">
@@ -99,7 +128,7 @@ export default async function RewardsPage() {
           Reward guides
         </h2>
         <p className="mt-2 max-w-2xl text-sm text-[var(--vq-ink-muted)]">
-          Honest pages for common searches. Live redeem catalog above is Steam-first — guides that say “not live yet”
+          Honest pages for common searches. The catalog above is Steam-first. Guides that say &quot;not live yet&quot;
           mean exactly that.
         </p>
         <ul className="mt-6 grid gap-2 sm:grid-cols-2">
