@@ -52,6 +52,28 @@ export function isVaultBluffSchemaUnavailable(error: unknown): boolean {
   );
 }
 
+export type RematchSessionPlan = {
+  closeSessionId: string | null;
+  returnSessionId: string | null;
+};
+
+export function planRematchSession(
+  activeSessionIds: readonly string[],
+  replaceSessionId: string | undefined,
+): RematchSessionPlan {
+  if (activeSessionIds.length === 0) {
+    return { closeSessionId: null, returnSessionId: null };
+  }
+  if (!replaceSessionId || !activeSessionIds.includes(replaceSessionId)) {
+    return { closeSessionId: null, returnSessionId: activeSessionIds[0] ?? null };
+  }
+  return {
+    closeSessionId: replaceSessionId,
+    returnSessionId:
+      activeSessionIds.find((sessionId) => sessionId !== replaceSessionId) ?? null,
+  };
+}
+
 export function rewardResultFromGrant(
   grant:
     | Pick<
@@ -126,11 +148,19 @@ export async function createGameSession(args: {
   userId: string;
   persona?: PersonaId;
   rematch?: boolean;
+  replaceSessionId?: string;
 }): Promise<SessionResult> {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       return await createGameSessionAttempt(args);
     } catch (error) {
+      if (
+        error instanceof GameServiceError &&
+        error.code === "VERSION_CONFLICT" &&
+        attempt < 2
+      ) {
+        continue;
+      }
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         (error.code === "P2002" || error.code === "P2034") &&
@@ -148,6 +178,7 @@ async function createGameSessionAttempt(args: {
   userId: string;
   persona?: PersonaId;
   rematch?: boolean;
+  replaceSessionId?: string;
 }): Promise<SessionResult> {
   return prisma.$transaction(
     async (tx) => {
@@ -165,9 +196,27 @@ async function createGameSessionAttempt(args: {
         };
       }
       if (args.rematch) {
+        const plan = planRematchSession(
+          activeSessions.map((session) => session.id),
+          args.replaceSessionId,
+        );
         const closedAt = new Date();
-        for (const activeSession of activeSessions) {
-          await closeActiveSessionForRematch(tx, activeSession, closedAt);
+        const sessionToClose = activeSessions.find(
+          (session) => session.id === plan.closeSessionId,
+        );
+        if (sessionToClose) {
+          await closeActiveSessionForRematch(tx, sessionToClose, closedAt);
+        }
+        const sessionToReturn = activeSessions.find(
+          (session) => session.id === plan.returnSessionId,
+        );
+        if (sessionToReturn) {
+          return {
+            id: sessionToReturn.id,
+            version: sessionToReturn.version,
+            session: toSafeSessionDto(parseState(sessionToReturn.state)),
+            reward: null,
+          };
         }
       }
 

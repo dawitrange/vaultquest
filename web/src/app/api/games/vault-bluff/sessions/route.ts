@@ -12,6 +12,7 @@ import { PERSONA_IDS } from "@/lib/vault-bluff/types";
 const createSchema = z.object({
   persona: z.enum(PERSONA_IDS).optional(),
   rematch: z.boolean().optional().default(false),
+  replaceSessionId: z.string().min(1).max(64).optional(),
 });
 
 export async function POST(request: Request) {
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
       userId: session.user.id,
       persona: parsed.data.persona,
       rematch: parsed.data.rematch,
+      replaceSessionId: parsed.data.replaceSessionId,
     });
   } catch (error) {
     if (isVaultBluffSchemaUnavailable(error)) {

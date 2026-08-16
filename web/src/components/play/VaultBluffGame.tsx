@@ -96,6 +96,7 @@ export function VaultBluffGame({
   const [roundControlsReady, setRoundControlsReady] = useState(false);
   const [forfeitConfirmOpen, setForfeitConfirmOpen] = useState(false);
   const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestInFlightRef = useRef(false);
 
   function acceptGameResult(result: ApiResult) {
     if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
@@ -167,13 +168,19 @@ export function VaultBluffGame({
   );
 
   async function start(persona?: PersonaId, rematch = false) {
+    if (requestInFlightRef.current) return;
+    requestInFlightRef.current = true;
     setPending(true);
     setError(null);
     try {
       const response = await fetch("/api/games/vault-bluff/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ persona, rematch }),
+        body: JSON.stringify({
+          persona,
+          rematch,
+          replaceSessionId: rematch ? game?.id : undefined,
+        }),
       });
       const body = await response.json();
       if (!response.ok) {
@@ -189,12 +196,14 @@ export function VaultBluffGame({
       setError("The match could not start. Check your connection and try again.");
       setRetryIntent({ kind: "start", persona, rematch });
     } finally {
+      requestInFlightRef.current = false;
       setPending(false);
     }
   }
 
   async function act(command: ClientCommand) {
-    if (!game) return;
+    if (!game || requestInFlightRef.current) return;
+    requestInFlightRef.current = true;
     setPending(true);
     setPendingAction(command.kind);
     setError(null);
@@ -227,6 +236,7 @@ export function VaultBluffGame({
       setError("That action could not be sent. Your saved match is unchanged.");
       setRetryIntent({ kind: "action", command });
     } finally {
+      requestInFlightRef.current = false;
       setPending(false);
       setPendingAction(null);
     }

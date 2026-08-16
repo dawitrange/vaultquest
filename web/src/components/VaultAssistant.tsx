@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -12,9 +11,6 @@ const STARTERS = [
 ];
 
 export function VaultAssistant() {
-  const pathname = usePathname();
-  const hiddenForPlay =
-    pathname === "/play" || pathname === "/play/vault-bluff";
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [msgs, setMsgs] = useState<Msg[]>([
@@ -30,12 +26,11 @@ export function VaultAssistant() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (hiddenForPlay) return;
     fetch("/api/chat")
       .then((r) => r.json())
       .then((j) => setConfigured(Boolean(j.configured)))
       .catch(() => setConfigured(false));
-  }, [hiddenForPlay]);
+  }, []);
 
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 80);
@@ -145,7 +140,7 @@ export function VaultAssistant() {
   // end users. Only render once we've confirmed the server has an AI key
   // (`configured === true`); while checking (`null`) or unconfigured (`false`)
   // the launcher stays hidden.
-  if (hiddenForPlay || configured !== true) return null;
+  if (configured !== true) return null;
 
   if (!open) {
     return (

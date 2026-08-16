@@ -3,6 +3,7 @@ import test from "node:test";
 import { GameRewardStatus } from "@prisma/client";
 import {
   isVaultBluffSchemaErrorCode,
+  planRematchSession,
   rewardResultFromGrant,
 } from "./service";
 
@@ -10,6 +11,17 @@ test("missing Bluff tables and columns are classified as safe setup failures", (
   assert.equal(isVaultBluffSchemaErrorCode("P2021"), true);
   assert.equal(isVaultBluffSchemaErrorCode("P2022"), true);
   assert.equal(isVaultBluffSchemaErrorCode("P2002"), false);
+});
+
+test("a repeated rematch returns the replacement instead of forfeiting it", () => {
+  assert.deepEqual(planRematchSession(["old-session"], "old-session"), {
+    closeSessionId: "old-session",
+    returnSessionId: null,
+  });
+  assert.deepEqual(planRematchSession(["new-session"], "old-session"), {
+    closeSessionId: null,
+    returnSessionId: "new-session",
+  });
 });
 
 test("persisted completing reward converts to the same replay payload", () => {

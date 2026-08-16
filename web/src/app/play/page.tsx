@@ -138,7 +138,7 @@ export default async function PlayPage() {
           ) : null}
           <Link
             href={signedIn ? "/play/vault-bluff" : "/login?from=play"}
-            className="mt-7 inline-flex rounded-md bg-[var(--vq-teal)] px-5 py-3 text-sm font-semibold text-[var(--vq-bg-deep)] hover:bg-[var(--vq-teal-dim)] hover:text-white"
+            className="mt-7 inline-flex min-h-11 items-center rounded-md bg-[var(--vq-teal)] px-5 py-3 text-sm font-semibold text-[var(--vq-bg-deep)] hover:bg-[var(--vq-teal-dim)] hover:text-white"
           >
             {signedIn
               ? progress.schemaReady

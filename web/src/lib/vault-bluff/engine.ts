@@ -242,7 +242,12 @@ function safeRound(round: VaultBluffRound, isCurrent: boolean): SafeRoundDto {
     botCase: round.botCase,
     phase: round.phase,
     questions: round.questions,
-    responses: round.responses,
+    responses: round.responses.map((response) => ({
+      question: response.question,
+      answer: response.answer,
+      confidence: response.confidence,
+      recommendation: response.recommendation,
+    })),
     choice: round.choice,
     winner: round.winner,
     startedAt: round.startedAt,

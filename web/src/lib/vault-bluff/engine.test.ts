@@ -129,6 +129,7 @@ test("bot chooser decision is exposed safely when the human is Keeper", () => {
   assert.equal(dto.currentRound.phase, "ROUND_REVEAL");
   assert.ok(dto.currentRound.choice === "KEEP" || dto.currentRound.choice === "TAKE");
   assert.ok(dto.currentRound.keyCase);
+  assert.ok(dto.currentRound.responses.every((response) => !("durationMs" in response)));
 });
 
 test("every human Chooser round starts with zero questions and both available", () => {
@@ -182,6 +183,7 @@ test("server deadline rejects stale commands without mutating state", () => {
       }),
     { message: "This round expired. Forfeit it and start a new match" },
   );
+  assert.equal(state.forfeited, false);
   assert.deepEqual(state, original);
 });
 

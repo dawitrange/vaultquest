@@ -24,7 +24,7 @@ All names, copy, visuals, and assets are original VaultQuest work. The UI uses d
 - `/play/vault-bluff` requires authentication and is `noindex`. Signed-out users go directly to `/login?from=play`; the game route does not render a signed-out play panel. It supports persona selection or automatic assignment, a new match, active rounds, results, instant rematch, and one optional rotated Earn recommendation after three completed matches.
 - `Play` is added to primary navigation and `/play` to public sitemap paths.
 - The centralized auth redirect allowlist maps `from=play` to `/play/vault-bluff`. Login, signup, credential forms, and OAuth redirects all preserve the `play` hint so successful authentication completes the round-trip. While the visitor is on `/play`, the signed-out header's desktop and mobile `Sign in` links use `/login?from=play`, and both `Sign up` links use `/signup?from=play`.
-- The site-wide Vault Assistant is inherited chrome, not game chat. It does not render or fetch chat configuration on `/play` or `/play/vault-bluff`.
+- The site-wide Vault Assistant remains inherited chrome with no Play-route suppression. The floating preview control observed during QA is the Vercel toolbar, not game chat.
 
 ## Match rules
 
@@ -98,7 +98,7 @@ The implementation uses:
 - `BotPlayerProfile`
 - `GameRewardGrant`
 
-Enums, foreign keys, indexes, and uniqueness constraints prevent duplicate client actions, round completion, profile updates, daily rewards, and ledger entries. PostgreSQL partial uniqueness permits at most one `ACTIVE` `GameSession` per user. `rematch=true` first closes every current active session as completed or forfeited in the same serializable transaction, then creates the new active session.
+Enums, foreign keys, indexes, and uniqueness constraints prevent duplicate client actions, round completion, profile updates, daily rewards, and ledger entries. PostgreSQL partial uniqueness permits at most one `ACTIVE` `GameSession` per user. `rematch=true` identifies the exact prior session being replaced. A repeated or concurrent rematch request returns the already-created replacement instead of forfeiting it.
 
 Endpoints:
 
@@ -106,7 +106,7 @@ Endpoints:
 - `GET /api/games/vault-bluff/sessions/[sessionId]`
 - `POST /api/games/vault-bluff/sessions/[sessionId]/actions`
 
-Commands include an optimistic session version and unique `clientActionId`. Commands are idempotent. Replaying the completing action returns the reward payload persisted for that session, including the same blocked reason or pending amount and availability time. The server rejects stale versions and illegal transitions with structured, safe errors. Actions are append-only. Sessions persist engine and policy versions, timestamps, deadlines, deterministic RNG cursor, and the current authoritative state. Refresh, reconnect, rematch closure, normal actions, and idempotent replay all convert stored state through `toSafeSessionDto`; no API returns raw `GameSession.state`.
+Commands include an optimistic session version and unique `clientActionId`. Commands are idempotent. Replaying the completing action returns the reward payload persisted for that session, including the same blocked reason or pending amount and availability time. The server rejects stale versions and illegal transitions with structured, safe errors. Actions are append-only. Sessions persist engine and policy versions, timestamps, deadlines, deterministic RNG cursor, and the current authoritative state. A deadline rejection never changes a match to forfeited. Only a player-confirmed `FORFEIT` action or an explicit rematch replacement can forfeit an active session. Refresh, reconnect, rematch closure, normal actions, and idempotent replay all convert stored state through `toSafeSessionDto`; no API returns raw `GameSession.state`, RNG data, or response-duration milliseconds.
 
 Logs and analytics must never include hidden placement, seed, unrevealed answers, email, raw identity, private state, or fraud thresholds.
 
@@ -176,7 +176,7 @@ Safe properties may include engine version, policy version, persona, completion 
 
 ## Required UI states
 
-The signed-out state exists on the public `/play` explainer only. Authenticated components under `web/src/components/play/` cover preview-schema unavailable, new match, Keeper inspection, Chooser questioning, bot-answering status, Keeper response, bot-choosing status after the second Keeper answer, human Keep or Take, bot Chooser decision, held reveal with explicit Continue, visually separate round result, match result, reward pending, distinct daily and rolling cap states, populated and empty rotated Earn slots, confirmation-guarded forfeit, and dedicated error recovery with retry. Every human Chooser round first renders at 0 of 2 with no used questions; a short interaction guard prevents the reveal click from landing on a new-round question. Keeper response submission reads the answer, confidence, and recommendation from the submitted form so the visible selection is the sent selection. `/play/vault-bluff` never renders a signed-out game panel. The experience must work on mobile and by keyboard. Interactive targets are at least 44 px; short chips also have a 44 px minimum width. Color cannot be the only case identifier. Brass and gold are reserved for the Vault Key, cases, and unlock moments.
+The signed-out state exists on the public `/play` explainer only. Authenticated components under `web/src/components/play/` cover preview-schema unavailable, new match, Keeper inspection, Chooser questioning, bot-answering status, Keeper response, bot-choosing status after the second Keeper answer, human Keep or Take, bot Chooser decision, held reveal with explicit Continue, visually separate round result, match result, reward pending, distinct daily and rolling cap states, populated and empty rotated Earn slots, confirmation-guarded forfeit, and dedicated error recovery with retry. Every human Chooser round first renders at 0 of 2 with no used questions; a short interaction guard prevents the reveal click from landing on a new-round question. Keeper response submission reads the answer, confidence, and recommendation from the submitted form so the visible selection is the sent selection. `/play/vault-bluff` never renders a signed-out game panel. The experience must work on mobile and by keyboard. Interactive targets, including the mobile hub CTA, are at least 44 px; short chips also have a 44 px minimum width. Color cannot be the only case identifier. Brass and gold are reserved for the Vault Key, cases, and unlock moments.
 
 ## Motion
 

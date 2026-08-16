@@ -64,6 +64,8 @@ export type KeeperResponse = {
   durationMs: number;
 };
 
+export type SafeKeeperResponse = Omit<KeeperResponse, "durationMs">;
+
 export type RoundPhase =
   | "KEEPER_INSPECTION"
   | "CHOOSER_QUESTIONING"
@@ -136,7 +138,8 @@ export type VaultBluffCommand =
   | { kind: "NEXT_ROUND"; now: string }
   | { kind: "FORFEIT"; now: string };
 
-export type SafeRoundDto = Omit<VaultBluffRound, "keyCase"> & {
+export type SafeRoundDto = Omit<VaultBluffRound, "keyCase" | "responses"> & {
+  responses: SafeKeeperResponse[];
   keyCase?: CaseId;
   keeperHasKey?: boolean;
 };
