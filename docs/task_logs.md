@@ -374,3 +374,4 @@ When user runs `@vault-planner get us verified`, vault-planner appends new dated
 - **Did:** Status + flags `CPX_YIELD_FLIP_CONFIRMED=false` / `CPX_LIVE_SMOKE_ALLOWED=false`. Probe no longer hits `/api/go/q-surveys`. Live URL has no `hash=`; MD5 stays for later signed posts. After confirm, smoke path is CPX / q-surveys only. Not earn-live until a prod pending VP is visible.
 - **Do not:** smoke Freecash or a homepage; invent a URL; require `hash=` on the live URL; merge; certify earn-live.
 - **Next:** Yield confirms `/admin` flip → CPX-only smoke → earn-live only if prod pending VP is visible.
+- **Skill evidence:** `vault-build-check` PASS. `--probe-prod` 22/22: `/earn` already shows `q-surveys` CTA; **did not** hit `/api/go/q-surveys`. STAND BY until Yield confirms. No secrets. Not earn-live.
