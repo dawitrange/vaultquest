@@ -235,7 +235,7 @@ export const CPX_SECURE_HASH_ENV_NAMES = ["CPX_SECURE_HASH", "CPX_APP_SECRET"] a
  * Current prod HMAC-checks `hash` and would 401. Ethio is saving without HMAC `hash=`.
  */
 export const CPX_POSTBACK_TEMPLATE =
-  "https://vaultquest.io/api/postback?secret=…&user_id={user_id}&trans_id={trans_id}&vp={amount_local}&payout_usd={amount_usd}&status={status}&secure_hash={secure_hash}&partner=cpx";
+  "https://vaultquest.io/api/postback?secret=…&user_id={user_id}&subid_1={subid_1}&trans_id={trans_id}&vp={amount_local}&payout_usd={amount_usd}&status={status}&secure_hash={secure_hash}&partner=cpx";
 
 export function md5Hex(payload: string): string {
   return crypto.createHash("md5").update(payload).digest("hex");

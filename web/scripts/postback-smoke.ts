@@ -27,6 +27,7 @@ import {
   CPX_EARN_LIVE_CERTIFIED,
   CPX_LIVE_SMOKE_ALLOWED,
   CPX_MD5_HOOK_READY,
+  CPX_POSTBACK_TEMPLATE,
   CPX_YIELD_FLIP_CONFIRMED,
   CPX_SECURE_HASH_ENV_NAMES,
   CPX_SLUG,
@@ -700,6 +701,11 @@ function offlineHmacCases(): CaseResult[] {
       hasPostbackSubject(officialGet) &&
       !hasPostbackSubject((k) => (k === "partner" ? "cpx" : "")),
     detail: "user_id/uid/ext_user_id → wall flow; subid_1/subid_2 → click aliases",
+  });
+  results.push({
+    name: "CPX postback template returns existing subid_1",
+    pass: CPX_POSTBACK_TEMPLATE.includes("subid_1={subid_1}"),
+    detail: "operator template echoes OfferClick id through subid_1",
   });
 
   return results;
