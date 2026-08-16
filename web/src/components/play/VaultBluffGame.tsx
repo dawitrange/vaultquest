@@ -155,6 +155,8 @@ export function VaultBluffGame({
       if (saved) void loadSession(saved);
       else setLoading(false);
     });
+    // Restore once from the browser-owned session pointer on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(
