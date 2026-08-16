@@ -5,6 +5,7 @@ import {
   authHintFromValue,
   loginPathForPage,
   pathFromAuthHint,
+  signupPathForPage,
 } from "../auth-redirect";
 
 test("play auth hint survives login and signup filtering", () => {
@@ -16,6 +17,8 @@ test("play auth hint survives login and signup filtering", () => {
   assert.equal(authHintFromFormData(formData), "play");
   assert.equal(loginPathForPage("/play"), "/login?from=play");
   assert.equal(loginPathForPage("/earn"), "/login");
+  assert.equal(signupPathForPage("/play"), "/signup?from=play");
+  assert.equal(signupPathForPage("/earn"), "/signup");
 });
 
 test("unknown auth hints still fail closed to account", () => {

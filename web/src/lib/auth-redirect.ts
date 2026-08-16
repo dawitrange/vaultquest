@@ -25,6 +25,10 @@ export function loginPathForPage(pathname: string): string {
   return pathname === "/play" ? "/login?from=play" : "/login";
 }
 
+export function signupPathForPage(pathname: string): string {
+  return pathname === "/play" ? "/signup?from=play" : "/signup";
+}
+
 export function authHintFromFormData(formData: FormData): string | null {
   const from = String(formData.get("from") ?? "").trim();
   return authHintFromValue(from) ?? null;

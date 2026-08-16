@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { loginPathForPage } from "@/lib/auth-redirect";
+import { loginPathForPage, signupPathForPage } from "@/lib/auth-redirect";
 import { NAV } from "@/lib/site";
 
 export function SiteHeaderNav({ email, isAdmin }: { email: string | null; isAdmin?: boolean }) {
   const pathname = usePathname();
   const signInHref = loginPathForPage(pathname);
+  const signUpHref = signupPathForPage(pathname);
   const [open, setOpen] = useState(false);
 
   return (
@@ -50,7 +51,7 @@ export function SiteHeaderNav({ email, isAdmin }: { email: string | null; isAdmi
           </Link>
         )}
         <Link
-          href={email ? "/earn" : "/signup"}
+          href={email ? "/earn" : signUpHref}
           className="hidden rounded-md bg-[var(--vq-teal)] px-3.5 py-2 text-sm font-semibold text-[var(--vq-bg-deep)] transition hover:bg-[var(--vq-teal-dim)] hover:text-white sm:inline-flex"
         >
           {email ? "See quests" : "Sign up"}
@@ -103,7 +104,7 @@ export function SiteHeaderNav({ email, isAdmin }: { email: string | null; isAdmi
             </li>
             <li>
               <Link
-                href={email ? "/earn" : "/signup"}
+                href={email ? "/earn" : signUpHref}
                 className="mt-1 block rounded-md bg-[var(--vq-teal)] px-2 py-2 text-center font-semibold text-[var(--vq-bg-deep)]"
                 onClick={() => setOpen(false)}
               >
