@@ -140,11 +140,16 @@ export type GoRedirectResult =
   | { ok: true; location: string }
   | { ok: false; reason: "sign_in" };
 
-/** Signed-out CPX / survey hops go here — login + signup, not a raw error page. */
+/** Signed-out CPX / survey hops go here. Login + signup, not a raw error page. */
 export const GO_SIGN_IN_PATH = "/login?from=earn";
 
 export function goFailurePath(reason: "sign_in" | "no_link"): string {
   return reason === "sign_in" ? GO_SIGN_IN_PATH : "/earn?error=no_link";
+}
+
+/** Prisma User.id is a cuid. Reject blank and the CPX "user 0" placeholder. */
+export function isVaultUserId(userId?: string | null): userId is string {
+  return typeof userId === "string" && userId.length > 1 && userId !== "0";
 }
 
 /**
@@ -158,17 +163,18 @@ export function buildGoRedirect(args: {
   link: { slug: string; url: string };
 }): GoRedirectResult {
   const cpx = isCpxWallHop(args.link) || isAllowedCpxWallHost(args.destinationUrl);
-  if (cpx && !args.userId) {
+  const userId = isVaultUserId(args.userId) ? args.userId : null;
+  if (cpx && !userId) {
     return { ok: false, reason: "sign_in" };
   }
 
   const target = new URL(args.destinationUrl);
-  const s1 = args.userId ?? args.clickId;
+  const s1 = userId ?? args.clickId;
   target.searchParams.set("subid", args.clickId);
   target.searchParams.set("click_id", args.clickId);
   target.searchParams.set("s1", s1);
-  if (args.userId) target.searchParams.set("user_id", args.userId);
-  if (cpx && args.userId) target.searchParams.set("ext_user_id", args.userId);
+  if (userId) target.searchParams.set("user_id", userId);
+  if (cpx && userId) target.searchParams.set("ext_user_id", userId);
   return { ok: true, location: target.toString() };
 }
 

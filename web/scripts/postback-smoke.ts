@@ -6,6 +6,7 @@
  *
  * Usage (from web/):
  *   npx tsx scripts/postback-smoke.ts --help
+ *   npx tsx scripts/postback-smoke.ts --offline
  *   npx tsx scripts/postback-smoke.ts --probe-prod
  *   npx tsx scripts/postback-smoke.ts --base-url http://localhost:3000
  *
@@ -35,6 +36,7 @@ import {
   buildGoRedirect,
   GO_SIGN_IN_PATH,
   goFailurePath,
+  isVaultUserId,
   isAllowedCpxWallHost,
   isCpxCreditSafe,
   isCpxWallHop,
@@ -117,6 +119,7 @@ function parseArgs(argv: string[]) {
     probeProd: false,
     requireLive: false,
     seedLocal: false,
+    offline: false,
     baseUrl: "http://localhost:3000",
   };
   for (let i = 0; i < argv.length; i++) {
@@ -124,6 +127,7 @@ function parseArgs(argv: string[]) {
     if (a === "--help" || a === "-Help" || a === "-h") out.help = true;
     else if (a === "--probe-prod") out.probeProd = true;
     else if (a === "--require-live") out.requireLive = true;
+    else if (a === "--offline") out.offline = true;
     else if (a === "--seed-local") out.seedLocal = true;
     else if (a === "--base-url" || a === "-BaseUrl") out.baseUrl = argv[++i] ?? out.baseUrl;
     else if (/^https?:\/\//.test(a)) out.baseUrl = a;
@@ -357,6 +361,32 @@ function offlineHmacCases(): CaseResult[] {
     name: "anonymous CPX hop refuses wall (sign_in)",
     pass: !anonCpx.ok && anonCpx.reason === "sign_in",
     detail: anonCpx.ok ? "FAIL — would open CPX without a user" : "sign_in — no wall Location",
+  });
+
+  const zeroCpx = buildGoRedirect({
+    destinationUrl: cpxWallUrl,
+    clickId: "click-cpx-zero",
+    userId: "0",
+    link: cpxLink,
+  });
+  const blankCpx = buildGoRedirect({
+    destinationUrl: cpxWallUrl,
+    clickId: "click-cpx-blank",
+    userId: "",
+    link: cpxLink,
+  });
+  results.push({
+    name: "CPX hop refuses ext_user_id 0 or blank",
+    pass:
+      !isVaultUserId("0") &&
+      !isVaultUserId("") &&
+      !isVaultUserId(null) &&
+      isVaultUserId(signedCuid) &&
+      !zeroCpx.ok &&
+      zeroCpx.reason === "sign_in" &&
+      !blankCpx.ok &&
+      blankCpx.reason === "sign_in",
+    detail: zeroCpx.ok || blankCpx.ok ? "FAIL — would open CPX as user 0" : "refused 0 and blank",
   });
 
   results.push({
@@ -839,6 +869,13 @@ async function main() {
   }
 
   const results: CaseResult[] = [...offlineHmacCases()];
+
+  if (args.offline) {
+    const ok = printTable(results);
+    if (!ok) process.exit(1);
+    console.log("PASS — postback-smoke --offline");
+    return;
+  }
 
   if (args.probeProd || args.requireLive === false) {
     try {

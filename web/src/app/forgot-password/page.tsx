@@ -15,7 +15,7 @@ export default async function ForgotPasswordPage() {
         Forgot password
       </h1>
       <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
-        Enter the email on your account. We&apos;ll send a reset link if it matches.
+        Enter the email on your account. If we have it, we send a reset link.
       </p>
       <ForgotPasswordForm />
     </div>

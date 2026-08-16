@@ -88,7 +88,7 @@ const requestResetSchema = z.object({
 });
 
 const GENERIC_RESET_MESSAGE =
-  "If an account exists for that email, we sent a reset link. Check your inbox and spam folder.";
+  "If that email is on an account, we sent a reset link. Check inbox and spam.";
 
 export async function requestPasswordResetAction(
   _prev: AuthFormState,

@@ -4,10 +4,10 @@ export function EarnAuthPrompt({ actions = true }: { actions?: boolean }) {
   return (
     <div className="mt-6 rounded-xl border border-[var(--vq-border-strong)] bg-[var(--vq-bg-raised)] px-4 py-4">
       <p className="font-[family-name:var(--vq-font-display)] text-base font-semibold">
-        Sign in or sign up to start this quest
+        Sign in to start this quest
       </p>
       <p className="mt-1 text-sm text-[var(--vq-ink-muted)]">
-        Surveys need an account so completed quests credit to your Vault points — not a guest session.
+        We credit survey points to an account. Without one, the partner wall stays closed.
       </p>
       {actions ? (
         <div className="mt-3 flex flex-wrap gap-2">
