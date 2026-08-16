@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { createOfferClick, getQuest } from "@/lib/affiliates";
-import { isMarketingHomepageUrl } from "@/lib/postback";
+import { buildGoRedirect, isMarketingHomepageUrl } from "@/lib/postback";
 
 /** Creates a tracked click and redirects to the rotated partner URL. */
 export async function GET(
@@ -31,14 +31,15 @@ export async function GET(
     return NextResponse.redirect(new URL("/earn?error=no_link", _req.url));
   }
 
-  const target = new URL(started.link.url);
-  // Pass click id as common subid params partners can echo in postbacks.
-  // AdGate {s1} is the user (docs.prodegeads.com); fall back to click id for anon.
-  const s1 = session?.user?.id ?? started.click.id;
-  target.searchParams.set("subid", started.click.id);
-  target.searchParams.set("click_id", started.click.id);
-  target.searchParams.set("s1", s1);
-  if (session?.user?.id) target.searchParams.set("user_id", session.user.id);
+  const dest = buildGoRedirect({
+    destinationUrl: started.link.url,
+    clickId: started.click.id,
+    userId: session?.user?.id,
+    link: started.link,
+  });
+  if (!dest.ok) {
+    return NextResponse.redirect(new URL("/earn?error=sign_in", _req.url));
+  }
 
-  return NextResponse.redirect(target.toString());
+  return NextResponse.redirect(dest.location);
 }

@@ -32,8 +32,10 @@ import {
   HMAC_SECRET_ENV_NAMES,
   TX_ID_ALIASES,
   firstAlias,
+  buildGoRedirect,
   isAllowedCpxWallHost,
   isCpxCreditSafe,
+  isCpxWallHop,
   isCpxReversalStatus,
   isForbiddenProdSmokeTarget,
   isMarketingHomepageUrl,
@@ -314,6 +316,78 @@ function offlineHmacCases(): CaseResult[] {
       !isYieldFlippedCpxWallUrl("https://offers.cpx-research.com/") &&
       !isYieldFlippedCpxWallUrl(`https://offers.cpx-research.com/index.php?app_id=not-${CPX_APP_ID}`),
     detail: "apex/www CPX + AdGate homepage blocked; flip detector requires allowed host + app_id 35413",
+  });
+
+  const cpxWallUrl = `https://offers.cpx-research.com/index.php?app_id=${CPX_APP_ID}`;
+  const cpxLink = { slug: CPX_SLUG, url: cpxWallUrl };
+  const signedCuid = "clxyz0123456789abcdefghij";
+  const signedCpx = buildGoRedirect({
+    destinationUrl: cpxWallUrl,
+    clickId: "click-cpx-1",
+    userId: signedCuid,
+    link: cpxLink,
+  });
+  const signedLoc = signedCpx.ok ? new URL(signedCpx.location) : null;
+  results.push({
+    name: "signed-in CPX hop sets ext_user_id to session cuid",
+    pass:
+      signedCpx.ok &&
+      isCpxWallHop(cpxLink) &&
+      signedLoc?.searchParams.get("ext_user_id") === signedCuid &&
+      signedLoc.searchParams.get("user_id") === signedCuid &&
+      signedLoc.searchParams.get("subid") === "click-cpx-1" &&
+      signedLoc.searchParams.get("click_id") === "click-cpx-1" &&
+      signedLoc.searchParams.get("s1") === signedCuid,
+    detail: signedCpx.ok
+      ? `ext_user_id=${signedLoc?.searchParams.get("ext_user_id")}`
+      : signedCpx.reason,
+  });
+
+  const anonCpx = buildGoRedirect({
+    destinationUrl: cpxWallUrl,
+    clickId: "click-cpx-anon",
+    userId: null,
+    link: cpxLink,
+  });
+  results.push({
+    name: "anonymous CPX hop refuses wall (sign_in)",
+    pass: !anonCpx.ok && anonCpx.reason === "sign_in",
+    detail: anonCpx.ok ? "FAIL — would open CPX without a user" : "sign_in — no wall Location",
+  });
+
+  const hostOnly = buildGoRedirect({
+    destinationUrl: cpxWallUrl,
+    clickId: "click-cpx-host",
+    userId: signedCuid,
+    link: { slug: "other-survey", url: cpxWallUrl },
+  });
+  results.push({
+    name: "offers.cpx-research.com host sets ext_user_id even if slug differs",
+    pass:
+      hostOnly.ok &&
+      new URL(hostOnly.location).searchParams.get("ext_user_id") === signedCuid,
+    detail: hostOnly.ok ? "host match" : hostOnly.reason,
+  });
+
+  const otherLink = { slug: "vq-smoke-first-party", url: SMOKE_URL };
+  const otherGo = buildGoRedirect({
+    destinationUrl: SMOKE_URL,
+    clickId: "click-other-1",
+    userId: signedCuid,
+    link: otherLink,
+  });
+  const otherLoc = otherGo.ok ? new URL(otherGo.location) : null;
+  results.push({
+    name: "non-CPX hop keeps tracking params, no ext_user_id",
+    pass:
+      otherGo.ok &&
+      !isCpxWallHop(otherLink) &&
+      otherLoc?.searchParams.get("subid") === "click-other-1" &&
+      otherLoc.searchParams.get("click_id") === "click-other-1" &&
+      otherLoc.searchParams.get("s1") === signedCuid &&
+      otherLoc.searchParams.get("user_id") === signedCuid &&
+      otherLoc.searchParams.get("ext_user_id") === null,
+    detail: otherGo.ok ? "first-party /proof — no CPX param" : otherGo.reason,
   });
 
   const cpxUnitSecret = "unit-cpx-not-a-prod-secret";
