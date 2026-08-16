@@ -169,6 +169,10 @@ export function buildGoRedirect(args: {
   target.searchParams.set("s1", s1);
   if (args.userId) target.searchParams.set("user_id", args.userId);
   if (cpx && args.userId) target.searchParams.set("ext_user_id", args.userId);
+  // Official CPX dashboard macros include {subid} and {subid_1}. Both must
+  // echo the OfferClick id so a postback can attach the click. user_id /
+  // ext_user_id stay the VaultQuest user id — never the click id.
+  if (cpx) target.searchParams.set("subid_1", args.clickId);
   return { ok: true, location: target.toString() };
 }
 
@@ -192,12 +196,13 @@ export function isYieldFlippedCpxWallUrl(url: string): boolean {
  *   wall/API outbound: md5(`${ext_user_id}-${app_secure_hash}`)
  * Env name: CPX_SECURE_HASH (or CPX_APP_SECRET). Never commit the value.
  * Hook ready ≠ earn-live. Ethio's CPX postback test succeeded. Live URL has
- * no hash=. Yield is flipping cpx-survey — do not smoke until Yield confirms.
- * Not earn-live until a production pending VP credit is visible.
+ * no hash=. Yield already flipped cpx-survey to the official offers host +
+ * app_id 35413 (healthy). Earn-live is still not certified until a production
+ * pending VP credit is visible.
  */
 export const CPX_MD5_HOOK_READY = true;
 export const CPX_EARN_LIVE_CERTIFIED = false;
-/** Yield is flipping cpx-survey. Stay false until Yield confirms /admin. */
+/** Inventory flip happened; stay false so we do not smoke or certify earn-live. */
 export const CPX_YIELD_FLIP_CONFIRMED = false;
 /** Smoke only after flip confirm. Path is CPX / q-surveys — not Freecash, not a homepage. */
 export const CPX_LIVE_SMOKE_ALLOWED = false;
@@ -286,8 +291,29 @@ export function isCpxCreditSafe(): boolean {
   return CPX_EARN_LIVE_CERTIFIED;
 }
 
-export const CLICK_ID_ALIASES = ["click_id", "clickId", "subid", "ext_user_id", "s1"] as const;
-export const USER_ID_ALIASES = ["user_id", "uid", "s1"] as const;
+/**
+ * Click-row keys only. Official CPX `{user_id}` / `{ext_user_id}` are VaultQuest
+ * user ids — they must not live here or a user-id-only postback is looked up as
+ * OfferClick.id and can 404 before wall flow.
+ */
+export const CLICK_ID_ALIASES = ["click_id", "clickId", "subid", "subid_1", "subid_2", "s1"] as const;
+export const USER_ID_ALIASES = ["user_id", "uid", "ext_user_id", "s1"] as const;
+
+export function postbackSubjectIds(get: (key: string) => string): {
+  clickIdCandidate: string;
+  userIdCandidate: string;
+} {
+  return {
+    clickIdCandidate: firstAlias(get, CLICK_ID_ALIASES),
+    userIdCandidate: firstAlias(get, USER_ID_ALIASES),
+  };
+}
+
+export function hasPostbackSubject(get: (key: string) => string): boolean {
+  const { clickIdCandidate, userIdCandidate } = postbackSubjectIds(get);
+  return Boolean(clickIdCandidate || userIdCandidate);
+}
+
 export const TX_ID_ALIASES = ["trans_id", "tx_id", "TX", "transaction_id", "conversion_id"] as const;
 export const VP_ALIASES = ["vp", "points", "amount_local", "val", "VAL", "VALUE"] as const;
 export const PAYOUT_ALIASES = ["payout_usd", "amount_usd", "payout", "RAW", "USD"] as const;
