@@ -4,8 +4,10 @@ import Credentials from "next-auth/providers/credentials";
 import Discord from "next-auth/providers/discord";
 import Google from "next-auth/providers/google";
 import { compare } from "bcryptjs";
+import { cookies } from "next/headers";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { FIRST_TOUCH_COOKIE, hasUtm, utmFromCookieValue, type UtmTouch } from "@/lib/utm";
 
 const credentialsSchema = z.object({
   email: z.string().email(),
@@ -72,6 +74,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const email = user.email.toLowerCase();
 
       const existing = await prisma.user.findUnique({ where: { email } });
+      let utm: UtmTouch = {};
+      if (!existing) {
+        try {
+          utm = utmFromCookieValue((await cookies()).get(FIRST_TOUCH_COOKIE)?.value);
+        } catch {
+          utm = {};
+        }
+      }
       const dbUser =
         existing ??
         (await prisma.user.create({
@@ -81,6 +91,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             image: user.image ?? null,
             ageConfirmed: true,
             passwordHash: null,
+            ...(hasUtm(utm) ? { utm } : {}),
           },
         }));
 

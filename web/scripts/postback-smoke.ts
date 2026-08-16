@@ -54,7 +54,17 @@ import {
   verifyCpxSecureHash,
   verifyPostbackHash,
 } from "../src/lib/postback";
-import { pathFromAuthHint } from "../src/lib/auth-redirect";
+import { pathAfterSignup, pathFromAuthHint } from "../src/lib/auth-redirect";
+import {
+  FIRST_TOUCH_COOKIE,
+  hasUtm,
+  mergeFirstTouch,
+  parseBrowserUtmCookie,
+  serializeUtmCookie,
+  utmFromCookieValue,
+  utmFromFormData,
+  utmFromSearchParams,
+} from "../src/lib/utm";
 import { createResetToken, hashResetToken } from "../src/lib/password-reset";
 import type { PostbackDb } from "../src/lib/postback-handler";
 import { LedgerKind, LedgerStatus } from "@prisma/client";
@@ -403,6 +413,44 @@ function offlineHmacCases(): CaseResult[] {
     name: "auth from=earn returns /earn; open redirects rejected",
     pass: pathFromAuthHint("earn") === "/earn" && pathFromAuthHint("https://evil.example") === "/account",
     detail: `${pathFromAuthHint("earn")} / reject=${pathFromAuthHint("https://evil.example")}`,
+  });
+
+  results.push({
+    name: "signup lands on /earn?from=signup, not /account",
+    pass: pathAfterSignup() === "/earn?from=signup" && pathFromAuthHint(undefined) === "/account",
+    detail: `signup=${pathAfterSignup()} login-default=${pathFromAuthHint(undefined)}`,
+  });
+
+  const utmFromUrl = utmFromSearchParams({
+    utm_source: "test<script>",
+    utm_medium: "preview",
+    utm_campaign: "signup-friction",
+    junk: "drop-me",
+  });
+  const utmForm = new FormData();
+  utmForm.set("utm_source", "form-wins");
+  utmForm.set("utm_content", "card-a");
+  const mergedUtm = mergeFirstTouch(utmFromFormData(utmForm), utmFromUrl);
+  const cookieRoundTrip = utmFromCookieValue(serializeUtmCookie({ utm_source: "test", utm_term: "hold" }));
+  const browserCookie = parseBrowserUtmCookie(
+    `other=1; ${FIRST_TOUCH_COOKIE}=${encodeURIComponent(serializeUtmCookie({ utm_source: "test" }))}`,
+  );
+  results.push({
+    name: "first-touch UTM parse keeps known keys and does not overwrite",
+    pass:
+      utmFromUrl.utm_source === "testscript" &&
+      utmFromUrl.utm_medium === "preview" &&
+      utmFromUrl.utm_campaign === "signup-friction" &&
+      !("junk" in utmFromUrl) &&
+      mergedUtm.utm_source === "form-wins" &&
+      mergedUtm.utm_medium === "preview" &&
+      mergedUtm.utm_content === "card-a" &&
+      cookieRoundTrip.utm_source === "test" &&
+      cookieRoundTrip.utm_term === "hold" &&
+      browserCookie.utm_source === "test" &&
+      hasUtm(utmFromUrl) &&
+      !hasUtm({}),
+    detail: JSON.stringify({ utmFromUrl, mergedUtm, cookieRoundTrip, browserCookie }),
   });
 
   const resetA = createResetToken();
