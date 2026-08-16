@@ -1,6 +1,14 @@
 import { signIn } from "@/auth";
 
-export function OAuthButtons({ google, discord }: { google: boolean; discord: boolean }) {
+export function OAuthButtons({
+  google,
+  discord,
+  redirectTo = "/account",
+}: {
+  google: boolean;
+  discord: boolean;
+  redirectTo?: string;
+}) {
   // SSO: wire AUTH_GOOGLE_ID/SECRET + AUTH_DISCORD_ID/SECRET in web/.env + Vercel env to enable Google/Discord — no user-visible hint.
   if (!google && !discord) {
     return <div className="relative py-2 text-center text-xs text-[var(--vq-ink-faint)]">or continue with email</div>;
@@ -12,7 +20,7 @@ export function OAuthButtons({ google, discord }: { google: boolean; discord: bo
         <form
           action={async () => {
             "use server";
-            await signIn("google", { redirectTo: "/account" });
+            await signIn("google", { redirectTo });
           }}
         >
           <button
@@ -27,7 +35,7 @@ export function OAuthButtons({ google, discord }: { google: boolean; discord: bo
         <form
           action={async () => {
             "use server";
-            await signIn("discord", { redirectTo: "/account" });
+            await signIn("discord", { redirectTo });
           }}
         >
           <button

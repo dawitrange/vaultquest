@@ -1,16 +1,27 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { QuestRow } from "@/components/QuestRow";
 import { isDemoCreditEnabled } from "@/lib/actions/ledger";
 import { getServableCategories, QUESTS } from "@/lib/affiliates";
+import { GO_SIGN_IN_PATH } from "@/lib/postback";
 
 export const metadata: Metadata = {
   title: "Earn",
   description: "Complete partner quests, earn Vault points. Links rotate automatically when networks cap.",
 };
 
-export default async function EarnPage() {
+export default async function EarnPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const params = await searchParams;
+  if (params.error === "sign_in") {
+    redirect(GO_SIGN_IN_PATH);
+  }
+
   const session = await auth();
   const signedIn = Boolean(session?.user?.id);
   const [servable, demoEnabled] = await Promise.all([getServableCategories(), isDemoCreditEnabled()]);
@@ -27,12 +38,17 @@ export default async function EarnPage() {
         </p>
         {signedIn ? null : (
           <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
-            <Link href="/signup" className="text-[var(--vq-teal)] underline decoration-[var(--vq-border-strong)] underline-offset-2 hover:decoration-[var(--vq-teal)]">
+            <Link href="/signup?from=earn" className="text-[var(--vq-teal)] underline decoration-[var(--vq-border-strong)] underline-offset-2 hover:decoration-[var(--vq-teal)]">
               Sign up
             </Link>{" "}
             first so your completed quests credit to your account — it&apos;s free.
           </p>
         )}
+        {params.error === "no_link" ? (
+          <p className="mt-3 text-sm text-[var(--vq-ink-muted)]">
+            That quest isn&apos;t available right now. Pick another, or try again later.
+          </p>
+        ) : null}
       </header>
 
       <div className="mt-6 flex flex-wrap gap-2 text-xs">

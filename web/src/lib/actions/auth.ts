@@ -4,7 +4,10 @@ import { hash } from "bcryptjs";
 import { AuthError } from "next-auth";
 import { z } from "zod";
 import { signIn } from "@/auth";
+import { authHintFromFormData, pathFromAuthHint } from "@/lib/auth-redirect";
 import { prisma } from "@/lib/db";
+import { sendPasswordResetEmail } from "@/lib/email";
+import { createResetToken, hashResetToken, RESET_TOKEN_TTL_MS, resetLinkForToken } from "@/lib/password-reset";
 
 const signupSchema = z.object({
   email: z.string().email(),
@@ -15,7 +18,7 @@ const signupSchema = z.object({
     .refine((v) => v === true, { message: "You must confirm you meet the age requirement" }),
 });
 
-export type AuthFormState = { error?: string; ok?: boolean };
+export type AuthFormState = { error?: string; ok?: boolean; message?: string };
 
 export async function signupAction(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
   const parsed = signupSchema.safeParse({
@@ -47,7 +50,7 @@ export async function signupAction(_prev: AuthFormState, formData: FormData): Pr
     await signIn("credentials", {
       email,
       password: parsed.data.password,
-      redirectTo: "/account",
+      redirectTo: pathFromAuthHint(authHintFromFormData(formData)),
     });
   } catch (err) {
     if (err instanceof AuthError) {
@@ -68,7 +71,7 @@ export async function loginAction(_prev: AuthFormState, formData: FormData): Pro
     await signIn("credentials", {
       email,
       password,
-      redirectTo: "/account",
+      redirectTo: pathFromAuthHint(authHintFromFormData(formData)),
     });
   } catch (err) {
     if (err instanceof AuthError) {
@@ -78,4 +81,89 @@ export async function loginAction(_prev: AuthFormState, formData: FormData): Pro
   }
 
   return { ok: true };
+}
+
+const requestResetSchema = z.object({
+  email: z.string().email(),
+});
+
+const GENERIC_RESET_MESSAGE =
+  "If an account exists for that email, we sent a reset link. Check your inbox and spam folder.";
+
+export async function requestPasswordResetAction(
+  _prev: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const parsed = requestResetSchema.safeParse({
+    email: formData.get("email"),
+  });
+  if (!parsed.success) {
+    return { error: "Enter a valid email address" };
+  }
+
+  const email = parsed.data.email.toLowerCase();
+  const user = await prisma.user.findUnique({ where: { email } });
+
+  if (user) {
+    await prisma.passwordResetToken.deleteMany({
+      where: { userId: user.id },
+    });
+    const { token, tokenHash } = createResetToken();
+    await prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        tokenHash,
+        expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+      },
+    });
+    await sendPasswordResetEmail({
+      to: email,
+      resetUrl: resetLinkForToken(token),
+    });
+  }
+
+  return { ok: true, message: GENERIC_RESET_MESSAGE };
+}
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(16),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+export async function resetPasswordAction(
+  _prev: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const parsed = resetPasswordSchema.safeParse({
+    token: formData.get("token"),
+    password: formData.get("password"),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  const tokenHash = hashResetToken(parsed.data.token);
+  const record = await prisma.passwordResetToken.findUnique({
+    where: { tokenHash },
+  });
+
+  if (!record || record.expiresAt.getTime() < Date.now()) {
+    if (record) {
+      await prisma.passwordResetToken.delete({ where: { id: record.id } });
+    }
+    return { error: "This reset link is invalid or expired. Request a new one." };
+  }
+
+  const passwordHash = await hash(parsed.data.password, 12);
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: record.userId },
+      data: { passwordHash },
+    }),
+    prisma.passwordResetToken.deleteMany({
+      where: { userId: record.userId },
+    }),
+  ]);
+
+  return { ok: true, message: "Password updated. You can sign in now." };
 }

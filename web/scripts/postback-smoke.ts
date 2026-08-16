@@ -33,6 +33,8 @@ import {
   TX_ID_ALIASES,
   firstAlias,
   buildGoRedirect,
+  GO_SIGN_IN_PATH,
+  goFailurePath,
   isAllowedCpxWallHost,
   isCpxCreditSafe,
   isCpxWallHop,
@@ -48,6 +50,8 @@ import {
   verifyCpxSecureHash,
   verifyPostbackHash,
 } from "../src/lib/postback";
+import { pathFromAuthHint } from "../src/lib/auth-redirect";
+import { createResetToken, hashResetToken } from "../src/lib/password-reset";
 
 type CaseResult = { name: string; pass: boolean; detail: string };
 
@@ -353,6 +357,40 @@ function offlineHmacCases(): CaseResult[] {
     name: "anonymous CPX hop refuses wall (sign_in)",
     pass: !anonCpx.ok && anonCpx.reason === "sign_in",
     detail: anonCpx.ok ? "FAIL — would open CPX without a user" : "sign_in — no wall Location",
+  });
+
+  results.push({
+    name: "signed-out go failure lands on login+signup, not a raw error page",
+    pass:
+      !anonCpx.ok &&
+      goFailurePath(anonCpx.reason) === GO_SIGN_IN_PATH &&
+      GO_SIGN_IN_PATH.startsWith("/login") &&
+      GO_SIGN_IN_PATH.includes("from=earn") &&
+      !GO_SIGN_IN_PATH.includes("error="),
+    detail: goFailurePath("sign_in"),
+  });
+
+  results.push({
+    name: "no_link go failure stays on earn (not a partner wall)",
+    pass: goFailurePath("no_link") === "/earn?error=no_link",
+    detail: goFailurePath("no_link"),
+  });
+
+  results.push({
+    name: "auth from=earn returns /earn; open redirects rejected",
+    pass: pathFromAuthHint("earn") === "/earn" && pathFromAuthHint("https://evil.example") === "/account",
+    detail: `${pathFromAuthHint("earn")} / reject=${pathFromAuthHint("https://evil.example")}`,
+  });
+
+  const resetA = createResetToken();
+  const resetB = createResetToken();
+  results.push({
+    name: "password reset token hashes are unique and deterministic",
+    pass:
+      resetA.tokenHash === hashResetToken(resetA.token) &&
+      resetA.tokenHash !== resetB.tokenHash &&
+      resetA.token !== resetA.tokenHash,
+    detail: "sha256 tokenHash ≠ raw token",
   });
 
   const hostOnly = buildGoRedirect({
