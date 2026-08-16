@@ -193,7 +193,7 @@ CPX and partner Earn integrations are not required to play.
 
 Results recorded 2026-08-16:
 
-- `npm run test:vault-bluff`: pass, 12 tests. Coverage includes deterministic replay, illegal transitions, secret redaction, Chooser bot input, immutable placement, server deadlines, neutral memory, forfeit exclusion, completion XP, reward default-off behavior, atomic reward and ledger calls, rolling and funded caps, and UTC-day idempotency.
+- `npm run test:vault-bluff`: pass, 14 tests. Coverage includes deterministic replay, illegal transitions, secret redaction, Chooser bot input, immutable placement, server deadlines, neutral memory, forfeit exclusion, completion XP, reward default-off behavior, runtime mint and fulfillment stop, gameplay independence, anti-farm readiness, funding isolation, the $500 ceiling, atomic reward and ledger calls, remaining-reserve and rolling caps, and UTC-day idempotency.
 - `npm run vault-bluff:simulate`: pass, 10,000 seeded matches.
 - `npm run vault-bluff:benchmark`: pass, 40 required persona and archetype cells.
 - `npm run vault-bluff:tune`: pass, 1,728 parameter candidates across bluff rate, exploration, memory weight, confidence, delay, and reverse psychology. The report retains `vault-bluff-policy-v1`; runtime weights remain frozen.

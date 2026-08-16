@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Prisma } from "@prisma/client";
+import { applyCommand, startMatch } from "./engine";
 import {
   canFulfillVaultBluffPromo,
   grantGamePromoInTransaction,
@@ -115,6 +116,16 @@ test("runtime kill switch blocks mint and fulfillment without stopping play", as
       assert.deepEqual(result, { kind: "blocked", reason: "kill_switch_stopped" });
       assert.equal(canFulfillVaultBluffPromo(), false);
       assert.equal(fake.ledgers.length, 0);
+      const match = startMatch({
+        seed: "kill-switch-does-not-stop-play",
+        persona: "ANALYST",
+        now: NOW.toISOString(),
+      });
+      const played = applyCommand(match, {
+        kind: "ACK_INSPECTION",
+        now: new Date(NOW.getTime() + 1_000).toISOString(),
+      });
+      assert.equal(played.rounds[0]?.phase, "KEEPER_RESPONSE");
     },
   );
 });
