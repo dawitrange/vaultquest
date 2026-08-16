@@ -179,6 +179,8 @@ Safe properties may include engine version, policy version, persona, completion 
 
 The signed-out state exists on the public `/play` explainer only. Authenticated components under `web/src/components/play/` cover preview-schema unavailable, new match, Keeper inspection, Chooser questioning, bot-answering status, Keeper response, bot-choosing status after the second Keeper answer, human Keep or Take, bot Chooser decision, held reveal with explicit Continue, visually separate round result, match result, reward pending, distinct daily and rolling cap states, populated and empty rotated Earn slots, confirmation-guarded forfeit, and dedicated error recovery with retry. Every human Chooser round first renders at 0 of 2 with no used questions; a short interaction guard prevents the reveal click from landing on a new-round question. Keeper response submission reads the answer, confidence, and recommendation from the submitted form so the visible selection is the sent selection. `/play/vault-bluff` never renders a signed-out game panel. The experience must work on mobile and by keyboard. Interactive targets, including the mobile hub CTA, are at least 44 px; short chips also have a 44 px minimum width. Color cannot be the only case identifier. Brass and gold are reserved for the Vault Key, cases, and unlock moments.
 
+The `/play` reward card uses the locked sentence `Rewards are off. Play and XP stay available.` It shows no promo meter, future timing, "coming soon" promise, or easy-VP implication.
+
 ## Motion
 
 Vault Bluff motion uses DOM and CSS only. It adds no Lottie asset, canvas, runtime animation engine, or gameplay transition.

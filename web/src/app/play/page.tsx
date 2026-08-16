@@ -3,6 +3,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { GameHubViewed } from "@/components/play/GameHubViewed";
 import { getBalance } from "@/lib/ledger";
+import { PLAY_REWARDS_OFF_COPY } from "@/lib/site";
 import { getPlayProgress } from "@/lib/vault-bluff/service";
 import { nextRank } from "@/lib/vault-bluff/progress";
 
@@ -148,23 +149,10 @@ export default async function PlayPage() {
         <div className="space-y-5">
           <article className="rounded-[10px] border border-[var(--vq-border)] bg-[var(--vq-surface)] p-5">
             <h2 className="font-[family-name:var(--vq-font-display)] text-lg font-semibold">
-              Daily promotional VP
+              Game rewards
             </h2>
-            {signedIn ? (
-              <p className="mt-2 font-[family-name:var(--vq-font-mono)] text-2xl text-[var(--vq-teal)]">
-                {progress.promoVp30Days} / 30 VP
-              </p>
-            ) : null}
             <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
-              {!signedIn
-                ? "Sign in to see your daily promotional VP status."
-                : !progress.schemaReady
-                  ? "Promotional VP is off while Vault Bluff is unavailable."
-                : progress.rewardsEnabled
-                ? progress.rewardedToday
-                  ? "1 promotional VP for this UTC day was already granted. Play stays open; no more promo VP is added today."
-                  : "First eligible completion may grant 1 pending VP."
-                : "Promotional VP is off. Play and XP remain available."}
+              {PLAY_REWARDS_OFF_COPY}
             </p>
           </article>
           {signedIn && progress.schemaReady ? (

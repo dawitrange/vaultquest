@@ -12,6 +12,9 @@ export const SITE = {
 /** Effective / last-updated date shown on Terms & Privacy. */
 export const LEGAL_EFFECTIVE = "August 12, 2026";
 
+export const PLAY_REWARDS_OFF_COPY =
+  "Rewards are off. Play and XP stay available.";
+
 export const NAV = [
   { href: "/play", label: "Play" },
   { href: "/earn", label: "Earn" },
