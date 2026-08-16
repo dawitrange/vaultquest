@@ -1,0 +1,7 @@
+PASS home-earn
+base=http://127.0.0.1:3317
+home_status=200
+earn_status=200
+home_headline=Turn quests into Steam credit
+home_cta=Start earning -> /earn
+earn_reached=yes

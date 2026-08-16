@@ -1,0 +1,3 @@
+# Local run dumps (SSR HTML) — not committed. Keep result.txt as the durable proof.
+*.html
+*.headers
