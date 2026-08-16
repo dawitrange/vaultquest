@@ -64,6 +64,8 @@ export type PostbackDb = {
 /**
  * S2S postback core. Official CPX may send `user_id` and no click_id — that
  * must credit via wall flow, not 400 `click_id required`.
+ * A display name (e.g. Dawit) is not a User.id — 404, do not invent a user.
+ * Incoming secret and alias values are trimmed so `secret= VALUE` still matches.
  */
 export async function handlePostbackRequest(args: {
   url: string;
