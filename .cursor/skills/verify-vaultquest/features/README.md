@@ -28,6 +28,7 @@ Maintained source for user-facing behavior of the VaultQuest web app (`web/`). R
 ## Features
 
 - [Home to Earn](./home-earn.md) — hero CTA and earn catalog.
+- [Go auth gate](./go-auth-gate.md) — signed-out `/api/go/*` (including q-freecash) → login, no OfferClick.
 - [How it works](./how-it-works.md) — honest steps, no generator path.
 - [Sign up and sign in](./signup-login.md) — email account, never Steam password.
 - [Proof and claims](./proof-claims.md) — `/proof` rules and banned-claim scan.

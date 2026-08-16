@@ -15,12 +15,14 @@ export async function GET(
   }
 
   const session = await auth();
-  if ((quest.id === "q-surveys" || quest.id === "q-gamehag") && !session?.user?.id) {
+  // Every QUESTS hop needs a VaultQuest user, including q-freecash and q-gamehag.
+  // Unsigned traffic must not create OfferClick or open a partner URL.
+  if (!session?.user?.id) {
     return NextResponse.redirect(new URL(goFailurePath("sign_in"), _req.url));
   }
 
   const started = await createOfferClick({
-    userId: session?.user?.id,
+    userId: session.user.id,
     questId: quest.id,
     category: quest.category,
     pinSlug: quest.pinSlug,
@@ -39,7 +41,7 @@ export async function GET(
   const dest = buildGoRedirect({
     destinationUrl: started.link.url,
     clickId: started.click.id,
-    userId: session?.user?.id,
+    userId: session.user.id,
     link: started.link,
   });
   if (!dest.ok) {

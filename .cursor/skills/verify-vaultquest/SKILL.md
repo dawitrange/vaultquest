@@ -58,7 +58,7 @@ Harness: `scripts/drive-home-earn.sh` plus browser clicks documented in `feature
 - Header when signed out: **Sign in** → `/login`, **Sign up** → `/signup`
 - Login: heading **Sign in**; fields **Email**, **Password**; submit **Sign in**
 - Signup: heading **Create account**; **Name**, **Email**, **Password**; required age checkbox; submit **Create account**
-- Earn: heading **Earn**; quest CTA **Start quest** → `/api/go/q-offerwall` (or `Not available yet` if rotator empty)
+- Earn: heading **Earn**; quest CTA **Start quest** → `/api/go/q-offerwall` (or `Not available yet` if rotator empty). Signed-out GET `/api/go/q-freecash` (and every other QUESTS hop) must 307 `/login?from=earn`, same as surveys. Do not follow that hop on production until the auth-gate is live.
 - Banned on every page: generator claims, “no survey” as a lie, Steam password asks
 
 Feature recipes: `features/README.md`.
@@ -93,12 +93,14 @@ All executable; run from **repo root**.
 | `scripts/launch.sh` | `npm ci` if needed, `prisma generate`, `next dev -p $VERIFY_PORT`, wait for 200, write PID |
 | `scripts/doctor.sh` | PID + HTTP 200 + `VaultQuest` in body (`--public` skips PID) |
 | `scripts/drive-home-earn.sh` | User path `/` → `/earn`; writes artifacts |
+| `scripts/drive-go-auth.sh` | Signed-out GET `/api/go/q-freecash` (and other QUESTS) → login; refuses production |
 | `scripts/cleanup.sh` | Stop the launched instance only |
 
 ```bash
 bash .cursor/skills/verify-vaultquest/scripts/launch.sh
 bash .cursor/skills/verify-vaultquest/scripts/doctor.sh
 bash .cursor/skills/verify-vaultquest/scripts/drive-home-earn.sh
+bash .cursor/skills/verify-vaultquest/scripts/drive-go-auth.sh
 bash .cursor/skills/verify-vaultquest/scripts/cleanup.sh
 ```
 

@@ -23,7 +23,7 @@ Flags: `--help` prints cases without calling; `--probe-prod` public prod checks 
 
 ## What it does
 1. Offline HMAC unit: strip `hash`, SHA1 + SHA256, fail-closed if hash present and no HMAC secret
-2. Prod probe (optional): `/api/postback` without secret → 401/503; `/earn` CTAs — never sends secrets
+2. Prod probe (optional): `/api/postback` without secret → 401/503; `/earn` CTAs; signed-out `GET /api/go/q-surveys` → `/login?from=earn` (no OfferClick). Never sends secrets. Do **not** GET `/api/go/q-freecash` on production from this runner until the all-QUESTS auth-gate is live (that hop still 307s to Freecash and writes `userId=null`). Verify q-freecash on preview/localhost.
 3. Valid BitLabs signed callback → expects 200 + `hash=ok`
 4. Bad hash → expects 401
 5. Duplicate `tx_id` → expects HTTP 200 `{ok:true, duplicate:true}`
@@ -32,7 +32,7 @@ Flags: `--help` prints cases without calling; `--probe-prod` public prod checks 
 8. Refuse marketing homepages (`adgatemedia.com/`, `www.cpx-research.com/`)
 9. **CPX MD5:** official param is `secure_hash` = `md5(trans_id-appsecurehash)`. Fail-closed when `secure_hash` is present. `partner=cpx` with **no** HMAC `hash` must **not** 401 (Ethio’s current save). Do not put MD5 on `hash=` — current prod HMAC-checks `hash`.
 10. **CPX status=2:** voids matching PENDING/POSTED EARN. Does **not** unwind REDEEM if already spent (flagged gap).
-11. Flip watch: `--probe-prod` reads `/earn` only. **Does not** hit `/api/go/q-surveys` (that would create a wall click). Stand by until Yield confirms the flip. After confirm, smoke path is **CPX / q-surveys only** — not Freecash, not a homepage.
+11. Flip watch: `--probe-prod` reads `/earn` and signed-out `/api/go/q-surveys` (login, no wall click). **Does not** hit `/api/go/q-freecash` on production (that would create a Freecash click until the auth-gate ships). After confirm, smoke path is **CPX / q-surveys only** — not Freecash, not a homepage.
 12. Reports PASS/FAIL per case. `--help` needs no server. Live credit needs localhost + env names below.
 
 ## Yield target: CPX (Yield is flipping — do not smoke yet)
