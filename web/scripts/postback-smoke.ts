@@ -21,11 +21,13 @@ import path from "path";
 import {
   ADGATE_SLUG,
   CLICK_ID_ALIASES,
-  CPX_ALLOWED_WALL_HOSTS,
   CPX_APP_ID,
+  CPX_CLICK_ID,
+  CPX_CLICK_SMOKE_DONE,
+  CPX_CONFIRMED_WALL_URL,
   CPX_EARN_LIVE_CERTIFIED,
-  CPX_LIVE_SMOKE_ALLOWED,
   CPX_MD5_HOOK_READY,
+  CPX_SIGNED_POSTBACK_PENDING,
   CPX_YIELD_FLIP_CONFIRMED,
   CPX_SECURE_HASH_ENV_NAMES,
   CPX_SLUG,
@@ -140,11 +142,11 @@ Cases:
   9. CPX official secure_hash = md5(trans_id-appsecurehash); missing HMAC hash must not 401
   10. CPX status=2 voids matching EARN (does not unwind REDEEM) — flagged gap if already spent
 
-Target network: CPX (${CPX_SLUG}). AdGate (${ADGATE_SLUG}) is stalled (under review).
-Ethio's CPX postback test succeeded. Live URL has no hash=. Yield is flipping
-${CPX_SLUG} — do not smoke until Yield confirms. After confirm, smoke path is
-CPX / q-surveys only — not Freecash, not a homepage. Do not invent a
-${CPX_ALLOWED_WALL_HOSTS[0]} path. Not earn-live until a prod pending VP is visible.
+Target network: CPX (${CPX_SLUG}). Yield HAS flipped ${CPX_SLUG} healthy.
+Click-half done: click ${CPX_CLICK_ID} → ${CPX_CONFIRMED_WALL_URL}.
+Standby is over for the click half. Signed postback waits on Vercel
+(POSTBACK_SECRET off chat). Live URL has no hash=. Not earn-live (pending EARN 0).
+Do not hit /api/go/q-surveys again. Do not smoke Freecash or a homepage.
 
 CPX MD5 (md5(trans_id-appsecurehash)) stays for later signed posts. Do not require
 hash= on the live URL while prod still HMAC-checks hash.
@@ -225,19 +227,23 @@ async function probeProd(): Promise<CaseResult[]> {
 
   const surveyCta = html.includes("/api/go/q-surveys");
   results.push({
-    name: "CPX smoke standby — wait for Yield flip confirm",
-    pass: !CPX_LIVE_SMOKE_ALLOWED && !CPX_YIELD_FLIP_CONFIRMED,
-    detail: surveyCta
-      ? `/earn shows q-surveys CTA. Yield is flipping — do not hit /api/go/q-surveys until Yield confirms. Smoke path is CPX only.`
-      : `STAND BY. Ethio postback test succeeded. Yield is flipping ${CPX_SLUG}. No /api/go/q-surveys hit (would create a wall click).`,
+    name: "CPX click-half done — Yield flipped; no second /api/go",
+    pass:
+      CPX_YIELD_FLIP_CONFIRMED &&
+      CPX_CLICK_SMOKE_DONE &&
+      isYieldFlippedCpxWallUrl(CPX_CONFIRMED_WALL_URL) &&
+      surveyCta,
+    detail:
+      `Yield flipped ${CPX_SLUG} healthy. click=${CPX_CLICK_ID} userId=null credited=false. ` +
+      `Do not hit /api/go/q-surveys again. Signed postback pending=${CPX_SIGNED_POSTBACK_PENDING} (secret off chat).`,
   });
 
   results.push({
     name: "CPX MD5 hook ready — earn-live NOT certified",
-    pass: CPX_MD5_HOOK_READY && !CPX_EARN_LIVE_CERTIFIED && !isCpxCreditSafe() && !CPX_LIVE_SMOKE_ALLOWED,
+    pass: CPX_MD5_HOOK_READY && !CPX_EARN_LIVE_CERTIFIED && !isCpxCreditSafe(),
     detail:
       `Hook ready: md5(trans_id-appsecurehash) on official secure_hash. Live URL has no hash=. ` +
-      "Not earn-live until a production pending VP credit is visible.",
+      "Pending EARN still 0. Demo 500 + REDEEM 500 only. Not earn-live.",
   });
 
   return results;
@@ -312,8 +318,9 @@ function offlineHmacCases(): CaseResult[] {
       isAllowedCpxWallHost("https://wall.cpx-research.com/") &&
       !isYieldFlippedCpxWallUrl("https://www.cpx-research.com/") &&
       !isYieldFlippedCpxWallUrl("https://offers.cpx-research.com/") &&
-      !isYieldFlippedCpxWallUrl(`https://offers.cpx-research.com/index.php?app_id=not-${CPX_APP_ID}`),
-    detail: "apex/www CPX + AdGate homepage blocked; flip detector requires allowed host + app_id 35413",
+      !isYieldFlippedCpxWallUrl(`https://offers.cpx-research.com/index.php?app_id=not-${CPX_APP_ID}`) &&
+      isYieldFlippedCpxWallUrl(CPX_CONFIRMED_WALL_URL),
+    detail: "apex/www blocked; Yield-flipped offers URL + app_id 35413 recognized",
   });
 
   const cpxUnitSecret = "unit-cpx-not-a-prod-secret";

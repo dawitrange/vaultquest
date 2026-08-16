@@ -33,8 +33,8 @@ import {
  *           skips MD5 (Ethio's current save) and still credits via POSTBACK_SECRET.
  *           status=2 voids a matching PENDING/POSTED EARN; does not unwind REDEEM.
  *           Live URL has no hash=. MD5 stays for later signed CPX posts.
- *           Ethio's postback test succeeded. Yield is flipping — do not smoke
- *           until Yield confirms. Not earn-live until a prod pending VP is visible.
+ *           Yield HAS flipped cpx-survey. Click-half done. Signed postback
+ *           waits on Vercel (secret off chat). Not earn-live until pending VP.
  */
 
 export async function GET(req: NextRequest) {

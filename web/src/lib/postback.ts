@@ -150,16 +150,22 @@ export function isYieldFlippedCpxWallUrl(url: string): boolean {
  *   postback inbound: md5(`${trans_id}-${app_secure_hash}`)
  *   wall/API outbound: md5(`${ext_user_id}-${app_secure_hash}`)
  * Env name: CPX_SECURE_HASH (or CPX_APP_SECRET). Never commit the value.
- * Hook ready ≠ earn-live. Ethio's CPX postback test succeeded. Live URL has
- * no hash=. Yield is flipping cpx-survey — do not smoke until Yield confirms.
- * Not earn-live until a production pending VP credit is visible.
+ * Hook ready ≠ earn-live. Yield HAS flipped cpx-survey. Click-half smoke is
+ * done. Signed postback waits on Vercel (POSTBACK_SECRET off chat). Live URL
+ * has no hash=. Not earn-live until a production pending VP is visible.
  */
 export const CPX_MD5_HOOK_READY = true;
 export const CPX_EARN_LIVE_CERTIFIED = false;
-/** Yield is flipping cpx-survey. Stay false until Yield confirms /admin. */
-export const CPX_YIELD_FLIP_CONFIRMED = false;
-/** Smoke only after flip confirm. Path is CPX / q-surveys — not Freecash, not a homepage. */
+export const CPX_YIELD_FLIP_CONFIRMED = true;
+/** Click-half done. Do not fire another /api/go/q-surveys or a secret postback from this runner. */
+export const CPX_CLICK_SMOKE_DONE = true;
+export const CPX_SIGNED_POSTBACK_PENDING = true;
 export const CPX_LIVE_SMOKE_ALLOWED = false;
+
+/** Yield-flipped production wall (2026-08-16). Not invented. */
+export const CPX_CONFIRMED_WALL_URL = "https://offers.cpx-research.com/index.php?app_id=35413";
+export const CPX_CONFIRMED_LINK_ID = "dce672bc-f0c3-407c-9176-4b1df5448664";
+export const CPX_CLICK_ID = "cmsv1k67w0003jx04ykpzrfn9";
 export const CPX_SECURE_HASH_ENV_NAMES = ["CPX_SECURE_HASH", "CPX_APP_SECRET"] as const;
 
 /**

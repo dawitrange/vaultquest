@@ -32,18 +32,17 @@ Flags: `--help` prints cases without calling; `--probe-prod` public prod checks 
 8. Refuse marketing homepages (`adgatemedia.com/`, `www.cpx-research.com/`)
 9. **CPX MD5:** official param is `secure_hash` = `md5(trans_id-appsecurehash)`. Fail-closed when `secure_hash` is present. `partner=cpx` with **no** HMAC `hash` must **not** 401 (Ethio’s current save). Do not put MD5 on `hash=` — current prod HMAC-checks `hash`.
 10. **CPX status=2:** voids matching PENDING/POSTED EARN. Does **not** unwind REDEEM if already spent (flagged gap).
-11. Flip watch: `--probe-prod` reads `/earn` only. **Does not** hit `/api/go/q-surveys` (that would create a wall click). Stand by until Yield confirms the flip. After confirm, smoke path is **CPX / q-surveys only** — not Freecash, not a homepage.
+11. Flip confirmed: Yield flipped `cpx-survey` healthy. `--probe-prod` reads `/earn` only. **Does not** hit `/api/go/q-surveys` again (click-half already done: `cmsv1k67w0003jx04ykpzrfn9`). Signed postback waits on Vercel — secret off chat.
 12. Reports PASS/FAIL per case. `--help` needs no server. Live credit needs localhost + env names below.
 
-## Yield target: CPX (Yield is flipping — do not smoke yet)
+## Yield target: CPX (flipped — click-half done)
 
-- **AdGate** (`adgate-backup`) is **stalled (under review)**. Do not smoke `https://adgatemedia.com/`.
-- **Ethio’s CPX postback test succeeded.** Live postback URL has **no `hash=`**.
-- **Yield is flipping `cpx-survey`.** Do not smoke until Yield confirms the `/admin` flip.
-- After confirm, smoke path is **CPX / `q-surveys` only** — not Freecash, not a homepage. No invented URL.
-- CPX MD5 (`md5(trans_id-appsecurehash)` on official `secure_hash`) stays in this PR for later signed posts. Do **not** require `hash=` on the live URL while prod still HMAC-checks `hash`.
-- **Not earn-live** until a production pending VP credit is visible.
-- Freecash path + duplicate smoke is **not Yield** and **not earn-live**.
+- **Yield HAS flipped `cpx-survey`** healthy: `https://offers.cpx-research.com/index.php?app_id=35413` (`dce672bc-f0c3-407c-9176-4b1df5448664`).
+- Click-half done: `GET /api/go/q-surveys` → 307, OfferClick `cmsv1k67w0003jx04ykpzrfn9` (userId null, credited false). **Do not fire another go.**
+- Signed postback fire is **waiting on Vercel**. `POSTBACK_SECRET` stays off chat.
+- Live postback URL has **no `hash=`**. CPX MD5 stays in this PR for later signed posts. Do not require `hash=` while prod HMAC-checks `hash`.
+- Ledger pending EARN still **0**. Demo 500 + REDEEM 500 only. **Not earn-live.**
+- Do not smoke Freecash or a homepage. AdGate remains stalled.
 
 ## Env names required for live credit (never commit or log values)
 - `POSTBACK_SECRET`
