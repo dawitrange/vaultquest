@@ -76,6 +76,13 @@ export const ADGATE_POSTBACK_TEMPLATE =
 
 export const ADGATE_SLUG = "adgate-backup";
 export const CPX_SLUG = "cpx-survey";
+export const GAMEHAG_SLUG = "gamehag-cpa";
+/** Dest lock. /r/ rewrites and sets referralCode=TPQBRXGH. Do not deep-link signup. */
+export const GAMEHAG_REFERRAL_URL = "https://gamehag.com/r/TPQBRXGH";
+
+export function isExactGamehagReferralUrl(url: string): boolean {
+  return url === GAMEHAG_REFERRAL_URL;
+}
 
 /** Manager 2026-08-15: app_id exists. Not a wall URL — do not concatenate a placement. */
 export const CPX_APP_ID = "35413";
@@ -138,7 +145,7 @@ export function isCpxWallHop(link: { slug: string; url: string }): boolean {
 
 export type GoRedirectResult =
   | { ok: true; location: string }
-  | { ok: false; reason: "sign_in" };
+  | { ok: false; reason: "sign_in" | "no_link" };
 
 /** Signed-out CPX / survey hops go here — login + signup, not a raw error page. */
 export const GO_SIGN_IN_PATH = "/login?from=earn";
@@ -160,6 +167,21 @@ export function buildGoRedirect(args: {
   const cpx = isCpxWallHop(args.link) || isAllowedCpxWallHost(args.destinationUrl);
   if (cpx && !args.userId) {
     return { ok: false, reason: "sign_in" };
+  }
+
+  // Gamehag dest lock: their /r/ path rewrites to signup and page JS sets
+  // first-party cookie referralCode=TPQBRXGH. Deep-linking /authentication/signup
+  // or attaching query params can skip that rewrite and drop the referral.
+  // OfferClick still records click_id on our side. Do not "optimize" this dest.
+  const gamehagHop =
+    args.link.slug === GAMEHAG_SLUG ||
+    isExactGamehagReferralUrl(args.destinationUrl) ||
+    isExactGamehagReferralUrl(args.link.url);
+  if (gamehagHop) {
+    if (!isExactGamehagReferralUrl(args.destinationUrl) || !isExactGamehagReferralUrl(args.link.url)) {
+      return { ok: false, reason: "no_link" };
+    }
+    return { ok: true, location: GAMEHAG_REFERRAL_URL };
   }
 
   const target = new URL(args.destinationUrl);

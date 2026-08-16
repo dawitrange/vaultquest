@@ -37,8 +37,11 @@ import {
   hasPostbackSubject,
   postbackSubjectIds,
   buildGoRedirect,
+  GAMEHAG_REFERRAL_URL,
+  GAMEHAG_SLUG,
   GO_SIGN_IN_PATH,
   goFailurePath,
+  isExactGamehagReferralUrl,
   isAllowedCpxWallHost,
   isCpxCreditSafe,
   isCpxWallHop,
@@ -334,7 +337,9 @@ function offlineHmacCases(): CaseResult[] {
       isMarketingHomepageUrl("https://adgatemedia.com/") &&
       isMarketingHomepageUrl("https://www.cpx-research.com/") &&
       isMarketingHomepageUrl("https://www.cpx-research.com/publishers") &&
-      !isMarketingHomepageUrl("https://gamehag.com/r/TPQBRXGH") &&
+      !isMarketingHomepageUrl(GAMEHAG_REFERRAL_URL) &&
+      isExactGamehagReferralUrl(GAMEHAG_REFERRAL_URL) &&
+      !isExactGamehagReferralUrl("https://gamehag.com/authentication/signup") &&
       !isMarketingHomepageUrl(SMOKE_URL) &&
       !isAllowedCpxWallHost("https://www.cpx-research.com/") &&
       isAllowedCpxWallHost("https://offers.cpx-research.com/") &&
@@ -429,6 +434,35 @@ function offlineHmacCases(): CaseResult[] {
       hostOnly.ok &&
       new URL(hostOnly.location).searchParams.get("ext_user_id") === signedCuid,
     detail: hostOnly.ok ? "host match" : hostOnly.reason,
+  });
+
+  const gamehagExact = buildGoRedirect({
+    destinationUrl: GAMEHAG_REFERRAL_URL,
+    clickId: "click-gh-1",
+    userId: signedCuid,
+    link: { slug: GAMEHAG_SLUG, url: GAMEHAG_REFERRAL_URL },
+  });
+  results.push({
+    name: "Gamehag dest lock is exact /r/TPQBRXGH — no signup, no tracking query",
+    pass:
+      gamehagExact.ok &&
+      gamehagExact.location === "https://gamehag.com/r/TPQBRXGH" &&
+      !gamehagExact.location.includes("authentication/signup") &&
+      !gamehagExact.location.includes("click_id") &&
+      !gamehagExact.location.includes("subid"),
+    detail: gamehagExact.ok ? gamehagExact.location : gamehagExact.reason,
+  });
+
+  const gamehagSignup = buildGoRedirect({
+    destinationUrl: "https://gamehag.com/authentication/signup",
+    clickId: "click-gh-bad",
+    userId: signedCuid,
+    link: { slug: GAMEHAG_SLUG, url: "https://gamehag.com/authentication/signup" },
+  });
+  results.push({
+    name: "Gamehag signup deep-link is refused (dest lock)",
+    pass: !gamehagSignup.ok && gamehagSignup.reason === "no_link",
+    detail: gamehagSignup.ok ? gamehagSignup.location : gamehagSignup.reason,
   });
 
   const otherLink = { slug: "vq-smoke-first-party", url: SMOKE_URL };

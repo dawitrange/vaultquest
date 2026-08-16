@@ -1,6 +1,8 @@
 import type { AffiliateCategory, AffiliateHealth, AffiliateLink as DbLink } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { isMarketingHomepageUrl } from "@/lib/postback";
+import { GAMEHAG_REFERRAL_URL, GAMEHAG_SLUG, isExactGamehagReferralUrl, isMarketingHomepageUrl } from "@/lib/postback";
+
+export { GAMEHAG_REFERRAL_URL, GAMEHAG_SLUG };
 
 export type Quest = {
   id: string;
@@ -19,9 +21,7 @@ export type Quest = {
   ctaLabel?: string;
 };
 
-export const GAMEHAG_SLUG = "gamehag-cpa";
 export const GAMEHAG_QUEST_ID = "q-gamehag";
-export const GAMEHAG_REFERRAL_URL = "https://gamehag.com/r/TPQBRXGH";
 
 export const QUESTS: Quest[] = [
   {
@@ -196,7 +196,7 @@ export async function serveAffiliateLink(
       return ai - bi;
     });
     for (const link of candidates) {
-      if (!isServable(link)) {
+      if (!isServable(link) || (link.slug === GAMEHAG_SLUG && !isExactGamehagReferralUrl(link.url))) {
         await logRotation({ userId: opts?.userId, category, linkId: link.id, partner: link.partner, reason: "health" });
         continue;
       }
@@ -244,14 +244,14 @@ export async function serveAffiliateLinkBySlug(
     });
     return null;
   }
-  if (!isServable(link)) {
+  if (!isServable(link) || (slug === GAMEHAG_SLUG && !isExactGamehagReferralUrl(link.url))) {
     await logRotation({
       userId: opts?.userId,
       category: link.category,
       linkId: link.id,
       partner: link.partner,
       reason: "health",
-      meta: { slug, pinned: true },
+      meta: { slug, pinned: true, destLock: slug === GAMEHAG_SLUG },
     });
     return null;
   }
@@ -265,7 +265,9 @@ export async function isSlugServable(slug: string): Promise<boolean> {
     where: { slug },
     select: { status: true, url: true },
   });
-  return Boolean(link && link.status === "healthy" && !isMarketingHomepageUrl(link.url));
+  if (!link || link.status !== "healthy" || isMarketingHomepageUrl(link.url)) return false;
+  if (slug === GAMEHAG_SLUG) return isExactGamehagReferralUrl(link.url);
+  return true;
 }
 
 export async function createOfferClick(opts: {
