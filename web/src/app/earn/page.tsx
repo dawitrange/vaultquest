@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { QuestRow } from "@/components/QuestRow";
+import { GiveawayPeek } from "@/components/GiveawayPeek";
+import { QuestTile } from "@/components/QuestTile";
 import { isDemoCreditEnabled } from "@/lib/actions/ledger";
-import { getServableCategories, isSlugServable, QUESTS } from "@/lib/affiliates";
+import { listServableQuests } from "@/lib/affiliates";
 import { GO_SIGN_IN_PATH } from "@/lib/postback";
 
 export const metadata: Metadata = {
@@ -25,35 +26,23 @@ export default async function EarnPage({
 
   const session = await auth();
   const signedIn = Boolean(session?.user?.id);
-  const [servable, demoEnabled] = await Promise.all([getServableCategories(), isDemoCreditEnabled()]);
-  const pinned = [...new Set(QUESTS.map((q) => q.pinSlug).filter((slug): slug is string => Boolean(slug)))];
-  const pinnedServable = new Set(
-    (await Promise.all(pinned.map(async (slug) => ((await isSlugServable(slug)) ? slug : null)))).filter(
-      (slug): slug is string => Boolean(slug),
-    ),
-  );
-  // Hide categories with no healthy non-homepage link (disabled inventory stays in the DB).
-  const quests = QUESTS.filter((quest) =>
-    quest.pinSlug ? pinnedServable.has(quest.pinSlug) : servable.has(quest.category),
-  );
+  const [quests, demoEnabled] = await Promise.all([listServableQuests(), isDemoCreditEnabled()]);
   const anyAvailable = quests.length > 0;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-      <header className="max-w-2xl">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+      <header className="max-w-3xl">
         <p className="font-[family-name:var(--vq-font-mono)] text-xs uppercase tracking-[0.14em] text-[var(--vq-teal)]">
           Public catalog
         </p>
-        <h1 className="mt-2 font-[family-name:var(--vq-font-display)] text-4xl font-bold tracking-tight">Earn</h1>
-        <p className="mt-3 text-[var(--vq-ink-muted)]">
-          Quests → Vault Points → Steam credit. That is the grind. Surveys, partner signups, and play offers take
-          real time. Points start pending and sit 3–14 days. Read the list before you make an account. Hopping a
-          quest still needs a session.
+        <h1 className="mt-1 font-[family-name:var(--vq-font-display)] text-3xl font-bold tracking-tight sm:text-4xl">Earn</h1>
+        <p className="mt-2 text-sm text-[var(--vq-ink-muted)] sm:text-base">
+          Quests → Vault Points → Steam credit. Points start pending and sit 3–14 days. Read the list before you make
+          an account. Hopping a quest still needs a session.
         </p>
         {signedIn ? (
           <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
-            Your account is ready. Stay on this page and start a quest. That is how Vault Points show up. Gamehag is
-            a third-party hop, not the next step.
+            Stay on this page and start a quest. Gamehag is a third-party hop, not the next step.
           </p>
         ) : (
           <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
@@ -63,8 +52,7 @@ export default async function EarnPage({
             >
               Sign up
             </Link>{" "}
-            so a finished quest credits your account. After that, stay here and pick a quest. Do not leave for a
-            third-party site as your first move.
+            so a finished quest credits your account. Stay here for the next click.
           </p>
         )}
         {params.error === "no_link" ? (
@@ -74,22 +62,16 @@ export default async function EarnPage({
         ) : null}
       </header>
 
-      <div className="mt-6 flex flex-wrap gap-2 text-xs">
+      <div className="mt-4 flex flex-wrap gap-2 text-xs">
         <span className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-2.5 py-1 text-[var(--vq-ink-faint)]">
-          Points post after a 3–14 day hold
+          Pending 3–14 days
         </span>
         <span className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-2.5 py-1 text-[var(--vq-ink-faint)]">
           18+ on partner walls
         </span>
         <span className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-2.5 py-1 text-[var(--vq-ink-faint)]">
-          Free to join
+          Tracked redirect · S2S
         </span>
-        <Link
-          href="/giveaway"
-          className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-2.5 py-1 text-[var(--vq-ink-muted)] hover:text-[var(--vq-ink)]"
-        >
-          Roblox giveaway →
-        </Link>
         <Link
           href="/proof#earnings"
           className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-2.5 py-1 text-[var(--vq-ink-muted)] hover:text-[var(--vq-ink)]"
@@ -104,34 +86,8 @@ export default async function EarnPage({
         </Link>
       </div>
 
-      <article className="mt-10 max-w-2xl rounded-[10px] border border-[var(--vq-border)] bg-[var(--vq-surface)] p-5">
-        <p className="font-[family-name:var(--vq-font-mono)] text-xs uppercase tracking-wider text-[var(--vq-brass)]">
-          Same-site giveaway
-        </p>
-        <h2 className="mt-2 font-[family-name:var(--vq-font-display)] text-lg font-semibold">
-          Roblox gift card giveaway
-        </h2>
-        <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
-          Five $25 Roblox gift cards. Enter on this site at{" "}
-          <Link href="/giveaway" className="text-[var(--vq-teal)] hover:underline">
-            /giveaway
-          </Link>
-          . Rules and the form live there. We do not publish a running entry count.
-        </p>
-        <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
-          Window: August 17, 2026 12:00 AM to September 1, 2026 11:59 PM, America/New_York. After you have an
-          account, come back here and do a quest.
-        </p>
-        <Link
-          href="/giveaway"
-          className="mt-4 inline-flex rounded-md bg-[var(--vq-teal)] px-4 py-2.5 text-sm font-semibold text-[var(--vq-bg-deep)] hover:bg-[var(--vq-teal-dim)] hover:text-white"
-        >
-          Open /giveaway
-        </Link>
-      </article>
-
       {!anyAvailable ? (
-        <div className="mt-10 rounded-xl border border-dashed border-[var(--vq-border-strong)] bg-[var(--vq-bg-raised)]/40 px-6 py-10 text-center">
+        <div className="mt-8 rounded-xl border border-dashed border-[var(--vq-border-strong)] bg-[var(--vq-bg-raised)]/40 px-6 py-10 text-center">
           <p className="font-[family-name:var(--vq-font-display)] text-lg font-semibold">No quests available right now</p>
           <p className="mx-auto mt-2 max-w-md text-sm text-[var(--vq-ink-muted)]">
             We only show a quest once a partner network is live and verified for your region. No dead links or fake
@@ -143,21 +99,25 @@ export default async function EarnPage({
           </p>
         </div>
       ) : (
-        <div className="mt-10 flex flex-col gap-4">
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {quests.map((quest) => (
-            <QuestRow key={quest.id} quest={quest} signedIn={signedIn} demoEnabled={demoEnabled} />
+            <QuestTile key={quest.id} quest={quest} signedIn={signedIn} demoEnabled={demoEnabled} />
           ))}
         </div>
       )}
 
-      <section className="mt-10 max-w-2xl space-y-2 text-sm text-[var(--vq-ink-muted)]">
+      <div className="mt-6">
+        <GiveawayPeek />
+      </div>
+
+      <section className="mt-8 max-w-2xl space-y-2 text-sm text-[var(--vq-ink-muted)]">
         <h2 className="font-[family-name:var(--vq-font-display)] text-base font-semibold text-[var(--vq-ink)]">
           Before you click
         </h2>
         <ul className="list-disc space-y-1 pl-5">
+          <li>Tracked redirect. S2S postback credits pending VP. Hold is 3–14 days. 18+ where the partner requires it.</li>
           <li>VaultQuest path: quest → pending VP → Steam. Not instant, not a generator.</li>
-          <li>We don&apos;t control partner walls. Pending can take days.</li>
-          <li>18+ where the partner requires it. Gamehag (third party) is their site and does not pay Vault Points.</li>
+          <li>Gamehag (third party) is their site and does not pay Vault Points.</li>
         </ul>
       </section>
 

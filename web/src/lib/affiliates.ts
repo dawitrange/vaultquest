@@ -349,3 +349,21 @@ export async function getServableCategories(): Promise<Set<AffiliateCategory>> {
   });
   return servable;
 }
+
+/**
+ * Public catalog filter: omit a QUESTS tile unless it can actually hop.
+ * Pinned slugs (Gamehag) use isSlugServable; everyone else uses category rotation.
+ * Same rule as #35 — do not show unservable tiles as a fake store.
+ */
+export async function listServableQuests(): Promise<Quest[]> {
+  const servable = await getServableCategories();
+  const pinned = [...new Set(QUESTS.map((q) => q.pinSlug).filter((slug): slug is string => Boolean(slug)))];
+  const pinnedServable = new Set(
+    (await Promise.all(pinned.map(async (slug) => ((await isSlugServable(slug)) ? slug : null)))).filter(
+      (slug): slug is string => Boolean(slug),
+    ),
+  );
+  return QUESTS.filter((quest) =>
+    quest.pinSlug ? pinnedServable.has(quest.pinSlug) : servable.has(quest.category),
+  );
+}

@@ -23,7 +23,7 @@ Preconditions:
 - Doctor PASS at `http://127.0.0.1:3317` (or `VERIFY_BASE_URL`).
 - This run started the instance (or `--public` production for read-only).
 
-- **Open home.** GET `/`. Run `bash .cursor/skills/verify-vaultquest/scripts/drive-home-earn.sh`. Home HTTP 200. Body contains `VaultQuest` and `Turn quests into Steam credit`.
+- **Open home.** GET `/`. Run `bash .cursor/skills/verify-vaultquest/scripts/drive-home-earn.sh`. Home HTTP 200. Body contains `VaultQuest` and `Quests → Vault Points → Steam.`.
 - **Hero CTA.** The same HTML contains visible **See quests** and `href="/earn"`. No **Start earning**.
 - **Arrive on Earn.** GET `/earn` is HTTP 200. Heading **Earn** is present. Either **Start quest** links (`/api/go/q-offerwall` etc.) or copy **No quests available right now**.
 - **Browser click (when a browser is available).** Open `$VERIFY_BASE_URL/`, choose the **See quests** link. The URL becomes `/earn` and the **Earn** heading is visible.
