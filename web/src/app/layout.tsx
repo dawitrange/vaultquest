@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { IBM_Plex_Mono, Sora, Syne } from "next/font/google";
+import { auth } from "@/auth";
 import { JsonLd } from "@/components/JsonLd";
+import { PostHogProvider } from "@/components/PostHogProvider";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { VaultAssistant } from "@/components/VaultAssistant";
@@ -90,21 +92,24 @@ const SITE_JSON_LD = {
   ],
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const session = await auth();
   return (
     <html lang="en" className={`${syne.variable} ${sora.variable} ${ibmPlexMono.variable} h-full`}>
       <body className="vq-shell flex min-h-full flex-col antialiased">
-        <JsonLd data={SITE_JSON_LD} />
-        <a href="#main" className="vq-skip-link">
-          Skip to content
-        </a>
-        <SiteHeader />
-        <main id="main" className="flex-1" tabIndex={-1}>
-          {children}
-        </main>
-        <SiteFooter />
-        <VaultAssistant />
-        <Analytics />
+        <PostHogProvider userId={session?.user?.id ?? null}>
+          <JsonLd data={SITE_JSON_LD} />
+          <a href="#main" className="vq-skip-link">
+            Skip to content
+          </a>
+          <SiteHeader />
+          <main id="main" className="flex-1" tabIndex={-1}>
+            {children}
+          </main>
+          <SiteFooter />
+          <VaultAssistant />
+          <Analytics />
+        </PostHogProvider>
       </body>
     </html>
   );

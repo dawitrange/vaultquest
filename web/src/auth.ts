@@ -6,6 +6,7 @@ import Google from "next-auth/providers/google";
 import { compare } from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { PH_EVENTS, captureServerEvent } from "@/lib/posthog-server";
 
 const credentialsSchema = z.object({
   email: z.string().email(),
@@ -83,6 +84,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             passwordHash: null,
           },
         }));
+      if (!existing) {
+        await captureServerEvent(dbUser.id, PH_EVENTS.signup, {
+          source: account?.provider ?? "oauth",
+        });
+      }
 
       if (account && account.provider !== "credentials") {
         await prisma.account.upsert({
