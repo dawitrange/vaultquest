@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
 import {
+  GameRewardStatus,
   GameRoundStatus,
   GameSessionStatus,
   Prisma,
+  type GameRewardGrant,
   type GamePersona,
 } from "@prisma/client";
 import { prisma } from "@/lib/db";
@@ -30,6 +32,22 @@ type SessionResult = {
   session: SafeSessionDto;
   reward: GameRewardResult | null;
 };
+
+function rewardResultFromGrant(
+  grant:
+    | Pick<
+        GameRewardGrant,
+        "status" | "vp" | "availableAt" | "blockReason"
+      >
+    | null
+    | undefined,
+): GameRewardResult | null {
+  if (!grant) return null;
+  if (grant.status === GameRewardStatus.PENDING && grant.availableAt) {
+    return { kind: "granted", vp: grant.vp, availableAt: grant.availableAt };
+  }
+  return { kind: "blocked", reason: grant.blockReason ?? "not_eligible" };
+}
 
 function jsonValue(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
@@ -90,13 +108,36 @@ export async function createGameSession(args: {
   persona?: PersonaId;
   rematch?: boolean;
 }): Promise<SessionResult> {
-  return prisma.$transaction(async (tx) => {
-    if (!args.rematch) {
-      const active = await tx.gameSession.findFirst({
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await createGameSessionAttempt(args);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        (error.code === "P2002" || error.code === "P2034") &&
+        attempt < 2
+      ) {
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new GameServiceError("VERSION_CONFLICT", "A match is already being opened");
+}
+
+async function createGameSessionAttempt(args: {
+  userId: string;
+  persona?: PersonaId;
+  rematch?: boolean;
+}): Promise<SessionResult> {
+  return prisma.$transaction(
+    async (tx) => {
+      const activeSessions = await tx.gameSession.findMany({
         where: { userId: args.userId, status: GameSessionStatus.ACTIVE },
         orderBy: { updatedAt: "desc" },
       });
-      if (active) {
+      const active = activeSessions[0];
+      if (!args.rematch && active) {
         return {
           id: active.id,
           version: active.version,
@@ -104,40 +145,120 @@ export async function createGameSession(args: {
           reward: null,
         };
       }
-    }
+      if (args.rematch) {
+        const closedAt = new Date();
+        for (const activeSession of activeSessions) {
+          await closeActiveSessionForRematch(tx, activeSession, closedAt);
+        }
+      }
 
-    await ensureProfile(tx, args.userId);
-    const seed = randomUUID();
-    const persona = args.persona ?? randomPersona(seed);
-    const now = new Date();
-    const state = startMatch({ seed, persona, now: now.toISOString() });
-    const safe = toSafeSessionDto(state);
-    const session = await tx.gameSession.create({
-      data: {
-        userId: args.userId,
-        persona: persona as GamePersona,
-        engineVersion: state.engineVersion,
-        policyVersion: state.policyVersion,
-        seed,
-        rngCursor: state.rngCursor,
-        state: jsonValue(state),
-        humanScore: 0,
-        botScore: 0,
-        rounds: {
-          create: {
-            number: 1,
-            humanRole: state.rounds[0]!.humanRole,
-            humanCase: state.rounds[0]!.humanCase,
-            botCase: state.rounds[0]!.botCase,
-            keyCase: state.rounds[0]!.keyCase,
-            publicState: jsonValue(safe.currentRound),
-            startedAt: now,
-            deadlineAt: new Date(state.rounds[0]!.deadlineAt),
+      await ensureProfile(tx, args.userId);
+      const seed = randomUUID();
+      const persona = args.persona ?? randomPersona(seed);
+      const now = new Date();
+      const state = startMatch({ seed, persona, now: now.toISOString() });
+      const safe = toSafeSessionDto(state);
+      const session = await tx.gameSession.create({
+        data: {
+          userId: args.userId,
+          persona: persona as GamePersona,
+          engineVersion: state.engineVersion,
+          policyVersion: state.policyVersion,
+          seed,
+          rngCursor: state.rngCursor,
+          state: jsonValue(state),
+          humanScore: 0,
+          botScore: 0,
+          rounds: {
+            create: {
+              number: 1,
+              humanRole: state.rounds[0]!.humanRole,
+              humanCase: state.rounds[0]!.humanCase,
+              botCase: state.rounds[0]!.botCase,
+              keyCase: state.rounds[0]!.keyCase,
+              publicState: jsonValue(safe.currentRound),
+              startedAt: now,
+              deadlineAt: new Date(state.rounds[0]!.deadlineAt),
+            },
           },
         },
+      });
+      return { id: session.id, version: session.version, session: safe, reward: null };
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
+}
+
+async function closeActiveSessionForRematch(
+  tx: Prisma.TransactionClient,
+  session: {
+    id: string;
+    version: number;
+    state: Prisma.JsonValue;
+  },
+  closedAt: Date,
+): Promise<void> {
+  const before = parseState(session.state);
+  const closed = before.completed
+    ? before
+    : applyCommand(before, { kind: "FORFEIT", now: closedAt.toISOString() });
+  const safe = toSafeSessionDto(closed);
+  const currentRound = closed.rounds.at(-1);
+  if (!currentRound) throw new GameServiceError("NOT_FOUND", "Active round not found");
+
+  const status = closed.forfeited
+    ? GameSessionStatus.FORFEITED
+    : GameSessionStatus.COMPLETED;
+  const updated = await tx.gameSession.updateMany({
+    where: {
+      id: session.id,
+      status: GameSessionStatus.ACTIVE,
+      version: session.version,
+    },
+    data: {
+      status,
+      version: session.version + 1,
+      state: jsonValue(closed),
+      rngCursor: closed.rngCursor,
+      humanScore: closed.humanScore,
+      botScore: closed.botScore,
+      xpAwarded: closed.xpAwarded,
+      completedAt: closedAt,
+    },
+  });
+  if (updated.count !== 1) {
+    throw new GameServiceError("VERSION_CONFLICT", "Active match changed during rematch");
+  }
+
+  const round = await tx.gameRound.findUnique({
+    where: {
+      sessionId_number: {
+        sessionId: session.id,
+        number: currentRound.number,
       },
-    });
-    return { id: session.id, version: session.version, session: safe, reward: null };
+    },
+  });
+  if (!round) throw new GameServiceError("NOT_FOUND", "Active round not found");
+  await tx.gameRound.update({
+    where: { id: round.id },
+    data: {
+      status: closed.forfeited
+        ? GameRoundStatus.FORFEITED
+        : GameRoundStatus.COMPLETED,
+      publicState: jsonValue(safe.currentRound),
+      completedAt: closedAt,
+    },
+  });
+  await tx.gameAction.create({
+    data: {
+      sessionId: session.id,
+      roundId: round.id,
+      clientActionId: `rematch-${randomUUID()}`,
+      expectedVersion: session.version,
+      resultingVersion: session.version + 1,
+      kind: "REMATCH_CLOSE",
+      payload: jsonValue({ reason: "rematch", closedAt: closedAt.toISOString() }),
+    },
   });
 }
 
@@ -150,20 +271,11 @@ export async function getGameSession(args: {
     include: { rewardGrant: true },
   });
   if (!session) return null;
-  const reward: GameRewardResult | null = session.rewardGrant
-    ? session.rewardGrant.status === "PENDING" && session.rewardGrant.availableAt
-      ? {
-          kind: "granted",
-          vp: session.rewardGrant.vp,
-          availableAt: session.rewardGrant.availableAt,
-        }
-      : { kind: "blocked", reason: session.rewardGrant.blockReason ?? "not_eligible" }
-    : null;
   return {
     id: session.id,
     version: session.version,
     session: toSafeSessionDto(parseState(session.state)),
-    reward,
+    reward: rewardResultFromGrant(session.rewardGrant),
   };
 }
 
@@ -178,6 +290,7 @@ async function applyActionAttempt(args: {
     async (tx) => {
       const session = await tx.gameSession.findFirst({
         where: { id: args.sessionId, userId: args.userId },
+        include: { rewardGrant: true },
       });
       if (!session) throw new GameServiceError("NOT_FOUND", "Game session not found");
 
@@ -194,7 +307,7 @@ async function applyActionAttempt(args: {
           id: session.id,
           version: session.version,
           session: toSafeSessionDto(parseState(session.state)),
-          reward: null,
+          reward: rewardResultFromGrant(session.rewardGrant),
         };
       }
       if (session.version !== args.expectedVersion) {
@@ -382,7 +495,9 @@ export async function getPlayProgress(userId: string) {
       .filter((reward) => reward.status === "PENDING")
       .reduce((total, reward) => total + reward.vp, 0),
     rewardedToday: rewards.some(
-      (reward) => reward.rewardPeriod.getTime() === new Date().setUTCHours(0, 0, 0, 0),
+      (reward) =>
+        reward.status === GameRewardStatus.PENDING &&
+        reward.rewardPeriod.getTime() === new Date().setUTCHours(0, 0, 0, 0),
     ),
     rewardsEnabled: canFulfillVaultBluffPromo(),
   };

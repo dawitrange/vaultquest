@@ -96,7 +96,7 @@ The implementation uses:
 - `BotPlayerProfile`
 - `GameRewardGrant`
 
-Enums, foreign keys, indexes, and uniqueness constraints prevent duplicate client actions, round completion, profile updates, daily rewards, and ledger entries.
+Enums, foreign keys, indexes, and uniqueness constraints prevent duplicate client actions, round completion, profile updates, daily rewards, and ledger entries. PostgreSQL partial uniqueness permits at most one `ACTIVE` `GameSession` per user. `rematch=true` first closes every current active session as completed or forfeited in the same serializable transaction, then creates the new active session.
 
 Endpoints:
 
@@ -104,7 +104,7 @@ Endpoints:
 - `GET /api/games/vault-bluff/sessions/[sessionId]`
 - `POST /api/games/vault-bluff/sessions/[sessionId]/actions`
 
-Commands include an optimistic session version and unique `clientActionId`. Commands are idempotent. The server rejects stale versions and illegal transitions with structured, safe errors. Actions are append-only. Sessions persist engine and policy versions, timestamps, deadlines, deterministic RNG cursor, and the current authoritative state. Refresh and reconnect load the current safe DTO.
+Commands include an optimistic session version and unique `clientActionId`. Commands are idempotent. Replaying the completing action returns the reward payload persisted for that session, including the same blocked reason or pending amount and availability time. The server rejects stale versions and illegal transitions with structured, safe errors. Actions are append-only. Sessions persist engine and policy versions, timestamps, deadlines, deterministic RNG cursor, and the current authoritative state. Refresh, reconnect, rematch closure, normal actions, and idempotent replay all convert stored state through `toSafeSessionDto`; no API returns raw `GameSession.state`.
 
 Logs and analytics must never include hidden placement, seed, unrevealed answers, email, raw identity, private state, or fraud thresholds.
 
@@ -118,9 +118,10 @@ Logs and analytics must never include hidden placement, seed, unrevealed answers
 - The first eligible completed bot match per UTC day may earn 1 promotional VP.
 - The rolling 30-day maximum is 30 promotional VP.
 - Promotional VP stays pending for 24 hours.
-- One reward grant exists per user and UTC reward period.
+- At most one minted `PENDING` reward grant exists per user and UTC reward period. `BLOCKED` rows record attempts and do not spend or reserve that daily period.
 - A dedicated transaction creates `GameRewardGrant` and `LedgerEntry` atomically. It does not call `creditAvailable()` or `demoCompleteQuestAction()`.
 - Ledger metadata records the game promo source, session ID, reward policy version, funding campaign, and availability date.
+- `LedgerEntry.gameSessionId` is unique. Combined with unique `GameRewardGrant.sessionId` and `GameRewardGrant.ledgerEntryId`, this prevents a second promo ledger row for the same game session.
 - A global funded reserve cap and environment kill switch bound liability. The owner can disable game VP without disabling play.
 - The initial reward feature is disabled. It remains disabled until a dedicated reserve and environment kill switch are configured.
 - Current maximum promotional VP liability is $0.
@@ -140,7 +141,7 @@ This freeze does not change the game rules. It controls funding, minting, abuse 
 - `VAULT_BLUFF_VP_KILL_SWITCH` is a separate fail-closed runtime control. Only the exact value `allow` permits mint or fulfillment. Missing, malformed, or `stop` values block both without stopping gameplay. Operators must be able to flip this environment control without a code deployment.
 - Every mint recalculates all unfulfilled Vault Bluff promotional liability. If remaining reserve VP is less than the 1 VP grant liability, the service refuses the mint.
 - `VAULT_BLUFF_RESERVE_VP` cannot exceed 50,000 VP. A larger value fails closed instead of raising the $500 ceiling.
-- `VAULT_BLUFF_ANTI_FARM_READY=true` is required before minting. This flag may only be set after authenticated unique-user controls, reward-path rate limiting, and multi-account detection or review are operating. The database still enforces one grant per user and UTC day and a maximum of 30 promotional VP per rolling 30 days.
+- `VAULT_BLUFF_ANTI_FARM_READY=true` is required before minting. This flag may only be set after authenticated unique-user controls, reward-path rate limiting, and multi-account detection or review are operating. A partial unique index enforces one minted pending grant per user and UTC day. Blocked attempts leave the period eligible if rewards are enabled later that day. The maximum remains 30 promotional VP per rolling 30 days.
 - Repeated sessions, duplicate commands, automation, incomplete games, forfeits, and linked multi-account farms do not earn promotional VP.
 - Vault Bluff funding campaigns must use a dedicated `vault-bluff-` campaign name. Names containing `earn`, `probe`, `roblox`, or `giveaway` fail closed.
 - The $20 `/earn` probe, the $50 Roblox giveaway, the $500 Vault Bluff reserve, and the $300 ad cap are separate budgets and ledgers. Funds, liabilities, grants, and fulfillment records must not move between them.

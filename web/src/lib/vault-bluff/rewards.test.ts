@@ -10,7 +10,7 @@ import {
 const NOW = new Date("2026-08-16T12:00:00.000Z");
 
 function fakeTransaction(args?: {
-  existing?: { id: string };
+  existingPending?: { id: string };
   userRollingVp?: number;
   fundedVp?: number;
 }) {
@@ -19,7 +19,7 @@ function fakeTransaction(args?: {
   let aggregates = 0;
   const tx = {
     gameRewardGrant: {
-      findUnique: async () => args?.existing ?? null,
+      findFirst: async () => args?.existingPending ?? null,
       aggregate: async () => {
         aggregates += 1;
         return {
@@ -237,8 +237,8 @@ test("rolling cap and funded reserve prevent additional liability", async () => 
   );
 });
 
-test("existing UTC-day reward is idempotent", async () => {
-  const fake = fakeTransaction({ existing: { id: "existing" } });
+test("existing UTC-day reward blocks another mint and records the attempt", async () => {
+  const fake = fakeTransaction({ existingPending: { id: "existing" } });
   const result = await grantGamePromoInTransaction({
     tx: fake.tx,
     userId: "user-1",
@@ -246,6 +246,52 @@ test("existing UTC-day reward is idempotent", async () => {
     now: NOW,
   });
   assert.deepEqual(result, { kind: "blocked", reason: "daily_grant_exists" });
-  assert.equal(fake.grants.length, 0);
+  assert.equal(fake.grants.length, 1);
+  assert.equal(fake.grants[0]?.status, "BLOCKED");
   assert.equal(fake.ledgers.length, 0);
+});
+
+test("blocked attempts do not consume the UTC-day reward period", async () => {
+  const disabled = fakeTransaction();
+  await withRewardEnvironment(
+    {
+      VAULT_BLUFF_REWARDS_ENABLED: undefined,
+      VAULT_BLUFF_VP_KILL_SWITCH: undefined,
+      VAULT_BLUFF_ANTI_FARM_READY: undefined,
+      VAULT_BLUFF_FUNDING_CAMPAIGN: undefined,
+      VAULT_BLUFF_RESERVE_VP: undefined,
+    },
+    async () => {
+      const blocked = await grantGamePromoInTransaction({
+        tx: disabled.tx,
+        userId: "user-eligible-later",
+        sessionId: "disabled-session",
+        now: NOW,
+      });
+      assert.deepEqual(blocked, { kind: "blocked", reason: "feature_disabled" });
+    },
+  );
+  assert.equal(disabled.grants[0]?.status, "BLOCKED");
+
+  const enabledLater = fakeTransaction();
+  await withRewardEnvironment(
+    {
+      VAULT_BLUFF_REWARDS_ENABLED: "true",
+      VAULT_BLUFF_VP_KILL_SWITCH: "allow",
+      VAULT_BLUFF_ANTI_FARM_READY: "true",
+      VAULT_BLUFF_FUNDING_CAMPAIGN: "vault-bluff-enabled-later",
+      VAULT_BLUFF_RESERVE_VP: "100",
+    },
+    async () => {
+      const granted = await grantGamePromoInTransaction({
+        tx: enabledLater.tx,
+        userId: "user-eligible-later",
+        sessionId: "enabled-session",
+        now: NOW,
+      });
+      assert.equal(granted.kind, "granted");
+    },
+  );
+  assert.equal(enabledLater.ledgers.length, 1);
+  assert.equal(enabledLater.grants[0]?.status, "PENDING");
 });

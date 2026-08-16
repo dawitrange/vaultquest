@@ -89,7 +89,7 @@ model LedgerEntry {
   questId     String?
   clickId     String?
   note        String?
-  gameSessionId String?
+  gameSessionId String?      @unique
   rewardPolicyVersion String?
   fundingCampaign String?
   createdAt   DateTime     @default(now())
@@ -98,7 +98,6 @@ model LedgerEntry {
   @@index([userId, status])
   @@index([userId, availableAt])
   @@index([clickId])
-  @@index([gameSessionId])
 }
 
 enum GameSessionStatus {
@@ -234,8 +233,8 @@ model GameRewardGrant {
   ledgerEntry         LedgerEntry?     @relation(fields: [ledgerEntryId], references: [id], onDelete: SetNull)
   createdAt           DateTime         @default(now())
 
-  @@unique([userId, rewardPeriod])
   @@index([userId, createdAt])
+  @@index([userId, rewardPeriod, status])
   @@index([status])
 }
 

@@ -104,12 +104,22 @@ CREATE UNIQUE INDEX "BotPlayerProfile_userId_key" ON "BotPlayerProfile"("userId"
 CREATE UNIQUE INDEX "BotPlayerProfile_lastTrainedSessionId_key" ON "BotPlayerProfile"("lastTrainedSessionId");
 CREATE UNIQUE INDEX "GameRewardGrant_sessionId_key" ON "GameRewardGrant"("sessionId");
 CREATE UNIQUE INDEX "GameRewardGrant_ledgerEntryId_key" ON "GameRewardGrant"("ledgerEntryId");
-CREATE UNIQUE INDEX "GameRewardGrant_userId_rewardPeriod_key" ON "GameRewardGrant"("userId", "rewardPeriod");
+-- BLOCKED rows are attempts, not spent grants. Only a minted PENDING grant
+-- consumes the user's UTC reward period.
+CREATE UNIQUE INDEX "GameRewardGrant_one_pending_period_per_user_key"
+ON "GameRewardGrant"("userId", "rewardPeriod")
+WHERE "status" = 'PENDING';
 CREATE INDEX "GameRewardGrant_userId_createdAt_idx" ON "GameRewardGrant"("userId", "createdAt");
+CREATE INDEX "GameRewardGrant_userId_rewardPeriod_status_idx" ON "GameRewardGrant"("userId", "rewardPeriod", "status");
 CREATE INDEX "GameRewardGrant_status_idx" ON "GameRewardGrant"("status");
 CREATE INDEX "GameSession_userId_status_idx" ON "GameSession"("userId", "status");
 CREATE INDEX "GameSession_userId_completedAt_idx" ON "GameSession"("userId", "completedAt");
-CREATE INDEX "LedgerEntry_gameSessionId_idx" ON "LedgerEntry"("gameSessionId");
+-- PostgreSQL partial uniqueness enforces one active match per user while
+-- retaining any number of completed or forfeited matches.
+CREATE UNIQUE INDEX "GameSession_one_active_per_user_key"
+ON "GameSession"("userId")
+WHERE "status" = 'ACTIVE';
+CREATE UNIQUE INDEX "LedgerEntry_gameSessionId_key" ON "LedgerEntry"("gameSessionId");
 
 ALTER TABLE "GameSession" ADD CONSTRAINT "GameSession_userId_fkey"
 FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

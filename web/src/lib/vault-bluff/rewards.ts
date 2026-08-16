@@ -59,37 +59,43 @@ export async function grantGamePromoInTransaction(args: {
   now: Date;
 }): Promise<GameRewardResult> {
   const rewardPeriod = utcDay(args.now);
-  const existing = await args.tx.gameRewardGrant.findUnique({
-    where: { userId_rewardPeriod: { userId: args.userId, rewardPeriod } },
+  const existing = await args.tx.gameRewardGrant.findFirst({
+    where: {
+      userId: args.userId,
+      rewardPeriod,
+      status: GameRewardStatus.PENDING,
+    },
   });
-  if (existing) return { kind: "blocked", reason: "daily_grant_exists" };
 
   const enabled = process.env.VAULT_BLUFF_REWARDS_ENABLED === "true";
   const fundingCampaign = process.env.VAULT_BLUFF_FUNDING_CAMPAIGN?.trim();
   const reserveVp = positiveInteger(process.env.VAULT_BLUFF_RESERVE_VP);
-  let blockReason: string | null = null;
-  if (!enabled) blockReason = "feature_disabled";
-  else if (!isVaultBluffVpKillSwitchOpen()) blockReason = "kill_switch_stopped";
-  else if (process.env.VAULT_BLUFF_ANTI_FARM_READY !== "true") {
+  let blockReason: string | null = existing ? "daily_grant_exists" : null;
+  if (!blockReason && !enabled) blockReason = "feature_disabled";
+  else if (!blockReason && !isVaultBluffVpKillSwitchOpen()) {
+    blockReason = "kill_switch_stopped";
+  } else if (!blockReason && process.env.VAULT_BLUFF_ANTI_FARM_READY !== "true") {
     blockReason = "anti_farm_not_ready";
-  } else if (!isIsolatedBluffCampaign(fundingCampaign)) {
+  } else if (!blockReason && !isIsolatedBluffCampaign(fundingCampaign)) {
     blockReason = "funding_campaign_not_isolated";
-  } else if (reserveVp == null) blockReason = "reserve_not_configured";
-  else if (reserveVp > BLUFF_PROGRAM_CEILING_VP) {
+  } else if (!blockReason && reserveVp == null) blockReason = "reserve_not_configured";
+  else if (!blockReason && reserveVp > BLUFF_PROGRAM_CEILING_VP) {
     blockReason = "bluff_program_ceiling_exceeded";
   }
 
-  const rollingStart = new Date(args.now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const userRolling = await args.tx.gameRewardGrant.aggregate({
-    where: {
-      userId: args.userId,
-      status: GameRewardStatus.PENDING,
-      createdAt: { gte: rollingStart },
-    },
-    _sum: { vp: true },
-  });
-  if ((userRolling._sum.vp ?? 0) + PROMO_VP > ROLLING_LIMIT_VP) {
-    blockReason = "rolling_cap_reached";
+  if (!blockReason) {
+    const rollingStart = new Date(args.now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const userRolling = await args.tx.gameRewardGrant.aggregate({
+      where: {
+        userId: args.userId,
+        status: GameRewardStatus.PENDING,
+        createdAt: { gte: rollingStart },
+      },
+      _sum: { vp: true },
+    });
+    if ((userRolling._sum.vp ?? 0) + PROMO_VP > ROLLING_LIMIT_VP) {
+      blockReason = "rolling_cap_reached";
+    }
   }
 
   if (!blockReason && reserveVp != null) {
