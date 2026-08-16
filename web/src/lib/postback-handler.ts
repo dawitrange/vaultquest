@@ -13,6 +13,7 @@ import {
   officialCpxSecureHash,
   postbackSubjectIds,
   shouldSkipHmacForCpx,
+  trimmedParam,
   verifyCpxSecureHash,
   verifyPostbackHash,
 } from "./postback";
@@ -70,10 +71,12 @@ export async function handlePostbackRequest(args: {
   prisma: PostbackDb;
   nowMs?: number;
 }): Promise<PostbackResult> {
-  const { get, prisma } = args;
+  const rawGet = args.get;
+  const get = (key: string) => trimmedParam(rawGet, key);
+  const { prisma } = args;
   const nowMs = args.nowMs ?? Date.now();
 
-  const secret = process.env.POSTBACK_SECRET;
+  const secret = process.env.POSTBACK_SECRET?.trim();
   if (!secret) {
     return json(503, { ok: false, error: "POSTBACK_SECRET not configured" });
   }

@@ -32,6 +32,7 @@ import {
   CPX_SLUG,
   HMAC_SECRET_ENV_NAMES,
   TX_ID_ALIASES,
+  PAYOUT_ALIASES,
   firstAlias,
   hasPostbackSubject,
   postbackSubjectIds,
@@ -122,6 +123,7 @@ function parseArgs(argv: string[]) {
     probeProd: false,
     requireLive: false,
     seedLocal: false,
+    offline: false,
     baseUrl: "http://localhost:3000",
   };
   for (let i = 0; i < argv.length; i++) {
@@ -130,6 +132,7 @@ function parseArgs(argv: string[]) {
     else if (a === "--probe-prod") out.probeProd = true;
     else if (a === "--require-live") out.requireLive = true;
     else if (a === "--seed-local") out.seedLocal = true;
+    else if (a === "--offline") out.offline = true;
     else if (a === "--base-url" || a === "-BaseUrl") out.baseUrl = argv[++i] ?? out.baseUrl;
     else if (/^https?:\/\//.test(a)) out.baseUrl = a;
   }
@@ -151,6 +154,7 @@ Cases:
   9. CPX official secure_hash = md5(trans_id-appsecurehash); missing HMAC hash must not 401
   10. CPX status=2 voids matching EARN (does not unwind REDEEM) — flagged gap if already spent
   11. Official CPX user_id-only (no click_id) credits PENDING EARN via wall flow — in-memory, no prod
+  12. Trim secret/aliases; user_id=Dawit (not a User.id) → 404 and no ledger row
 
 Target network: CPX (${CPX_SLUG}). AdGate (${ADGATE_SLUG}) is stalled (under review).
 Ethio's CPX postback test succeeded. Live URL has no hash=. Yield is flipping
@@ -163,6 +167,7 @@ hash= on the live URL while prod still HMAC-checks hash.
 
 Usage:
   bash .cursor/skills/postback-tester/scripts/test.sh --help
+  bash .cursor/skills/postback-tester/scripts/test.sh --offline
   bash .cursor/skills/postback-tester/scripts/test.sh --probe-prod
   bash .cursor/skills/postback-tester/scripts/test.sh http://localhost:3000
 
@@ -310,6 +315,17 @@ function offlineHmacCases(): CaseResult[] {
     name: "AdGate aliases s1 + conversion_id",
     pass: firstAlias(get, CLICK_ID_ALIASES) === "user-1" && firstAlias(get, TX_ID_ALIASES) === "conv-9",
     detail: "s1→click_id, conversion_id→tx_id",
+  });
+
+  const padded: Record<string, string> = { tx_id: "  T-pad  ", payout_usd: " 0.50 ", user_id: "  uid-1 " };
+  const paddedGet = (k: string) => padded[k] ?? "";
+  results.push({
+    name: "alias values trim whitespace before lookup",
+    pass:
+      firstAlias(paddedGet, TX_ID_ALIASES) === "T-pad" &&
+      firstAlias(paddedGet, PAYOUT_ALIASES) === "0.50" &&
+      firstAlias(paddedGet, USER_ID_ALIASES) === "uid-1",
+    detail: "tx_id + payout_usd + user_id keep aliases; values trimmed",
   });
 
   results.push({
@@ -1027,6 +1043,52 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
         detail: `HTTP ${badSecret.status} error=${String(badSecret.body.error ?? "")}`,
       });
 
+      const dawitDb = createMemoryPostbackDb({ users: [userId] });
+      const dawit = await handlePostbackRequest({
+        url: "http://localhost/api/postback?secret=%20x&user_id=Dawit&partner=cpx&tx_id=T-dawit&payout_usd=0.50",
+        get: bagGet({
+          secret: ` ${unitSecret}`,
+          partner: "cpx",
+          user_id: "Dawit",
+          click_id: "Dawit",
+          tx_id: "T-dawit",
+          payout_usd: "0.50",
+        }),
+        prisma: dawitDb,
+        nowMs,
+      });
+      results.push({
+        name: "spaced secret authorizes; user_id=Dawit → 404 no ledger",
+        pass:
+          dawit.status === 404 &&
+          dawit.body.error === "unknown click_id or user" &&
+          dawitDb.ledger.length === 0,
+        detail: `HTTP ${dawit.status} error=${String(dawit.body.error ?? "")} ledger=${dawitDb.ledger.length} — display name is not a User.id`,
+      });
+
+      const aliasDb = createMemoryPostbackDb({ users: [userId] });
+      const aliasCredit = await handlePostbackRequest({
+        url: "http://localhost/api/postback?secret=x&partner=cpx&user_id=u&tx_id=T-alias&payout_usd=0.50",
+        get: bagGet({
+          secret: unitSecret,
+          partner: "cpx",
+          user_id: userId,
+          tx_id: "T-alias",
+          payout_usd: "0.50",
+        }),
+        prisma: aliasDb,
+        nowMs,
+      });
+      results.push({
+        name: "user_id-only with tx_id + payout_usd credits PENDING",
+        pass:
+          aliasCredit.status === 200 &&
+          aliasCredit.body.ok === true &&
+          aliasDb.ledger[0]?.status === LedgerStatus.PENDING &&
+          Boolean(aliasDb.ledger[0]?.note?.includes("tx=T-alias")),
+        detail: `HTTP ${aliasCredit.status} note=${aliasDb.ledger[0]?.note ?? "none"}`,
+      });
+
       const clickId = "click-signed-in-001";
       const clickDb = createMemoryPostbackDb({
         users: [userId],
@@ -1171,6 +1233,13 @@ async function main() {
   }
 
   const results: CaseResult[] = [...offlineHmacCases(), ...(await offlineCpxUserIdCases())];
+
+  if (args.offline) {
+    const ok = printTable(results);
+    if (!ok) process.exit(1);
+    console.log("PASS — postback-smoke (offline)");
+    return;
+  }
 
   if (args.probeProd || args.requireLive === false) {
     try {

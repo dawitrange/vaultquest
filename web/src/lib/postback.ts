@@ -320,8 +320,13 @@ export const PAYOUT_ALIASES = ["payout_usd", "amount_usd", "payout", "RAW", "USD
 
 export function firstAlias(get: (key: string) => string, keys: readonly string[]): string {
   for (const key of keys) {
-    const value = get(key);
+    const value = get(key)?.trim() ?? "";
     if (value) return value;
   }
   return "";
+}
+
+/** Trim query/body values so `secret= VALUE` and padded aliases still match. */
+export function trimmedParam(get: (key: string) => string, key: string): string {
+  return get(key)?.trim() ?? "";
 }

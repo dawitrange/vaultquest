@@ -44,7 +44,7 @@ async function handlePostback(req: NextRequest) {
     }
   }
 
-  const get = (key: string) => url.searchParams.get(key) ?? body[key] ?? "";
+  const get = (key: string) => (url.searchParams.get(key) ?? body[key] ?? "").trim();
   const result = await handlePostbackRequest({
     url: req.nextUrl.toString(),
     get,
