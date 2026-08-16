@@ -70,6 +70,10 @@ const SMOKE_URL = "https://www.vaultquest.io/proof";
 const SMOKE_QUEST = "q-offerwall";
 const SMOKE_HOLD_DAYS = 7;
 const SMOKE_VP = 500;
+/** Matches web/src/lib/affiliates.ts QUESTS ids. Do not import affiliates here (pulls prisma). */
+const GO_QUEST_IDS = ["q-offerwall", "q-freecash", "q-surveys", "q-play", "q-gamehag"] as const;
+const SMOKE_EMAIL = "postback-smoke@vaultquest.invalid";
+const SMOKE_PASSWORD = "postback-smoke-local-only";
 
 function loadEnvFile(filePath: string) {
   if (!fs.existsSync(filePath)) return;
@@ -102,6 +106,108 @@ function redactUrl(raw: string): string {
   } catch {
     return "[unparseable-url]";
   }
+}
+
+function isGoSignInRedirect(status: number, location: string, origin: string): boolean {
+  if (status !== 307 && status !== 302) return false;
+  try {
+    const url = new URL(location, origin);
+    return url.pathname === "/login" && url.searchParams.get("from") === "earn";
+  } catch {
+    return false;
+  }
+}
+
+function locationLooksLikeTrackedHop(location: string, origin: string): boolean {
+  try {
+    const url = new URL(location, origin);
+    if (url.searchParams.has("click_id") || url.searchParams.has("subid")) return true;
+    const host = url.hostname.toLowerCase();
+    return (
+      host === "freecash.com" ||
+      host.endsWith(".freecash.com") ||
+      host === "gamehag.com" ||
+      host.endsWith(".gamehag.com") ||
+      isMarketingHomepageUrl(location)
+    );
+  } catch {
+    return false;
+  }
+}
+
+function mergeCookies(store: Map<string, string>, setCookieHeaders: string[]) {
+  for (const header of setCookieHeaders) {
+    const pair = header.split(";")[0] ?? "";
+    const eq = pair.indexOf("=");
+    if (eq < 1) continue;
+    const name = pair.slice(0, eq).trim();
+    const value = pair.slice(eq + 1);
+    const lower = header.toLowerCase();
+    if (!value || lower.includes("max-age=0") || lower.includes("expires=thu, 01 jan 1970")) {
+      store.delete(name);
+      continue;
+    }
+    store.set(name, value);
+  }
+}
+
+function cookieHeader(store: Map<string, string>): string {
+  return [...store.entries()].map(([k, v]) => `${k}=${v}`).join("; ");
+}
+
+async function fetchWithCookies(
+  url: string,
+  store: Map<string, string>,
+  init?: RequestInit,
+): Promise<Response> {
+  const headers = new Headers(init?.headers);
+  const cookie = cookieHeader(store);
+  if (cookie) headers.set("cookie", cookie);
+  const res = await fetch(url, { ...init, headers, redirect: init?.redirect ?? "manual" });
+  const setCookies =
+    typeof res.headers.getSetCookie === "function"
+      ? res.headers.getSetCookie()
+      : res.headers.get("set-cookie")
+        ? [res.headers.get("set-cookie") as string]
+        : [];
+  mergeCookies(store, setCookies);
+  return res;
+}
+
+async function signInSmokeUser(origin: string): Promise<{ ok: boolean; cookies: Map<string, string>; detail: string }> {
+  const cookies = new Map<string, string>();
+  const csrfRes = await fetchWithCookies(`${origin}/api/auth/csrf`, cookies);
+  let csrfToken = "";
+  try {
+    const json = (await csrfRes.json()) as { csrfToken?: string };
+    csrfToken = json.csrfToken ?? "";
+  } catch {
+    return { ok: false, cookies, detail: "csrf json parse failed" };
+  }
+  if (!csrfToken) return { ok: false, cookies, detail: "missing csrfToken" };
+
+  const body = new URLSearchParams({
+    csrfToken,
+    email: SMOKE_EMAIL,
+    password: SMOKE_PASSWORD,
+    callbackUrl: `${origin}/earn`,
+    json: "true",
+    redirect: "false",
+  });
+  const signInRes = await fetchWithCookies(`${origin}/api/auth/callback/credentials`, cookies, {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  const hasSession = [...cookies.keys()].some((k) => /session-token|session_token/i.test(k));
+  if (!hasSession) {
+    return {
+      ok: false,
+      cookies,
+      detail: `no session cookie HTTP ${signInRes.status} loc=${signInRes.headers.get("location") ?? "(none)"}`,
+    };
+  }
+  return { ok: true, cookies, detail: `session cookie HTTP ${signInRes.status}` };
 }
 
 function firstHmacSecret(): string | undefined {
@@ -148,7 +254,8 @@ function printHelp() {
 Cases:
   1. Offline HMAC unit (strip hash, SHA1 + SHA256, fail-closed, no server)
   2. Missing / wrong secret → 401 or 503
-  3. /api/go test click creates OfferClick (first-party smoke link, not a partner URL)
+  3. Signed-out /api/go (all QUESTS, including q-freecash) → /login?from=earn, no OfferClick.
+     Signed-in /api/go test click creates OfferClick with userId (first-party smoke link, not a partner URL)
   4. Valid signed postback → 200 + hash=ok + ledger PENDING + availableAt from holdDays
   5. Duplicate tx_id → HTTP 200 {ok:true, duplicate:true}
   6. Bad hash → 401
@@ -182,7 +289,10 @@ Env required for live credit (names only — never commit values):
   POSTBACK_SMOKE_ALLOW_DB=1   (with --seed-local; localhost only)
 
 Constraints:
-  Never sends secrets to vaultquest.io. --probe-prod is public 401/503 + /earn only.
+  Never sends secrets to vaultquest.io. --probe-prod is public 401/503 + /earn
+  plus signed-out GET /api/go/q-surveys (already login-gated, no OfferClick).
+  Do not GET /api/go/q-freecash on production from this runner (that leak is
+  what the auth-gate PR closes; verify q-freecash on preview/localhost).
   Smoke AffiliateLink URL is first-party ${SMOKE_URL} — not a live partner placement.
   Never invent a CPX wall URL. Do not flip /admin.
 `);
@@ -215,14 +325,22 @@ async function probeProd(): Promise<CaseResult[]> {
         : `unexpected HTTP ${pb.status}`,
   });
 
-  const goOffer = await fetch(`${PROD_ORIGIN}/api/go/${SMOKE_QUEST}`, { redirect: "manual" });
-  const loc = goOffer.headers.get("location") ?? "";
+  const goSurveys = await fetch(`${PROD_ORIGIN}/api/go/q-surveys`, { redirect: "manual" });
+  const surveyLoc = goSurveys.headers.get("location") ?? "";
   results.push({
-    name: "prod /api/go/q-offerwall",
-    pass: goOffer.status === 307 || goOffer.status === 302,
-    detail: loc.includes("error=no_link")
-      ? "307 → /earn?error=no_link (no healthy offerwall inventory — #13 reseed)"
-      : `HTTP ${goOffer.status} location=${loc.split("?")[0] || "(none)"}`,
+    name: "prod signed-out /api/go/q-surveys → login (no OfferClick)",
+    pass:
+      isGoSignInRedirect(goSurveys.status, surveyLoc, PROD_ORIGIN) &&
+      !locationLooksLikeTrackedHop(surveyLoc, PROD_ORIGIN),
+    detail: isGoSignInRedirect(goSurveys.status, surveyLoc, PROD_ORIGIN)
+      ? `HTTP ${goSurveys.status} ${surveyLoc}`
+      : `HTTP ${goSurveys.status} location=${surveyLoc.split("?")[0] || "(none)"} — do not follow`,
+  });
+  results.push({
+    name: "prod probe does not hit /api/go/q-freecash",
+    pass: true,
+    detail:
+      "Unsigned GET /api/go/q-freecash still 307s to Freecash on live until the auth-gate ships. Verify q-freecash on preview. OfferClick cmsv8toze0003lc04z6tmnl6y is eng-qa logged-out smoke, not user traffic.",
   });
 
   const earn = await fetch(`${PROD_ORIGIN}/earn`);
@@ -397,6 +515,17 @@ function offlineHmacCases(): CaseResult[] {
       GO_SIGN_IN_PATH.includes("from=earn") &&
       !GO_SIGN_IN_PATH.includes("error="),
     detail: goFailurePath("sign_in"),
+  });
+
+  results.push({
+    name: "q-freecash and every QUESTS hop share the surveys sign_in path",
+    pass:
+      goFailurePath("sign_in") === GO_SIGN_IN_PATH &&
+      GO_QUEST_IDS.includes("q-freecash") &&
+      GO_QUEST_IDS.includes("q-gamehag") &&
+      GO_QUEST_IDS.includes("q-surveys") &&
+      GO_QUEST_IDS.length === 5,
+    detail: `${GO_QUEST_IDS.join(",")} → ${GO_SIGN_IN_PATH}`,
   });
 
   results.push({
@@ -584,11 +713,13 @@ async function seedSmokeInventory(): Promise<{ userId: string; detail: string }>
     throw new Error("refusing smoke seed: destination is a marketing homepage");
   }
   const { prisma } = await import("../src/lib/db");
-  const email = `postback-smoke@vaultquest.invalid`;
+  const { hash } = await import("bcryptjs");
+  const email = SMOKE_EMAIL;
+  const passwordHash = await hash(SMOKE_PASSWORD, 10);
   const user = await prisma.user.upsert({
     where: { email },
-    create: { email, name: "Postback smoke", role: "USER" },
-    update: {},
+    create: { email, name: "Postback smoke", role: "USER", passwordHash, ageConfirmed: true },
+    update: { passwordHash },
   });
   await prisma.affiliateLink.upsert({
     where: { slug: SMOKE_SLUG },
@@ -671,7 +802,33 @@ async function liveCases(baseUrl: string): Promise<CaseResult[]> {
     return results;
   }
 
-  const go = await fetch(`${origin}/api/go/${SMOKE_QUEST}`, { redirect: "manual" });
+  const { prisma } = await import("../src/lib/db");
+
+  for (const questId of GO_QUEST_IDS) {
+    const unsignedGo = await fetch(`${origin}/api/go/${questId}`, { redirect: "manual" });
+    const unsignedLoc = unsignedGo.headers.get("location") ?? "";
+    const loginOk =
+      isGoSignInRedirect(unsignedGo.status, unsignedLoc, origin) &&
+      !locationLooksLikeTrackedHop(unsignedLoc, origin);
+    results.push({
+      name: `signed-out /api/go/${questId} → login`,
+      pass: loginOk,
+      detail: loginOk
+        ? `HTTP ${unsignedGo.status} ${unsignedLoc}`
+        : `HTTP ${unsignedGo.status} loc=${redactUrl(unsignedLoc) || "(none)"}`,
+    });
+    if ((questId === "q-freecash" || questId === "q-gamehag") && !loginOk) return results;
+  }
+
+  const session = await signInSmokeUser(origin);
+  results.push({
+    name: "smoke user session for signed-in /api/go",
+    pass: session.ok,
+    detail: session.detail,
+  });
+  if (!session.ok) return results;
+
+  const go = await fetchWithCookies(`${origin}/api/go/${SMOKE_QUEST}`, session.cookies);
   const loc = go.headers.get("location") ?? "";
   if (loc && isMarketingHomepageUrl(loc)) {
     results.push({
@@ -687,7 +844,7 @@ async function liveCases(baseUrl: string): Promise<CaseResult[]> {
   const clickOk =
     (go.status === 307 || go.status === 302) && Boolean(clickId) && loc.startsWith(SMOKE_URL) && Boolean(s1);
   results.push({
-    name: "/api/go creates OfferClick",
+    name: "signed-in /api/go creates OfferClick",
     pass: clickOk,
     detail: clickOk
       ? `click_id=${clickId} s1=${s1} → first-party /proof`
@@ -695,12 +852,15 @@ async function liveCases(baseUrl: string): Promise<CaseResult[]> {
   });
   if (!clickOk) return results;
 
-  const { prisma } = await import("../src/lib/db");
   const clickRow = await prisma.offerClick.findUnique({ where: { id: clickId } });
   results.push({
-    name: "OfferClick row exists",
-    pass: Boolean(clickRow && clickRow.questId === SMOKE_QUEST && !clickRow.credited),
-    detail: clickRow ? `id=${clickRow.id} quest=${clickRow.questId} credited=${clickRow.credited}` : "missing row",
+    name: "OfferClick row exists with userId",
+    pass: Boolean(
+      clickRow && clickRow.questId === SMOKE_QUEST && clickRow.userId === userId && !clickRow.credited,
+    ),
+    detail: clickRow
+      ? `id=${clickRow.id} quest=${clickRow.questId} userId=${clickRow.userId ?? "null"} credited=${clickRow.credited}`
+      : "missing row",
   });
 
   const txId = `smoke-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
