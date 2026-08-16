@@ -1351,16 +1351,22 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
         prisma: subidDb,
         nowMs,
       });
+      const subidLedger = subidDb.ledger[0];
       results.push({
         name: "CPX ext_user_id + subid_1 links production-shaped click",
         pass:
           subidCredit.status === 200 &&
           subidCredit.body.user_id === productionUserId &&
           Number(subidCredit.body.vp) === 91 &&
+          subidDb.ledger.length === 1 &&
+          subidLedger?.userId === productionUserId &&
+          subidLedger.vp === 91 &&
+          subidLedger.kind === LedgerKind.EARN &&
+          subidLedger.status === LedgerStatus.PENDING &&
           subidDb.clicks.get(productionClickId)?.credited === true &&
-          subidDb.ledger[0]?.clickId === productionClickId &&
-          Boolean(subidDb.ledger[0]?.note?.includes(`tx=${productionTxId}`)),
-        detail: `HTTP ${subidCredit.status} clickId=${subidDb.ledger[0]?.clickId ?? "none"}`,
+          subidLedger.clickId === productionClickId &&
+          Boolean(subidLedger.note?.includes(`tx=${productionTxId}`)),
+        detail: `HTTP ${subidCredit.status} clickId=${subidLedger?.clickId ?? "none"}`,
       });
 
       const skipHmac = await handlePostbackRequest({
