@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { createOfferClick, getQuest } from "@/lib/affiliates";
-import { buildGoRedirect, goFailurePath, isMarketingHomepageUrl } from "@/lib/postback";
+import { buildGoRedirect, goFailurePath, isMarketingHomepageUrl, isVaultUserId } from "@/lib/postback";
 
 /** Creates a tracked click and redirects to the rotated partner URL. */
 export async function GET(
@@ -15,12 +15,13 @@ export async function GET(
   }
 
   const session = await auth();
-  if (quest.id === "q-surveys" && !session?.user?.id) {
+  const userId = isVaultUserId(session?.user?.id) ? session.user.id : undefined;
+  if (quest.id === "q-surveys" && !userId) {
     return NextResponse.redirect(new URL(goFailurePath("sign_in"), _req.url));
   }
 
   const started = await createOfferClick({
-    userId: session?.user?.id,
+    userId,
     questId: quest.id,
     category: quest.category,
   });
@@ -38,7 +39,7 @@ export async function GET(
   const dest = buildGoRedirect({
     destinationUrl: started.link.url,
     clickId: started.click.id,
-    userId: session?.user?.id,
+    userId,
     link: started.link,
   });
   if (!dest.ok) {

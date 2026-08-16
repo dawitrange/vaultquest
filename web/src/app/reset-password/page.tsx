@@ -39,7 +39,7 @@ export default async function ResetPasswordPage({
         Choose a new password
       </h1>
       <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
-        At least 8 characters. We never ask for your Steam password.
+        At least 8 characters. This is your VaultQuest password, not Steam.
       </p>
       <ResetPasswordForm token={token} />
     </div>

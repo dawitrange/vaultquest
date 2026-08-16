@@ -14,7 +14,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
       <div className="mt-8 space-y-4">
         <p className="text-sm text-[var(--vq-ink-muted)]">{state.message}</p>
         <Link
-          href="/login"
+          href="/login?reset=1"
           className="inline-flex w-full items-center justify-center rounded-md bg-[var(--vq-teal)] px-4 py-2.5 text-sm font-semibold text-[var(--vq-bg-deep)]"
         >
           Sign in
