@@ -32,11 +32,11 @@ export default async function EarnPage({
       (slug): slug is string => Boolean(slug),
     ),
   );
-  const quests = QUESTS.map((quest) => ({
-    quest,
-    available: quest.pinSlug ? pinnedServable.has(quest.pinSlug) : servable.has(quest.category),
-  }));
-  const anyAvailable = quests.some((q) => q.available);
+  // Hide categories with no healthy non-homepage link (disabled inventory stays in the DB).
+  const quests = QUESTS.filter((quest) =>
+    quest.pinSlug ? pinnedServable.has(quest.pinSlug) : servable.has(quest.category),
+  );
+  const anyAvailable = quests.length > 0;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
@@ -144,8 +144,8 @@ export default async function EarnPage({
         </div>
       ) : (
         <div className="mt-10 flex flex-col gap-4">
-          {quests.map(({ quest, available }) => (
-            <QuestRow key={quest.id} quest={quest} signedIn={signedIn} available={available} demoEnabled={demoEnabled} />
+          {quests.map((quest) => (
+            <QuestRow key={quest.id} quest={quest} signedIn={signedIn} demoEnabled={demoEnabled} />
           ))}
         </div>
       )}
