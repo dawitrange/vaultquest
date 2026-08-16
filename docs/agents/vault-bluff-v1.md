@@ -98,7 +98,7 @@ The implementation uses:
 - `BotPlayerProfile`
 - `GameRewardGrant`
 
-Enums, foreign keys, indexes, and uniqueness constraints prevent duplicate client actions, round completion, profile updates, daily rewards, and ledger entries. PostgreSQL partial uniqueness permits at most one `ACTIVE` `GameSession` per user. `rematch=true` identifies the exact prior session being replaced. A repeated or concurrent rematch request returns the already-created replacement instead of forfeiting it.
+Enums, foreign keys, indexes, and uniqueness constraints prevent duplicate client actions, round completion, profile updates, daily rewards, and ledger entries. PostgreSQL partial uniqueness permits at most one `ACTIVE` `GameSession` per user. Every session-start request, including rematch and navigation return, resumes the existing active session. A new session is created only when no active session exists.
 
 Endpoints:
 
@@ -106,7 +106,7 @@ Endpoints:
 - `GET /api/games/vault-bluff/sessions/[sessionId]`
 - `POST /api/games/vault-bluff/sessions/[sessionId]/actions`
 
-Commands include an optimistic session version and unique `clientActionId`. Commands are idempotent. Replaying the completing action returns the reward payload persisted for that session, including the same blocked reason or pending amount and availability time. The server rejects stale versions and illegal transitions with structured, safe errors. Actions are append-only. Sessions persist engine and policy versions, timestamps, deadlines, deterministic RNG cursor, and the current authoritative state. A deadline rejection never changes a match to forfeited. Only a player-confirmed `FORFEIT` action or an explicit rematch replacement can forfeit an active session. Refresh, reconnect, rematch closure, normal actions, and idempotent replay all convert stored state through `toSafeSessionDto`; no API returns raw `GameSession.state`, RNG data, or response-duration milliseconds.
+Commands include an optimistic session version and unique `clientActionId`. Commands are idempotent. Replaying the completing action returns the reward payload persisted for that session, including the same blocked reason or pending amount and availability time. The server rejects stale versions and illegal transitions with structured, safe errors. Actions are append-only. Sessions persist engine and policy versions, timestamps, deadlines, deterministic RNG cursor, and the current authoritative state. A deadline rejection never changes a match to forfeited. Only a player-confirmed `FORFEIT` action can set an active session to `FORFEITED`; navigation, hub visits, refresh, reconnect, and rematch startup cannot. All reads, normal actions, and idempotent replay convert stored state through `toSafeSessionDto`; no API returns raw `GameSession.state`, RNG data, or response-duration milliseconds.
 
 Logs and analytics must never include hidden placement, seed, unrevealed answers, email, raw identity, private state, or fraud thresholds.
 

@@ -179,7 +179,6 @@ export function VaultBluffGame({
         body: JSON.stringify({
           persona,
           rematch,
-          replaceSessionId: rematch ? game?.id : undefined,
         }),
       });
       const body = await response.json();

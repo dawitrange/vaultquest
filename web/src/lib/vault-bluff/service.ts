@@ -10,7 +10,6 @@ import {
 import { prisma } from "@/lib/db";
 import {
   applyCommand,
-  closeMatchForRematch,
   startMatch,
   toSafeSessionDto,
 } from "./engine";
@@ -52,26 +51,10 @@ export function isVaultBluffSchemaUnavailable(error: unknown): boolean {
   );
 }
 
-export type RematchSessionPlan = {
-  closeSessionId: string | null;
-  returnSessionId: string | null;
-};
-
-export function planRematchSession(
+export function activeSessionToResume(
   activeSessionIds: readonly string[],
-  replaceSessionId: string | undefined,
-): RematchSessionPlan {
-  if (activeSessionIds.length === 0) {
-    return { closeSessionId: null, returnSessionId: null };
-  }
-  if (!replaceSessionId || !activeSessionIds.includes(replaceSessionId)) {
-    return { closeSessionId: null, returnSessionId: activeSessionIds[0] ?? null };
-  }
-  return {
-    closeSessionId: replaceSessionId,
-    returnSessionId:
-      activeSessionIds.find((sessionId) => sessionId !== replaceSessionId) ?? null,
-  };
+): string | null {
+  return activeSessionIds[0] ?? null;
 }
 
 export function rewardResultFromGrant(
@@ -148,7 +131,6 @@ export async function createGameSession(args: {
   userId: string;
   persona?: PersonaId;
   rematch?: boolean;
-  replaceSessionId?: string;
 }): Promise<SessionResult> {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
@@ -178,7 +160,6 @@ async function createGameSessionAttempt(args: {
   userId: string;
   persona?: PersonaId;
   rematch?: boolean;
-  replaceSessionId?: string;
 }): Promise<SessionResult> {
   return prisma.$transaction(
     async (tx) => {
@@ -186,38 +167,19 @@ async function createGameSessionAttempt(args: {
         where: { userId: args.userId, status: GameSessionStatus.ACTIVE },
         orderBy: { updatedAt: "desc" },
       });
-      const active = activeSessions[0];
-      if (!args.rematch && active) {
+      const activeSessionId = activeSessionToResume(
+        activeSessions.map((session) => session.id),
+      );
+      const active = activeSessions.find(
+        (session) => session.id === activeSessionId,
+      );
+      if (active) {
         return {
           id: active.id,
           version: active.version,
           session: toSafeSessionDto(parseState(active.state)),
           reward: null,
         };
-      }
-      if (args.rematch) {
-        const plan = planRematchSession(
-          activeSessions.map((session) => session.id),
-          args.replaceSessionId,
-        );
-        const closedAt = new Date();
-        const sessionToClose = activeSessions.find(
-          (session) => session.id === plan.closeSessionId,
-        );
-        if (sessionToClose) {
-          await closeActiveSessionForRematch(tx, sessionToClose, closedAt);
-        }
-        const sessionToReturn = activeSessions.find(
-          (session) => session.id === plan.returnSessionId,
-        );
-        if (sessionToReturn) {
-          return {
-            id: sessionToReturn.id,
-            version: sessionToReturn.version,
-            session: toSafeSessionDto(parseState(sessionToReturn.state)),
-            reward: null,
-          };
-        }
       }
 
       await ensureProfile(tx, args.userId);
@@ -255,77 +217,6 @@ async function createGameSessionAttempt(args: {
     },
     { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
   );
-}
-
-async function closeActiveSessionForRematch(
-  tx: Prisma.TransactionClient,
-  session: {
-    id: string;
-    version: number;
-    state: Prisma.JsonValue;
-  },
-  closedAt: Date,
-): Promise<void> {
-  const before = parseState(session.state);
-  const closed = closeMatchForRematch(before, closedAt.toISOString());
-  const safe = toSafeSessionDto(closed);
-  const currentRound = closed.rounds.at(-1);
-  if (!currentRound) throw new GameServiceError("NOT_FOUND", "Active round not found");
-
-  const status = closed.forfeited
-    ? GameSessionStatus.FORFEITED
-    : GameSessionStatus.COMPLETED;
-  const updated = await tx.gameSession.updateMany({
-    where: {
-      id: session.id,
-      status: GameSessionStatus.ACTIVE,
-      version: session.version,
-    },
-    data: {
-      status,
-      version: session.version + 1,
-      state: jsonValue(closed),
-      rngCursor: closed.rngCursor,
-      humanScore: closed.humanScore,
-      botScore: closed.botScore,
-      xpAwarded: closed.xpAwarded,
-      completedAt: closedAt,
-    },
-  });
-  if (updated.count !== 1) {
-    throw new GameServiceError("VERSION_CONFLICT", "Active match changed during rematch");
-  }
-
-  const round = await tx.gameRound.findUnique({
-    where: {
-      sessionId_number: {
-        sessionId: session.id,
-        number: currentRound.number,
-      },
-    },
-  });
-  if (!round) throw new GameServiceError("NOT_FOUND", "Active round not found");
-  await tx.gameRound.update({
-    where: { id: round.id },
-    data: {
-      status: closed.forfeited
-        ? GameRoundStatus.FORFEITED
-        : GameRoundStatus.COMPLETED,
-      publicState: jsonValue(safe.currentRound),
-      completedAt: closedAt,
-    },
-  });
-  await tx.gameAction.create({
-    data: {
-      sessionId: session.id,
-      roundId: round.id,
-      clientActionId: `rematch-${randomUUID()}`,
-      expectedVersion: session.version,
-      resultingVersion: session.version + 1,
-      kind: "REMATCH_CLOSE",
-      payload: jsonValue({ reason: "rematch", closedAt: closedAt.toISOString() }),
-    },
-  });
 }
 
 export async function getGameSession(args: {
