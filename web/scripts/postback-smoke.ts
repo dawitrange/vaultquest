@@ -27,6 +27,7 @@ import {
   CPX_EARN_LIVE_CERTIFIED,
   CPX_LIVE_SMOKE_ALLOWED,
   CPX_MD5_HOOK_READY,
+  CPX_POSTBACK_TEMPLATE,
   CPX_YIELD_FLIP_CONFIRMED,
   CPX_SECURE_HASH_ENV_NAMES,
   CPX_SLUG,
@@ -701,6 +702,11 @@ function offlineHmacCases(): CaseResult[] {
       !hasPostbackSubject((k) => (k === "partner" ? "cpx" : "")),
     detail: "user_id/uid/ext_user_id → wall flow; subid_1/subid_2 → click aliases",
   });
+  results.push({
+    name: "CPX postback template returns existing subid_1",
+    pass: CPX_POSTBACK_TEMPLATE.includes("subid_1={subid_1}"),
+    detail: "operator template echoes OfferClick id through subid_1",
+  });
 
   return results;
 }
@@ -1323,12 +1329,15 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
         detail: `HTTP ${clickCredit.status} credited=${String(clickRow?.credited)} clickId=${clickLedger?.clickId ?? "none"}`,
       });
 
+      const productionUserId = "cmsm9ktvi0000l4049p7l03xk";
+      const productionClickId = "cmsvy75ry000jl504w7x3q0sl";
+      const productionTxId = "1001165319314";
       const subidDb = createMemoryPostbackDb({
-        users: [userId],
+        users: [productionUserId],
         clicks: [
           {
-            id: clickId,
-            userId,
+            id: productionClickId,
+            userId: productionUserId,
             credited: false,
             questId: "q-surveys",
             affiliateLink: { partner: "cpx" },
@@ -1336,25 +1345,34 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
         ],
       });
       const subidCredit = await handlePostbackRequest({
-        url: "http://localhost/api/postback?secret=x&subid_1=c1&user_id=u&partner=cpx&trans_id=T-subid1&amount_usd=0.50",
+        url: `http://localhost/api/postback?secret=x&subid_1=${productionClickId}&ext_user_id=${productionUserId}&partner=cpx&trans_id=${productionTxId}&vp=91`,
         get: bagGet({
           secret: unitSecret,
           partner: "cpx",
-          subid_1: clickId,
-          user_id: userId,
-          trans_id: "T-subid1",
-          amount_usd: "0.50",
+          subid_1: productionClickId,
+          ext_user_id: productionUserId,
+          trans_id: productionTxId,
+          vp: "91",
         }),
         prisma: subidDb,
         nowMs,
       });
+      const subidLedger = subidDb.ledger[0];
       results.push({
-        name: "subid_1 matching OfferClick prefers click flow",
+        name: "CPX ext_user_id + subid_1 links production-shaped click",
         pass:
           subidCredit.status === 200 &&
-          subidDb.clicks.get(clickId)?.credited === true &&
-          subidDb.ledger[0]?.clickId === clickId,
-        detail: `HTTP ${subidCredit.status} clickId=${subidDb.ledger[0]?.clickId ?? "none"}`,
+          subidCredit.body.user_id === productionUserId &&
+          Number(subidCredit.body.vp) === 91 &&
+          subidDb.ledger.length === 1 &&
+          subidLedger?.userId === productionUserId &&
+          subidLedger.vp === 91 &&
+          subidLedger.kind === LedgerKind.EARN &&
+          subidLedger.status === LedgerStatus.PENDING &&
+          subidDb.clicks.get(productionClickId)?.credited === true &&
+          subidLedger.clickId === productionClickId &&
+          Boolean(subidLedger.note?.includes(`tx=${productionTxId}`)),
+        detail: `HTTP ${subidCredit.status} clickId=${subidLedger?.clickId ?? "none"}`,
       });
 
       const skipHmac = await handlePostbackRequest({
