@@ -131,6 +131,40 @@ export function isAllowedCpxWallHost(url: string): boolean {
   }
 }
 
+/** Official CPX wall hop: offers./wall. host, or the cpx-survey AffiliateLink row. */
+export function isCpxWallHop(link: { slug: string; url: string }): boolean {
+  return link.slug === CPX_SLUG || isAllowedCpxWallHost(link.url);
+}
+
+export type GoRedirectResult =
+  | { ok: true; location: string }
+  | { ok: false; reason: "sign_in" };
+
+/**
+ * Attach common partner tracking params. CPX official wall requires
+ * ext_user_id=session user; never open that wall with a blank/0 user.
+ */
+export function buildGoRedirect(args: {
+  destinationUrl: string;
+  clickId: string;
+  userId?: string | null;
+  link: { slug: string; url: string };
+}): GoRedirectResult {
+  const cpx = isCpxWallHop(args.link) || isAllowedCpxWallHost(args.destinationUrl);
+  if (cpx && !args.userId) {
+    return { ok: false, reason: "sign_in" };
+  }
+
+  const target = new URL(args.destinationUrl);
+  const s1 = args.userId ?? args.clickId;
+  target.searchParams.set("subid", args.clickId);
+  target.searchParams.set("click_id", args.clickId);
+  target.searchParams.set("s1", s1);
+  if (args.userId) target.searchParams.set("user_id", args.userId);
+  if (cpx && args.userId) target.searchParams.set("ext_user_id", args.userId);
+  return { ok: true, location: target.toString() };
+}
+
 /**
  * True only after Yield pastes a real offers./wall. URL that already includes
  * app_id 35413. Does not build or return a URL. Live smoke stays on standby
