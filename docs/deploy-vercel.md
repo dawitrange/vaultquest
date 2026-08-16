@@ -47,7 +47,7 @@ In Vercel → Project → Settings → Environment Variables (Production + Previ
 | `ADMIN_EMAIL` | Your email |
 | `POSTBACK_SECRET` | Shared with offerwalls |
 | `AUTH_URL` / `NEXTAUTH_URL` | `https://your-deployment.vercel.app` (or custom domain) |
-| `RESEND_API_KEY` | Optional until contact email |
+| `RESEND_API_KEY` | Optional until contact / password-reset email |
 | `CONTACT_TO_EMAIL` | Optional |
 | `CONTACT_FROM_EMAIL` | Optional |
 | `AUTH_GOOGLE_*` / `AUTH_DISCORD_*` | Optional |

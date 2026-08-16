@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { createOfferClick, getQuest } from "@/lib/affiliates";
-import { buildGoRedirect, isMarketingHomepageUrl } from "@/lib/postback";
+import { buildGoRedirect, goFailurePath, isMarketingHomepageUrl } from "@/lib/postback";
 
 /** Creates a tracked click and redirects to the rotated partner URL. */
 export async function GET(
@@ -15,6 +15,10 @@ export async function GET(
   }
 
   const session = await auth();
+  if (quest.id === "q-surveys" && !session?.user?.id) {
+    return NextResponse.redirect(new URL(goFailurePath("sign_in"), _req.url));
+  }
+
   const started = await createOfferClick({
     userId: session?.user?.id,
     questId: quest.id,
@@ -22,13 +26,13 @@ export async function GET(
   });
 
   if (!started) {
-    return NextResponse.redirect(new URL("/earn?error=no_link", _req.url));
+    return NextResponse.redirect(new URL(goFailurePath("no_link"), _req.url));
   }
 
   // Never send users (or smoke) at a partner marketing homepage.
   // After Yield confirms the cpx-survey flip, smoke path is CPX / q-surveys only.
   if (isMarketingHomepageUrl(started.link.url)) {
-    return NextResponse.redirect(new URL("/earn?error=no_link", _req.url));
+    return NextResponse.redirect(new URL(goFailurePath("no_link"), _req.url));
   }
 
   const dest = buildGoRedirect({
@@ -38,7 +42,7 @@ export async function GET(
     link: started.link,
   });
   if (!dest.ok) {
-    return NextResponse.redirect(new URL("/earn?error=sign_in", _req.url));
+    return NextResponse.redirect(new URL(goFailurePath(dest.reason), _req.url));
   }
 
   return NextResponse.redirect(dest.location);

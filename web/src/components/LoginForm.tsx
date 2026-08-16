@@ -6,11 +6,12 @@ import { loginAction, type AuthFormState } from "@/lib/actions/auth";
 
 const initial: AuthFormState = {};
 
-export function LoginForm() {
+export function LoginForm({ from }: { from?: string }) {
   const [state, action, pending] = useActionState(loginAction, initial);
 
   return (
     <form action={action} className="mt-8 space-y-4">
+      {from ? <input type="hidden" name="from" value={from} /> : null}
       <label className="block text-sm">
         <span className="text-[var(--vq-ink-muted)]">Email</span>
         <input
@@ -33,6 +34,11 @@ export function LoginForm() {
         />
       </label>
       {state.error ? <p className="text-sm text-[var(--vq-danger)]">{state.error}</p> : null}
+      <p className="text-right text-sm">
+        <Link href="/forgot-password" className="text-[var(--vq-teal)] hover:underline">
+          Forgot password?
+        </Link>
+      </p>
       <button
         type="submit"
         disabled={pending}
@@ -42,7 +48,10 @@ export function LoginForm() {
       </button>
       <p className="text-center text-sm text-[var(--vq-ink-muted)]">
         No account?{" "}
-        <Link href="/signup" className="text-[var(--vq-teal)] hover:underline">
+        <Link
+          href={from ? `/signup?from=${encodeURIComponent(from)}` : "/signup"}
+          className="text-[var(--vq-teal)] hover:underline"
+        >
           Sign up
         </Link>
       </p>

@@ -140,6 +140,13 @@ export type GoRedirectResult =
   | { ok: true; location: string }
   | { ok: false; reason: "sign_in" };
 
+/** Signed-out CPX / survey hops go here — login + signup, not a raw error page. */
+export const GO_SIGN_IN_PATH = "/login?from=earn";
+
+export function goFailurePath(reason: "sign_in" | "no_link"): string {
+  return reason === "sign_in" ? GO_SIGN_IN_PATH : "/earn?error=no_link";
+}
+
 /**
  * Attach common partner tracking params. CPX official wall requires
  * ext_user_id=session user; never open that wall with a blank/0 user.

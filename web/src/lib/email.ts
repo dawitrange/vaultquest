@@ -87,3 +87,25 @@ export async function sendRedemptionEmail(opts: {
 
   return { sent: true as const };
 }
+
+export async function sendPasswordResetEmail(opts: { to: string; resetUrl: string }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.CONTACT_FROM_EMAIL ?? "VaultQuest <onboarding@resend.dev>";
+
+  if (!apiKey) {
+    console.info("[password-reset:email-skipped]", {
+      reason: "missing RESEND_API_KEY",
+    });
+    return { sent: false as const, reason: "missing RESEND_API_KEY" as const };
+  }
+
+  const resend = new Resend(apiKey);
+  await resend.emails.send({
+    from,
+    to: opts.to,
+    subject: "Reset your VaultQuest password",
+    text: `Reset your VaultQuest password using this link (expires in 1 hour):\n\n${opts.resetUrl}\n\nIf you did not request this, you can ignore this email.`,
+  });
+
+  return { sent: true as const };
+}

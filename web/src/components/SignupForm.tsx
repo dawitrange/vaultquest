@@ -6,11 +6,12 @@ import { signupAction, type AuthFormState } from "@/lib/actions/auth";
 
 const initial: AuthFormState = {};
 
-export function SignupForm() {
+export function SignupForm({ from }: { from?: string }) {
   const [state, action, pending] = useActionState(signupAction, initial);
 
   return (
     <form action={action} className="mt-8 space-y-4">
+      {from ? <input type="hidden" name="from" value={from} /> : null}
       <label className="block text-sm">
         <span className="text-[var(--vq-ink-muted)]">Name</span>
         <input
@@ -54,7 +55,10 @@ export function SignupForm() {
       </button>
       <p className="text-center text-sm text-[var(--vq-ink-muted)]">
         Already have an account?{" "}
-        <Link href="/login" className="text-[var(--vq-teal)] hover:underline">
+        <Link
+          href={from ? `/login?from=${encodeURIComponent(from)}` : "/login"}
+          className="text-[var(--vq-teal)] hover:underline"
+        >
           Sign in
         </Link>
       </p>

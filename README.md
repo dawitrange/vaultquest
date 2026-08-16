@@ -30,7 +30,7 @@ See **[docs/deploy-vercel.md](docs/deploy-vercel.md)**. Vercel MCP is configured
 | Var | Purpose |
 |-----|---------|
 | `ADMIN_EMAIL` | Your email → Admin link + `/admin` |
-| `RESEND_API_KEY` + `CONTACT_TO_EMAIL` | Contact form email delivery |
+| `RESEND_API_KEY` + `CONTACT_TO_EMAIL` | Contact form + password-reset email delivery |
 | `POSTBACK_SECRET` | Offerwall S2S `/api/postback` (shared secret; never commit the value) |
 | `BITLABS_APP_SECRET` | Optional BitLabs HMAC (`hash=` SHA1; SHA256 fallback) |
 | `AYET_HMAC_SECRET` | Optional ayeT HMAC (`hash=`) |
@@ -45,4 +45,4 @@ See **[docs/deploy-vercel.md](docs/deploy-vercel.md)**. Vercel MCP is configured
 | `/admin` | Caps, fulfillment, contact inbox |
 | `/api/go/[questId]` | Tracked click → rotated partner |
 | `/api/postback` | S2S credit (`secret`, `click_id`, `vp`) |
-| `/signup` `/login` | Email auth + OAuth when configured |
+| `/signup` `/login` `/forgot-password` | Email auth + OAuth when configured; password reset uses `RESEND_API_KEY` |
