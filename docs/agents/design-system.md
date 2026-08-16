@@ -165,7 +165,7 @@ Suggested hero copy (editable):
 - **Secondary button:** steel border, transparent fill, ink text.
 - **Ghost / text link:** muted ink → teal on hover.
 - **Balance pill (header):** mono VP amount + teal tick; pending shown in warn.
-- **Nav:** brand wordmark left; Earn · Rewards · Giveaways · How it works. No emoji.
+- **Nav:** brand wordmark left; Play · Earn · Rewards · Giveaway, then auth. Giveaway points to `/giveaway` through Sep 1 ET. Trust links live in the footer. No emoji.
 
 ### Earn (offer catalog)
 
@@ -250,10 +250,8 @@ Optional later (not required for v1): subtle parallax on hero atmosphere ≤4px 
 
 **Home**
 1. Full-bleed vault/gameplay hero — brand-first, dual CTA.
-2. How it works (4 steps, honest time line).
-3. Earn peek (3–5 live quest rows, not a card grid).
-4. Giveaway next draw (single purpose section).
-5. Proof + disclosures + footer.
+2. Earn peek (3–5 live quest rows, not a card grid).
+3. Short FAQ + disclosures + footer.
 
 **Earn**
 1. Sticky balance + filters.

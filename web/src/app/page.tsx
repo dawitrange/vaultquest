@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { HeroRedeemDemo } from "@/components/HeroRedeemDemo";
 import { JsonLd } from "@/components/JsonLd";
 import { QuestTeaser } from "@/components/QuestTeaser";
-import { SocialProofBar } from "@/components/SocialProofBar";
 import { listServableQuests } from "@/lib/affiliates";
 import { SITE } from "@/lib/site";
 
@@ -42,24 +40,6 @@ const FAQ_JSON_LD = {
     acceptedAnswer: { "@type": "Answer", text: f.a },
   })),
 };
-
-const STEPS = [
-  {
-    step: "01",
-    title: "Earn VP",
-    body: "Finish a listed quest. Partners confirm the work. Points start pending — not instant.",
-  },
-  {
-    step: "02",
-    title: "Hold clears",
-    body: "A 3–14 day partner hold is normal. After it clears, those Vault Points become available.",
-  },
-  {
-    step: "03",
-    title: "Steam",
-    body: `Unlock Steam credit from about $${SITE.minRedeemUsd} once available VP is ready. No password sharing.`,
-  },
-] as const;
 
 export default async function HomePage() {
   const quests = (await listServableQuests()).slice(0, 6);
@@ -110,8 +90,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <SocialProofBar />
-
       <section className="border-t border-[var(--vq-border)] bg-[var(--vq-bg)]" aria-labelledby="home-catalog">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
           <div className="flex flex-wrap items-end justify-between gap-3">
@@ -138,40 +116,6 @@ export default async function HomePage() {
               ))}
             </div>
           )}
-        </div>
-      </section>
-
-      <section className="border-t border-[var(--vq-border)] bg-[var(--vq-bg-raised)]/50">
-        <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
-          <h2 className="font-[family-name:var(--vq-font-display)] text-2xl font-semibold tracking-tight sm:text-3xl">
-            Earn VP → hold clears → Steam
-          </h2>
-          <p className="mt-2 max-w-xl text-[var(--vq-ink-muted)]">
-            Pending Vault Points are not spendable until the partner hold clears. No instant cashout.
-          </p>
-          <div className="mt-8 grid gap-8 sm:grid-cols-3">
-            {STEPS.map((item) => (
-              <div key={item.step} className="animate-vq-tick">
-                <p className="font-[family-name:var(--vq-font-mono)] text-xs tracking-widest text-[var(--vq-teal)]">{item.step}</p>
-                <h3 className="mt-2 font-[family-name:var(--vq-font-display)] text-xl font-semibold">{item.title}</h3>
-                <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">{item.body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="border-t border-[var(--vq-border)] bg-[var(--vq-bg-raised)]/50">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-14 lg:py-20">
-          <div>
-            <h2 className="font-[family-name:var(--vq-font-display)] text-2xl font-semibold tracking-tight sm:text-3xl">
-              From VaultQuest to Steam
-            </h2>
-            <p className="mt-3 max-w-md text-[var(--vq-ink-muted)]">
-              Watch the path: quest credit → unlock Steam credit → activate the code in Steam. No password sharing.
-            </p>
-          </div>
-          <HeroRedeemDemo />
         </div>
       </section>
 

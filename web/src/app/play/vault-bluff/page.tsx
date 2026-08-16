@@ -22,13 +22,13 @@ export default async function VaultBluffPage() {
       <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
         <section className="rounded-[12px] border border-[var(--vq-warn)]/50 bg-[var(--vq-bg-raised)] p-6 sm:p-8">
           <p className="font-[family-name:var(--vq-font-mono)] text-xs uppercase tracking-wider text-[var(--vq-warn)]">
-            Preview setup required
+            Temporarily unavailable
           </p>
           <h1 className="mt-2 font-[family-name:var(--vq-font-display)] text-3xl font-bold">
             Vault Bluff is safely unavailable
           </h1>
           <p className="mt-3 text-[var(--vq-ink-muted)]">
-            This preview database does not have the Vault Bluff migration. Connect the isolated QA database and apply the committed migration there before starting a match.
+            Vault Bluff cannot start right now. Try again later.
           </p>
           <p className="mt-3 text-sm text-[var(--vq-ink-faint)]">
             No game session or promotional VP was created.

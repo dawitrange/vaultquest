@@ -51,10 +51,7 @@ export default async function PlayPage() {
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
       <GameHubViewed />
       <header className="max-w-3xl">
-        <p className="font-[family-name:var(--vq-font-mono)] text-xs uppercase tracking-[0.2em] text-[var(--vq-teal)]">
-          Play lab
-        </p>
-        <h1 className="mt-3 font-[family-name:var(--vq-font-display)] text-4xl font-bold tracking-tight sm:text-5xl">
+        <h1 className="font-[family-name:var(--vq-font-display)] text-4xl font-bold tracking-tight sm:text-5xl">
           Read the tell. Protect the key.
         </h1>
         <p className="mt-4 max-w-2xl text-[var(--vq-ink-muted)]">
@@ -92,7 +89,7 @@ export default async function PlayPage() {
             <div className="rounded-[10px] border border-[var(--vq-warn)]/50 bg-[var(--vq-surface)] p-4 sm:col-span-2">
               <p className="text-xs uppercase tracking-wider text-[var(--vq-warn)]">Vault Bluff unavailable</p>
               <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
-                This preview database does not have the Vault Bluff migration. Gameplay and promotional VP are safely unavailable.
+                Vault Bluff is temporarily unavailable. Your balance is safe, and no game or promotional VP was created.
               </p>
             </div>
           )}
@@ -143,7 +140,7 @@ export default async function PlayPage() {
             {signedIn
               ? progress.schemaReady
                 ? "Enter Vault Bluff"
-                : "View setup status"
+                : "Game unavailable"
               : "Sign in to play"}
           </Link>
         </article>
@@ -162,12 +159,12 @@ export default async function PlayPage() {
               {!signedIn
                 ? "Sign in to see your daily promotional VP status."
                 : !progress.schemaReady
-                  ? "Promotional VP is disabled. Connect the isolated QA database and apply the committed migration there before testing."
+                  ? "Promotional VP is off while Vault Bluff is unavailable."
                 : progress.rewardsEnabled
                 ? progress.rewardedToday
                   ? "1 promotional VP for this UTC day was already granted. Play stays open; no more promo VP is added today."
                   : "First eligible completion may grant 1 pending VP."
-                : "Promotional VP is disabled until a funded reserve and kill switch are configured."}
+                : "Promotional VP is off. Play and XP remain available."}
             </p>
           </article>
           {signedIn && progress.schemaReady ? (
@@ -194,7 +191,7 @@ export default async function PlayPage() {
               </h2>
               <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
                 {signedIn
-                  ? "XP, ranks, and cosmetics will load after this preview uses the migrated isolated QA database."
+                  ? "Game progress is temporarily unavailable. Try again later."
                   : "Sign in to track completed matches, XP, ranks, and earned case cosmetics."}
               </p>
             </article>

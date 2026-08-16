@@ -22,9 +22,10 @@ All names, copy, visuals, and assets are original VaultQuest work. The UI uses d
 
 - `/play` is a public, indexable explanation and an authenticated hub. It shows available and pending VP, a featured Vault Bluff card, daily promotional VP status, XP, rank, cosmetic progress, and an honest note that verified quests remain the main VP source.
 - `/play/vault-bluff` requires authentication and is `noindex`. Signed-out users go directly to `/login?from=play`; the game route does not render a signed-out play panel. It supports persona selection or automatic assignment, a new match, active rounds, results, instant rematch, and one optional rotated Earn recommendation after three completed matches.
-- `Play` is added to primary navigation and `/play` to public sitemap paths.
+- Primary header navigation is `Play · Earn · Rewards · Giveaway`; Giveaway links to the live `/giveaway` form and remains in the header through Sep 1 ET. About, How it works, Proof & Rules, and Contact live in the footer. Signed-in users get Account without a duplicate Earn CTA. `/play` remains in public sitemap paths.
 - The centralized auth redirect allowlist maps `from=play` to `/play/vault-bluff`. Login, signup, credential forms, and OAuth redirects all preserve the `play` hint so successful authentication completes the round-trip. While the visitor is on `/play`, the signed-out header's desktop and mobile `Sign in` links use `/login?from=play`, and both `Sign up` links use `/signup?from=play`.
 - The site-wide Vault Assistant remains inherited chrome with no Play-route suppression. The floating preview control observed during QA is the Vercel toolbar, not game chat.
+- Player-facing Play copy never mentions preview databases or migrations. Missing-schema states say the game is temporarily unavailable while technical API errors retain the setup detail for operators.
 
 ## Match rules
 
