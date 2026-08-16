@@ -13,9 +13,12 @@ import { prisma } from "@/lib/db";
 import {
   ADGATE_SLUG,
   CPX_APP_ID,
+  CPX_CLICK_ID,
+  CPX_CLICK_SMOKE_DONE,
+  CPX_CONFIRMED_WALL_URL,
   CPX_EARN_LIVE_CERTIFIED,
-  CPX_LIVE_SMOKE_ALLOWED,
   CPX_MD5_HOOK_READY,
+  CPX_SIGNED_POSTBACK_PENDING,
   CPX_YIELD_FLIP_CONFIRMED,
   CPX_POSTBACK_TEMPLATE,
   CPX_SLUG,
@@ -68,24 +71,25 @@ export default async function AdminPage() {
     <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6">
       <h1 className="font-[family-name:var(--vq-font-display)] text-4xl font-bold tracking-tight">Admin</h1>
       <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
-        Affiliate caps, fulfillment queue, contact inbox. Do not flip a homepage URL to{" "}
-        <code>healthy</code>. AdGate is stalled (under review). Ethio&apos;s CPX postback
-        test succeeded. Yield is flipping <code>{CPX_SLUG}</code> (app_id{" "}
-        <code>{CPX_APP_ID}</code>). Flip confirmed: {CPX_YIELD_FLIP_CONFIRMED ? "yes" : "no"}.
-        Live smoke allowed: {CPX_LIVE_SMOKE_ALLOWED ? "yes" : "no — wait for Yield confirm"}.
-        After confirm, smoke path is CPX / <code>q-surveys</code> only — not Freecash, not a
-        homepage. Do not invent a wall URL. Live postback has no <code>hash=</code>.
-        Not earn-live until a production pending VP is visible.
+        Affiliate caps, fulfillment queue, contact inbox. Yield{" "}
+        <strong>has flipped</strong> <code>{CPX_SLUG}</code> healthy (app_id{" "}
+        <code>{CPX_APP_ID}</code>). Click-half smoke is done
+        {CPX_CLICK_SMOKE_DONE ? ` — click ${CPX_CLICK_ID}` : ""}. Signed postback fire is
+        waiting on Vercel{CPX_SIGNED_POSTBACK_PENDING ? " — POSTBACK_SECRET stays off chat" : ""}.
+        Flip confirmed: {CPX_YIELD_FLIP_CONFIRMED ? "yes" : "no"}. Wall:{" "}
+        <code className="break-all">{CPX_CONFIRMED_WALL_URL}</code>. Live postback has no{" "}
+        <code>hash=</code>. Not earn-live until a production pending VP is visible.
         {CPX_EARN_LIVE_CERTIFIED ? null : (
           <span className="mt-2 block rounded-[8px] border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-3 py-2 text-xs text-[var(--vq-ink)]">
-            <strong>Earn-live is not certified. Live smoke is on standby.</strong> Official CPX
-            param is <code>secure_hash</code> = <code>md5(trans_id-appsecurehash)</code>. Do not
-            put MD5 on HMAC <code>hash=</code> (current prod would 401).{" "}
-            <code>partner=cpx</code> with no HMAC <code>hash</code> does not 401. MD5 hook{" "}
-            {CPX_MD5_HOOK_READY ? "ready" : "missing"}. Runtime <code>CPX_SECURE_HASH</code>:{" "}
-            {cpxSecureHashEnvConfigured() ? "configured" : "missing"} (name only).{" "}
-            <strong>status=2</strong> voids a matching PENDING/POSTED EARN; it does not unwind
-            an already-spent REDEEM. Do not smoke until Yield confirms the flip.
+            <strong>Earn-live is not certified.</strong> Standby is over for the click half.
+            Official CPX param is <code>secure_hash</code> ={" "}
+            <code>md5(trans_id-appsecurehash)</code>. Do not put MD5 on HMAC <code>hash=</code>{" "}
+            (current prod would 401). <code>partner=cpx</code> with no HMAC <code>hash</code> does
+            not 401. MD5 hook {CPX_MD5_HOOK_READY ? "ready" : "missing"}. Runtime{" "}
+            <code>CPX_SECURE_HASH</code>: {cpxSecureHashEnvConfigured() ? "configured" : "missing"}{" "}
+            (name only). <strong>status=2</strong> voids a matching PENDING/POSTED EARN; it does
+            not unwind an already-spent REDEEM. Do not fire another wall click or a secret
+            postback from this runner.
             <span className="mt-2 block break-all font-[family-name:var(--vq-font-mono)] text-[10px] text-[var(--vq-ink-muted)]">
               {CPX_POSTBACK_TEMPLATE}
             </span>
@@ -130,7 +134,7 @@ export default async function AdminPage() {
                   ? ` · homepage — keep ${link.slug} disabled (do not flip /admin)`
                   : ""}
                 {link.slug === CPX_SLUG
-                  ? ` · app_id ${CPX_APP_ID}; Ethio postback test ok; Yield flipping — do not smoke until confirm`
+                  ? ` · Yield flipped healthy; click-half done (${CPX_CLICK_ID}); pending EARN still 0 — not earn-live`
                   : ""}
                 {link.slug === ADGATE_SLUG ? " · AdGate stalled (under review)" : ""}
               </p>
