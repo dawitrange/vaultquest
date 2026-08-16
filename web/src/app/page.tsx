@@ -19,7 +19,7 @@ const FAQS = [
   },
   {
     q: "How long until I can redeem Steam credit?",
-    a: "Credits start PENDING during a partner hold (typically 3–14 days by network), then become available. Minimum redeem is about $5; MVP Steam fulfillment is 24–48h.",
+    a: "Credits start PENDING during a partner hold (typically 3–14 days by network), then become available. Minimum redeem is about $5. Steam send is manual after you unlock. We will publish a typical time once we have one.",
   },
   {
     q: "Do you use Steam code generators?",
@@ -75,7 +75,7 @@ export default function HomePage() {
                 href="/earn"
                 className="animate-vq-cta inline-flex rounded-md bg-[var(--vq-teal)] px-5 py-3 text-sm font-semibold text-[var(--vq-bg-deep)] hover:bg-[var(--vq-teal-dim)] hover:text-white"
               >
-                Start earning
+                See quests
               </Link>
               <Link
                 href="/giveaway"

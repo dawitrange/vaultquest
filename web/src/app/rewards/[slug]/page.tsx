@@ -80,19 +80,19 @@ export default async function RewardGuidePage({ params }: Props) {
 
       <div className="mt-10 flex flex-wrap gap-3">
         <Link
-          href="/earn"
+          href="/signup?from=rewards"
           className="inline-flex rounded-md bg-[var(--vq-teal)] px-5 py-3 text-sm font-semibold text-[var(--vq-bg-deep)] hover:bg-[var(--vq-teal-dim)] hover:text-white"
         >
-          Start earning
+          Sign up
         </Link>
         <Link
-          href="/rewards"
+          href="/earn"
           className="inline-flex rounded-md border border-[var(--vq-border-strong)] px-5 py-3 text-sm font-semibold text-[var(--vq-ink)] hover:border-[var(--vq-teal)] hover:text-[var(--vq-teal)]"
         >
-          View redeem catalog
+          See quests
         </Link>
-        <Link href="/how-it-works" className="inline-flex px-2 py-3 text-sm text-[var(--vq-teal)] hover:underline">
-          How it works →
+        <Link href="/proof" className="inline-flex px-2 py-3 text-sm text-[var(--vq-teal)] hover:underline">
+          Proof
         </Link>
       </div>
 

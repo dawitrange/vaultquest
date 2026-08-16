@@ -65,9 +65,9 @@ export const REWARD_GUIDES = [
     intro:
       "People search “Steam gift card” when they want wallet credit without buying retail cards. VaultQuest funds Steam credit from partner commissions — not free generators. Expect real task time and a short verification hold.",
     bullets: [
-      "Browse /earn for offers that fit your region and device.",
-      "Finish the offer the way it’s written — VPN tricks and multi-accounts get clawed back.",
-      "Redeem Steam Wallet tiers on /rewards when available VP is ready.",
+      "Pick a listed quest on /earn that fits your region and device.",
+      "Finish the offer the way it is written. VPN tricks and multi-accounts get clawed back.",
+      "Unlock Steam Wallet tiers from the vault on /rewards when available VP is ready.",
     ],
   },
   {
@@ -87,49 +87,49 @@ export const REWARD_GUIDES = [
   {
     slug: "paypal",
     title: "PayPal rewards",
-    h1: "PayPal on VaultQuest — status",
+    h1: "PayPal is not live yet",
     description:
       "VaultQuest MVP focuses on Steam wallet redemptions. PayPal is not a live redeem option yet.",
     intro:
-      "Some reward sites pay PayPal. VaultQuest’s current vault is Steam-first. If we add PayPal later, it will appear on /rewards with the same pending → available ledger rules — we will not advertise it before it ships.",
+      "Some reward sites pay PayPal. VaultQuest's current vault is Steam-first. If we add PayPal later, it will appear on /rewards with the same pending to available ledger rules. We will not advertise it before it ships.",
     bullets: [
-      "Live today: Steam Wallet tiers on /rewards.",
-      "Want PayPal? Use /contact — demand helps prioritization, not a promise.",
+      "Steam Wallet is what you can unlock from the vault today.",
+      "Want PayPal? Use /contact. Demand helps prioritization. It is not a promise.",
       "Any future cash-out still follows the margin rule: never above expected partner yield.",
     ],
   },
   {
     slug: "amazon",
     title: "Amazon gift cards",
-    h1: "Amazon gift cards — not in MVP",
+    h1: "Amazon gift cards are not live yet",
     description:
       "Amazon gift cards are not in the VaultQuest MVP catalog. Steam is the primary redeem path today.",
     intro:
       "Amazon gift cards are a common rewards keyword. We are not listing them until fulfillment is funded and reliable. Until then, Steam Wallet credit is the honest catalog.",
     bullets: [
-      "Check /rewards for what you can unlock now.",
-      "Partner quests on /earn still earn VP regardless of future catalog adds.",
-      "We only list rewards we can actually fulfill — Amazon isn’t one yet.",
+      "Check /rewards for what you can unlock from the vault now.",
+      "Pick a listed quest on /earn. VP still banks toward Steam today.",
+      "We only list rewards we can actually fulfill. Amazon is not one yet.",
     ],
   },
   {
     slug: "google-play",
     title: "Google Play credit",
-    h1: "Google Play credit — roadmap note",
+    h1: "Google Play credit is not live yet",
     description:
       "Google Play is not a live VaultQuest redeem option yet. Earn VP today toward Steam; mobile catalog may expand later.",
     intro:
-      "Mobile players often want Google Play credit. VaultQuest MVP ships Steam first. Play offers on /earn may still pay VP that redeem to Steam today.",
+      "Mobile players often want Google Play credit. VaultQuest MVP ships Steam first. Play offers on /earn may still pay VP that unlock as Steam today.",
     bullets: [
-      "Complete mobile-friendly quests on /earn when shown for your region.",
-      "Redeem path today: Steam Wallet on /rewards.",
+      "Pick a listed quest on /earn when one fits your region.",
+      "What you can unlock today is Steam Wallet from the vault on /rewards.",
       "We will only list Google Play when inventory and ops are ready.",
     ],
   },
   {
     slug: "xbox",
     title: "Xbox gift cards",
-    h1: "Xbox gift cards — not live yet",
+    h1: "Xbox gift cards are not live yet",
     description:
       "Xbox gift cards are not in the current VaultQuest vault. Steam remains the primary gaming redeem.",
     intro:

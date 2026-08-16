@@ -36,12 +36,12 @@ export function HeroRedeemDemo() {
   const current = STEPS[step];
 
   return (
-    <div className="vq-demo" aria-label="Demo: earn Vault points, unlock Steam credit, apply on Steam">
+    <div className="vq-demo" aria-label="Sample only. Not a real redemption.">
       <div className="vq-demo__chrome">
         <span className="vq-demo__dot" />
         <span className="vq-demo__dot" />
         <span className="vq-demo__dot" />
-        <p className="vq-demo__url">vaultquest.app → Steam</p>
+        <p className="vq-demo__url">Sample only. Not a real code.</p>
       </div>
 
       <div className="vq-demo__steps" role="tablist" aria-label="Demo steps">
@@ -77,12 +77,12 @@ export function HeroRedeemDemo() {
           <div className="vq-demo__panel animate-vq-unlock">
             <p className="vq-demo__eyebrow">Rewards</p>
             <p className="vq-demo__heading">$5 Steam credit</p>
-            <p className="vq-demo__meta">Cost 500 VP · Fulfill within 24–48h</p>
+            <p className="vq-demo__meta">Cost 500 VP. Sample unlock, not a real send.</p>
             <div className="vq-demo__cta-row">
               <span className="vq-demo__pill">Unlock</span>
-              <span className="vq-demo__code">VQ-STEAM-7K2M</span>
+              <span className="vq-demo__code">Sample</span>
             </div>
-            <p className="vq-demo__hint">Code ready — open Steam to redeem</p>
+            <p className="vq-demo__hint">Example only. We do not show a real Steam code here.</p>
           </div>
         )}
 
@@ -90,9 +90,9 @@ export function HeroRedeemDemo() {
           <div className="vq-demo__panel vq-demo__panel--steam animate-vq-unlock">
             <p className="vq-demo__eyebrow vq-demo__eyebrow--brass">Steam</p>
             <p className="vq-demo__heading">Activate a Product Code</p>
-            <div className="vq-demo__steam-field">VQ-STEAM-7K2M</div>
-            <p className="vq-demo__steam-ok">Wallet credited · +$5.00 USD</p>
-            <p className="vq-demo__hint">Same flow users follow after unlock on VaultQuest</p>
+            <div className="vq-demo__steam-field">Sample. Not a real code.</div>
+            <p className="vq-demo__steam-ok">No wallet was credited. This is a walkthrough.</p>
+            <p className="vq-demo__hint">A real code would go to your VaultQuest account after unlock.</p>
           </div>
         )}
       </div>
