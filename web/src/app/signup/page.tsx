@@ -33,7 +33,6 @@ export default async function SignupPage({
         google={Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET)}
         discord={Boolean(process.env.AUTH_DISCORD_ID && process.env.AUTH_DISCORD_SECRET)}
         redirectTo={pathAfterSignup()}
-        utm={utm}
       />
       <SignupForm from={from} utm={utm} />
     </div>

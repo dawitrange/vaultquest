@@ -1,22 +1,17 @@
 import { signIn } from "@/auth";
-import { rememberFirstTouchUtm } from "@/lib/actions/auth";
-import type { UtmTouch } from "@/lib/utm";
 
 export function OAuthButtons({
   google,
   discord,
   redirectTo = "/account",
-  utm,
 }: {
   google: boolean;
   discord: boolean;
   redirectTo?: string;
-  utm?: UtmTouch;
 }) {
-  // SSO: wire AUTH_GOOGLE_ID/SECRET + AUTH_DISCORD_ID/SECRET in web/.env + Vercel env to enable Google/Discord.
-  // No divider when both are off. Email forms on /signup and /login stand alone.
+  // SSO: wire AUTH_GOOGLE_ID/SECRET + AUTH_DISCORD_ID/SECRET in web/.env + Vercel env to enable Google/Discord — no user-visible hint.
   if (!google && !discord) {
-    return null;
+    return <div className="relative py-2 text-center text-xs text-[var(--vq-ink-faint)]">or continue with email</div>;
   }
 
   return (
@@ -25,7 +20,6 @@ export function OAuthButtons({
         <form
           action={async () => {
             "use server";
-            if (utm) await rememberFirstTouchUtm(utm);
             await signIn("google", { redirectTo });
           }}
         >
@@ -41,7 +35,6 @@ export function OAuthButtons({
         <form
           action={async () => {
             "use server";
-            if (utm) await rememberFirstTouchUtm(utm);
             await signIn("discord", { redirectTo });
           }}
         >

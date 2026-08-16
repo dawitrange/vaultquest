@@ -11,10 +11,8 @@ import { sendPasswordResetEmail } from "@/lib/email";
 import { createResetToken, hashResetToken, RESET_TOKEN_TTL_MS, resetLinkForToken } from "@/lib/password-reset";
 import {
   FIRST_TOUCH_COOKIE,
-  FIRST_TOUCH_MAX_AGE_SEC,
   hasUtm,
   mergeFirstTouch,
-  serializeUtmCookie,
   utmFromCookieValue,
   utmFromFormData,
   type UtmTouch,
@@ -179,22 +177,6 @@ export async function resetPasswordAction(
   ]);
 
   return { ok: true, message: "Password updated. You can sign in now." };
-}
-
-export async function rememberFirstTouchUtm(utm: UtmTouch): Promise<void> {
-  if (!hasUtm(utm)) return;
-  try {
-    const jar = await cookies();
-    if (jar.get(FIRST_TOUCH_COOKIE)?.value) return;
-    jar.set(FIRST_TOUCH_COOKIE, serializeUtmCookie(utm), {
-      path: "/",
-      maxAge: FIRST_TOUCH_MAX_AGE_SEC,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-    });
-  } catch {
-    // Cookie jar unavailable (rare). Form hidden fields still persist UTMs on email signup.
-  }
 }
 
 async function firstTouchUtmFromRequest(formData: FormData): Promise<UtmTouch> {
