@@ -24,7 +24,7 @@ All names, copy, visuals, and assets are original VaultQuest work. The UI uses d
 - `/play/vault-bluff` requires authentication and is `noindex`. Signed-out users go directly to `/login?from=play`; the game route does not render a signed-out play panel. It supports persona selection or automatic assignment, a new match, active rounds, results, instant rematch, and one optional rotated Earn recommendation after three completed matches.
 - `Play` is added to primary navigation and `/play` to public sitemap paths.
 - The centralized auth redirect allowlist maps `from=play` to `/play/vault-bluff`. Login, signup, credential forms, and OAuth redirects all preserve the `play` hint so successful authentication completes the round-trip. While the visitor is on `/play`, the signed-out header's desktop and mobile `Sign in` links use `/login?from=play`, and both `Sign up` links use `/signup?from=play`.
-- The site-wide Vault Assistant is inherited chrome, not game chat. It remains available on `/play` and is hidden only on `/play/vault-bluff`.
+- The site-wide Vault Assistant is inherited chrome, not game chat. It does not render or fetch chat configuration on `/play` or `/play/vault-bluff`.
 
 ## Match rules
 
@@ -42,7 +42,7 @@ All names, copy, visuals, and assets are original VaultQuest work. The UI uses d
   - How confident are you?
 - Keeper answers come from approved answer options and include confidence of Certain, Unsure, or Guessing and a Keep or Take recommendation.
 - When the human is Keeper, the bot is Chooser. After the second human answer, the UI must show whether the bot kept Case B or took Case A before or alongside the key reveal.
-- The UI may show server-measured response duration, confidence, prior answers, contradictions, and recommendation. It has no free text.
+- The UI may use server-measured duration internally for aggregate player memory, but it does not show raw timeout milliseconds as bot response time. It may show confidence, prior answers, contradictions, and recommendation. It has no free text.
 - Whoever ends with the key earns one round point.
 - Four rounds complete the match. Ties are allowed. A rematch starts immediately on request.
 - The server randomly places the key before behavior is evaluated. The bot cannot change placement.
@@ -176,7 +176,7 @@ Safe properties may include engine version, policy version, persona, completion 
 
 ## Required UI states
 
-The signed-out state exists on the public `/play` explainer only. Authenticated components under `web/src/components/play/` cover preview-schema unavailable, new match, Keeper inspection, Chooser questioning, bot-answering status, Keeper response, bot-choosing status after the second Keeper answer, human Keep or Take, bot Chooser decision, visually separate reveal and round result, match result, reward pending, distinct daily and rolling cap states, populated and empty rotated Earn slots, and dedicated error recovery with retry. `/play/vault-bluff` never renders a signed-out game panel. The experience must work on mobile and by keyboard. Interactive targets are at least 44 px; short chips also have a 44 px minimum width. Color cannot be the only case identifier. Brass and gold are reserved for the Vault Key, cases, and unlock moments.
+The signed-out state exists on the public `/play` explainer only. Authenticated components under `web/src/components/play/` cover preview-schema unavailable, new match, Keeper inspection, Chooser questioning, bot-answering status, Keeper response, bot-choosing status after the second Keeper answer, human Keep or Take, bot Chooser decision, held reveal with explicit Continue, visually separate round result, match result, reward pending, distinct daily and rolling cap states, populated and empty rotated Earn slots, confirmation-guarded forfeit, and dedicated error recovery with retry. Every human Chooser round first renders at 0 of 2 with no used questions; a short interaction guard prevents the reveal click from landing on a new-round question. Keeper response submission reads the answer, confidence, and recommendation from the submitted form so the visible selection is the sent selection. `/play/vault-bluff` never renders a signed-out game panel. The experience must work on mobile and by keyboard. Interactive targets are at least 44 px; short chips also have a 44 px minimum width. Color cannot be the only case identifier. Brass and gold are reserved for the Vault Key, cases, and unlock moments.
 
 ## Release and deployment gates
 

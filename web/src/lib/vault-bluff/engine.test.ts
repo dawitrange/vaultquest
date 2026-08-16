@@ -131,6 +131,46 @@ test("bot chooser decision is exposed safely when the human is Keeper", () => {
   assert.ok(dto.currentRound.keyCase);
 });
 
+test("every human Chooser round starts with zero questions and both available", () => {
+  let state = startMatch({ seed: "chooser-round-reset", persona: "ANALYST", now: START });
+  let tick = 1;
+  let chooserStarts = 0;
+  while (chooserStarts < 2) {
+    const round = state.rounds.at(-1)!;
+    const now = `2026-08-16T12:01:${String(tick).padStart(2, "0")}.000Z`;
+    tick += 1;
+    if (round.phase === "CHOOSER_QUESTIONING" && round.questions.length === 0) {
+      assert.equal(round.responses.length, 0);
+      assert.equal(APPROVED_ANSWERS.KEY_INSIDE_YOUR_CASE.length, 2);
+      chooserStarts += 1;
+      if (chooserStarts === 2) break;
+    }
+    if (round.phase === "KEEPER_INSPECTION") {
+      state = applyCommand(state, { kind: "ACK_INSPECTION", now });
+    } else if (round.phase === "KEEPER_RESPONSE") {
+      const question = round.questions[round.responses.length]!;
+      state = applyCommand(state, {
+        kind: "ANSWER_QUESTION",
+        answer: APPROVED_ANSWERS[question][0]!,
+        confidence: "UNSURE",
+        recommendation: "KEEP",
+        now,
+      });
+    } else if (round.phase === "CHOOSER_QUESTIONING") {
+      const question =
+        round.questions.length === 0
+          ? "KEY_INSIDE_YOUR_CASE"
+          : "HOW_CONFIDENT_ARE_YOU";
+      state = applyCommand(state, { kind: "ASK_QUESTION", question, now });
+    } else if (round.phase === "CHOOSER_DECISION") {
+      state = applyCommand(state, { kind: "CHOOSE_CASE", choice: "KEEP", now });
+    } else if (round.phase === "ROUND_REVEAL") {
+      state = applyCommand(state, { kind: "NEXT_ROUND", now });
+    }
+  }
+  assert.equal(state.rounds.at(-1)?.number, 4);
+});
+
 test("server deadline rejects stale commands without mutating state", () => {
   const state = startMatch({ seed: "expired", persona: "ANALYST", now: START });
   const original = structuredClone(state);

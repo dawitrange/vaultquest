@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { captureClientEvent, PH_EVENTS } from "@/lib/posthog-client";
 import { PERSONAS } from "@/lib/vault-bluff/personas";
+import { parseKeeperResponseForm } from "@/lib/vault-bluff/response-form";
 import {
   APPROVED_ANSWERS,
   PERSONA_IDS,
@@ -54,6 +55,8 @@ type EarnQuest = {
 };
 
 const STORAGE_KEY = "vaultquest:vault-bluff:session";
+const REVEAL_HOLD_MS = 1_500;
+const ROUND_ENTRY_GUARD_MS = 700;
 
 const ANSWER_LABELS: Record<ApprovedAnswer, string> = {
   YES: "Yes",
@@ -89,6 +92,35 @@ export function VaultBluffGame({
   const [answer, setAnswer] = useState<ApprovedAnswer | null>(null);
   const [confidence, setConfidence] = useState<Confidence>("UNSURE");
   const [recommendation, setRecommendation] = useState<Recommendation>("KEEP");
+  const [revealReady, setRevealReady] = useState(false);
+  const [roundControlsReady, setRoundControlsReady] = useState(false);
+  const [forfeitConfirmOpen, setForfeitConfirmOpen] = useState(false);
+  const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function acceptGameResult(result: ApiResult) {
+    if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+    setGame(result);
+    setForfeitConfirmOpen(false);
+    const round = result.session.currentRound;
+    if (round.phase === "ROUND_REVEAL") {
+      setRevealReady(false);
+      setRoundControlsReady(false);
+      transitionTimerRef.current = setTimeout(() => {
+        setRevealReady(true);
+        transitionTimerRef.current = null;
+      }, REVEAL_HOLD_MS);
+    } else if (round.phase === "CHOOSER_QUESTIONING" && round.questions.length === 0) {
+      setRevealReady(false);
+      setRoundControlsReady(false);
+      transitionTimerRef.current = setTimeout(() => {
+        setRoundControlsReady(true);
+        transitionTimerRef.current = null;
+      }, ROUND_ENTRY_GUARD_MS);
+    } else {
+      setRevealReady(true);
+      setRoundControlsReady(true);
+    }
+  }
 
   async function loadSession(sessionId: string) {
     setLoading(true);
@@ -99,7 +131,7 @@ export function VaultBluffGame({
       });
       if (response.ok) {
         const result: ApiResult = await response.json();
-        setGame(result);
+        acceptGameResult(result);
         setRetryIntent(null);
       } else if (response.status === 404) {
         localStorage.removeItem(STORAGE_KEY);
@@ -125,6 +157,13 @@ export function VaultBluffGame({
     });
   }, []);
 
+  useEffect(
+    () => () => {
+      if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+    },
+    [],
+  );
+
   async function start(persona?: PersonaId, rematch = false) {
     setPending(true);
     setError(null);
@@ -141,7 +180,7 @@ export function VaultBluffGame({
       } else {
         const result = body as ApiResult;
         localStorage.setItem(STORAGE_KEY, result.id);
-        setGame(result);
+        acceptGameResult(result);
         setRetryIntent(null);
       }
     } catch {
@@ -176,7 +215,7 @@ export function VaultBluffGame({
         setRetryIntent({ kind: "action", command });
         if (body?.error?.code === "VERSION_CONFLICT") await loadSession(game.id);
       } else {
-        setGame(body as ApiResult);
+        acceptGameResult(body as ApiResult);
         setRetryIntent(null);
         setAnswer(null);
         setConfidence("UNSURE");
@@ -200,6 +239,21 @@ export function VaultBluffGame({
     } else {
       void act(retryIntent.command);
     }
+  }
+
+  function submitKeeperResponse(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (pending) return;
+    const draft = parseKeeperResponseForm(new FormData(event.currentTarget));
+    if (!draft) {
+      setError("Choose an answer, confidence, and recommendation before locking your response.");
+      setRetryIntent(null);
+      return;
+    }
+    void act({
+      kind: "ANSWER_QUESTION",
+      ...draft,
+    });
   }
 
   if (loading) {
@@ -308,7 +362,7 @@ export function VaultBluffGame({
         ) : null}
 
         {round.phase === "KEEPER_RESPONSE" && activeQuestion ? (
-          <section aria-labelledby="response-title">
+          <form aria-labelledby="response-title" onSubmit={submitKeeperResponse}>
             <StageLabel>Bot asks · question {round.responses.length + 1} of 2</StageLabel>
             <h2 id="response-title" className="mt-2 text-2xl font-semibold">
               {QUESTION_LABELS[activeQuestion]}
@@ -325,6 +379,7 @@ export function VaultBluffGame({
             ) : null}
             <fieldset className="mt-6">
               <legend className="text-sm font-semibold">Approved answer</legend>
+              <input type="hidden" name="answer" value={answer ?? ""} />
               <div className="mt-2 flex flex-wrap gap-2">
                 {APPROVED_ANSWERS[activeQuestion].map((option) => (
                   <button
@@ -346,34 +401,27 @@ export function VaultBluffGame({
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <SelectField
                 label="Confidence"
+                name="confidence"
                 value={confidence}
                 onChange={(value) => setConfidence(value as Confidence)}
                 options={["CERTAIN", "UNSURE", "GUESSING"]}
               />
               <SelectField
                 label="Recommendation"
+                name="recommendation"
                 value={recommendation}
                 onChange={(value) => setRecommendation(value as Recommendation)}
                 options={["KEEP", "TAKE"]}
               />
             </div>
             <button
-              type="button"
-              disabled={pending || !answer}
-              onClick={() =>
-                answer &&
-                void act({
-                  kind: "ANSWER_QUESTION",
-                  answer,
-                  confidence,
-                  recommendation,
-                })
-              }
+              type="submit"
+              disabled={pending}
               className="mt-5 rounded-md bg-[var(--vq-teal)] px-5 py-3 font-semibold text-[var(--vq-bg-deep)] disabled:opacity-40"
             >
-              Lock response
+              {pendingAction === "ANSWER_QUESTION" ? "Locking response…" : "Lock response"}
             </button>
-          </section>
+          </form>
         ) : null}
 
         {round.phase === "CHOOSER_QUESTIONING" ? (
@@ -383,6 +431,11 @@ export function VaultBluffGame({
               Choose two questions for the {persona.name}
             </h2>
             <CasePair highlighted="CASE_A" />
+            {!roundControlsReady && round.questions.length === 0 ? (
+              <p role="status" className="mt-5 text-sm text-[var(--vq-ink-muted)]">
+                New round ready. Questions unlock in a moment…
+              </p>
+            ) : null}
             {pendingAction === "ASK_QUESTION" ? (
               <p
                 role="status"
@@ -397,7 +450,11 @@ export function VaultBluffGame({
                 <button
                   key={question}
                   type="button"
-                  disabled={pending || round.questions.includes(question)}
+                  disabled={
+                    pending ||
+                    !roundControlsReady ||
+                    round.questions.includes(question)
+                  }
                   onClick={() => void act({ kind: "ASK_QUESTION", question })}
                   className="min-h-11 rounded-md border border-[var(--vq-border)] bg-[var(--vq-surface)] p-3 text-left text-sm hover:border-[var(--vq-teal)] disabled:opacity-35"
                 >
@@ -479,13 +536,22 @@ export function VaultBluffGame({
                 The Vault Key awards one round point only.
               </p>
             </div>
+            {!revealReady ? (
+              <p role="status" className="mt-4 text-sm text-[var(--vq-ink-muted)]">
+                Reveal locked briefly so it cannot be skipped…
+              </p>
+            ) : null}
             <button
               type="button"
-              disabled={pending}
+              disabled={pending || !revealReady}
               onClick={() => void act({ kind: "NEXT_ROUND" })}
               className="mt-5 rounded-md bg-[var(--vq-teal)] px-5 py-3 font-semibold text-[var(--vq-bg-deep)] disabled:opacity-50"
             >
-              {round.number === 4 ? "See match result" : "Next round"}
+              {!revealReady
+                ? "Continue available shortly"
+                : round.number === 4
+                  ? "Continue to match result"
+                  : "Continue to next round"}
             </button>
           </section>
         ) : null}
@@ -508,14 +574,46 @@ export function VaultBluffGame({
         onRetry={retryIntent ? retryLast : null}
       />
       {!game.session.completed ? (
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => void act({ kind: "FORFEIT" })}
-          className="mt-8 inline-flex min-h-11 items-center px-2 text-sm text-[var(--vq-ink-faint)] underline hover:text-[var(--vq-danger)] disabled:opacity-50"
-        >
-          Forfeit match
-        </button>
+        <section className="mt-12 border-t border-[var(--vq-border)] pt-6" aria-label="Match options">
+          {forfeitConfirmOpen ? (
+            <div className="rounded-[10px] border border-[var(--vq-danger)]/50 bg-[var(--vq-danger)]/10 p-4">
+              <h2 className="font-semibold text-[var(--vq-danger)]">Forfeit this match?</h2>
+              <p className="mt-1 text-sm text-[var(--vq-ink-muted)]">
+                The match ends with no XP or promotional VP and will not train player memory.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => setForfeitConfirmOpen(false)}
+                  className="inline-flex min-h-11 items-center rounded-md border border-[var(--vq-border-strong)] px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                >
+                  Keep playing
+                </button>
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => {
+                    setForfeitConfirmOpen(false);
+                    void act({ kind: "FORFEIT" });
+                  }}
+                  className="inline-flex min-h-11 items-center rounded-md border border-[var(--vq-danger)] px-4 py-2 text-sm font-semibold text-[var(--vq-danger)] disabled:opacity-50"
+                >
+                  Confirm forfeit
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => setForfeitConfirmOpen(true)}
+              className="inline-flex min-h-11 items-center rounded-md border border-[var(--vq-border)] px-4 py-2 text-sm text-[var(--vq-ink-faint)] hover:border-[var(--vq-danger)]/60 hover:text-[var(--vq-danger)] disabled:opacity-50"
+            >
+              Forfeit options
+            </button>
+          )}
+        </section>
       ) : null}
     </GameShell>
   );
@@ -670,9 +768,6 @@ function ResponseHistory({ responses }: { responses: SafeSessionDto["currentRoun
           <p className="mt-1">
             {ANSWER_LABELS[response.answer]} · {ANSWER_LABELS[response.confidence]} · recommends {response.recommendation.toLowerCase()}
           </p>
-          <p className="mt-1 font-[family-name:var(--vq-font-mono)] text-xs text-[var(--vq-ink-faint)]">
-            Server measured {response.durationMs} ms
-          </p>
         </li>
       ))}
     </ol>
@@ -705,11 +800,13 @@ function CasePair({ highlighted, revealed = false }: { highlighted?: "CASE_A" | 
 
 function SelectField({
   label,
+  name,
   value,
   options,
   onChange,
 }: {
   label: string;
+  name: string;
   value: string;
   options: readonly string[];
   onChange: (value: string) => void;
@@ -718,6 +815,7 @@ function SelectField({
     <label className="text-sm">
       <span className="mb-1 block font-semibold">{label}</span>
       <select
+        name={name}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="w-full rounded-md border border-[var(--vq-border)] bg-[var(--vq-bg-sunken)] px-3 py-2"
