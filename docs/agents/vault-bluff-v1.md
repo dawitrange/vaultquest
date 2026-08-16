@@ -21,9 +21,10 @@ All names, copy, visuals, and assets are original VaultQuest work. The UI uses d
 ## Routes
 
 - `/play` is a public, indexable explanation and an authenticated hub. It shows available and pending VP, a featured Vault Bluff card, daily promotional VP status, XP, rank, cosmetic progress, and an honest note that verified quests remain the main VP source.
-- `/play/vault-bluff` requires authentication. Signed-out users go to `/login?from=play`. It supports persona selection or automatic assignment, a new match, active rounds, results, instant rematch, and one optional rotated Earn recommendation after three completed matches.
+- `/play/vault-bluff` requires authentication and is `noindex`. Signed-out users go directly to `/login?from=play`; the game route does not render a signed-out play panel. It supports persona selection or automatic assignment, a new match, active rounds, results, instant rematch, and one optional rotated Earn recommendation after three completed matches.
 - `Play` is added to primary navigation and `/play` to public sitemap paths.
 - The auth redirect allowlist maps `from=play` to `/play/vault-bluff`.
+- The site-wide Vault Assistant is inherited chrome, not game chat. It remains available on `/play` and is hidden only on `/play/vault-bluff`.
 
 ## Match rules
 
@@ -151,7 +152,7 @@ This freeze does not change the game rules. It controls funding, minting, abuse 
 
 ## Optional Earn recommendation
 
-After the third valid completed match, the game may show at most one optional quest selected through existing healthy, under-cap rotation. The card must show exact VP, effort, and hold time. It never blocks play or the daily bonus. A click earns no VP. Partner VP posts only after a verified partner postback.
+After the third valid completed match, the game may show at most one optional quest selected through the existing healthy, under-cap affiliate rotation. It cannot pin or hardcode `q-surveys` or another quest. The card must show exact VP, effort, and hold time. It never blocks play or the daily bonus. A click earns no VP. Partner VP posts only after a verified partner postback.
 
 ## Analytics
 
@@ -172,7 +173,7 @@ Safe properties may include engine version, policy version, persona, completion 
 
 ## Required UI states
 
-Components under `web/src/components/play/` cover signed out, new match, Keeper inspection, Chooser questioning, Keeper response, Keep or Take, reveal, round result, match result, reward pending, cap reached, and error recovery. The experience must work on mobile and by keyboard. Color cannot be the only case identifier.
+The signed-out state exists on the public `/play` explainer only. Authenticated components under `web/src/components/play/` cover new match, Keeper inspection, Chooser questioning, bot-answering status, Keeper response, Keep or Take, visually separate reveal and round result, match result, reward pending, distinct daily and rolling cap states, and dedicated error recovery with retry. `/play/vault-bluff` never renders a signed-out game panel. The experience must work on mobile and by keyboard. Interactive targets are at least 44 px. Color cannot be the only case identifier. Brass and gold are reserved for the Vault Key, cases, and unlock moments.
 
 ## Release and deployment gates
 

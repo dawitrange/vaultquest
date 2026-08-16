@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { VaultBluffGame } from "@/components/play/VaultBluffGame";
-import { listServableQuests } from "@/lib/affiliates";
+import { getRotatedEarnRecommendation } from "@/lib/affiliates";
 import { getPlayProgress } from "@/lib/vault-bluff/service";
 
 export const metadata: Metadata = {
@@ -18,7 +18,10 @@ export default async function VaultBluffPage() {
   const progress = await getPlayProgress(session.user.id);
   const earnQuest =
     progress.completedMatches >= 3
-      ? (await listServableQuests()).find((quest) => quest.id === "q-surveys") ?? null
+      ? await getRotatedEarnRecommendation({
+          userId: session.user.id,
+          rotationOffset: progress.completedMatches,
+        })
       : null;
 
   return (

@@ -39,6 +39,11 @@ type ClientCommand =
   | { kind: "NEXT_ROUND" }
   | { kind: "FORFEIT" };
 
+type RetryIntent =
+  | { kind: "restore"; sessionId: string }
+  | { kind: "start"; persona?: PersonaId; rematch: boolean }
+  | { kind: "action"; command: ClientCommand };
+
 type EarnQuest = {
   id: string;
   title: string;
@@ -78,13 +83,16 @@ export function VaultBluffGame({
   const [game, setGame] = useState<ApiResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
+  const [pendingAction, setPendingAction] = useState<ClientCommand["kind"] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [retryIntent, setRetryIntent] = useState<RetryIntent | null>(null);
   const [answer, setAnswer] = useState<ApprovedAnswer | null>(null);
   const [confidence, setConfidence] = useState<Confidence>("UNSURE");
   const [recommendation, setRecommendation] = useState<Recommendation>("KEEP");
 
   async function loadSession(sessionId: string) {
     setLoading(true);
+    setError(null);
     try {
       const response = await fetch(`/api/games/vault-bluff/sessions/${sessionId}`, {
         cache: "no-store",
@@ -92,14 +100,18 @@ export function VaultBluffGame({
       if (response.ok) {
         const result: ApiResult = await response.json();
         setGame(result);
+        setRetryIntent(null);
       } else if (response.status === 404) {
         localStorage.removeItem(STORAGE_KEY);
         setGame(null);
+        setRetryIntent(null);
       } else {
         setError("Your match could not be restored. Try again.");
+        setRetryIntent({ kind: "restore", sessionId });
       }
     } catch {
       setError("Your match could not be restored. Try again.");
+      setRetryIntent({ kind: "restore", sessionId });
     } finally {
       setLoading(false);
     }
@@ -125,13 +137,16 @@ export function VaultBluffGame({
       const body = await response.json();
       if (!response.ok) {
         setError(body?.error?.message ?? "The match could not start.");
+        setRetryIntent({ kind: "start", persona, rematch });
       } else {
         const result = body as ApiResult;
         localStorage.setItem(STORAGE_KEY, result.id);
         setGame(result);
+        setRetryIntent(null);
       }
     } catch {
       setError("The match could not start. Check your connection and try again.");
+      setRetryIntent({ kind: "start", persona, rematch });
     } finally {
       setPending(false);
     }
@@ -140,6 +155,7 @@ export function VaultBluffGame({
   async function act(command: ClientCommand) {
     if (!game) return;
     setPending(true);
+    setPendingAction(command.kind);
     setError(null);
     try {
       const response = await fetch(
@@ -157,17 +173,32 @@ export function VaultBluffGame({
       const body = await response.json();
       if (!response.ok) {
         setError(body?.error?.message ?? "That action could not be applied.");
+        setRetryIntent({ kind: "action", command });
         if (body?.error?.code === "VERSION_CONFLICT") await loadSession(game.id);
       } else {
         setGame(body as ApiResult);
+        setRetryIntent(null);
         setAnswer(null);
         setConfidence("UNSURE");
         setRecommendation("KEEP");
       }
     } catch {
       setError("That action could not be sent. Your saved match is unchanged.");
+      setRetryIntent({ kind: "action", command });
     } finally {
       setPending(false);
+      setPendingAction(null);
+    }
+  }
+
+  function retryLast() {
+    if (!retryIntent) return;
+    if (retryIntent.kind === "restore") {
+      void loadSession(retryIntent.sessionId);
+    } else if (retryIntent.kind === "start") {
+      void start(retryIntent.persona, retryIntent.rematch);
+    } else {
+      void act(retryIntent.command);
     }
   }
 
@@ -204,7 +235,7 @@ export function VaultBluffGame({
                 <span className="font-[family-name:var(--vq-font-display)] text-xl font-semibold">
                   {PERSONAS[persona].name}
                 </span>
-                <span className="ml-2 font-[family-name:var(--vq-font-mono)] text-xs text-[var(--vq-brass)]">
+                <span className="ml-2 font-[family-name:var(--vq-font-mono)] text-xs text-[var(--vq-ink-muted)]">
                   {PERSONAS[persona].style}
                 </span>
                 <span className="mt-2 block text-sm text-[var(--vq-ink-muted)]">
@@ -221,7 +252,11 @@ export function VaultBluffGame({
           >
             Auto-assign persona
           </button>
-          <GameError error={error} />
+          <GameError
+            error={error}
+            retrying={pending || loading}
+            onRetry={retryIntent ? retryLast : null}
+          />
         </section>
       </GameShell>
     );
@@ -288,7 +323,7 @@ export function VaultBluffGame({
                     type="button"
                     aria-pressed={answer === option}
                     onClick={() => setAnswer(option)}
-                    className={`rounded-md border px-4 py-2 text-sm ${
+                    className={`min-h-11 rounded-md border px-4 py-2 text-sm ${
                       answer === option
                         ? "border-[var(--vq-teal)] bg-[var(--vq-teal-glow)] text-[var(--vq-teal)]"
                         : "border-[var(--vq-border)]"
@@ -336,9 +371,18 @@ export function VaultBluffGame({
           <section aria-labelledby="question-title">
             <StageLabel>Your questions · {round.questions.length} of 2 asked</StageLabel>
             <h2 id="question-title" className="mt-2 text-2xl font-semibold">
-              Question the {persona.name}
+              Choose two questions for the {persona.name}
             </h2>
             <CasePair highlighted="CASE_A" />
+            {pendingAction === "ASK_QUESTION" ? (
+              <p
+                role="status"
+                aria-live="polite"
+                className="mt-5 rounded-md border border-[var(--vq-teal)]/40 bg-[var(--vq-teal-glow)] px-4 py-3 text-sm text-[var(--vq-teal)]"
+              >
+                VaultQuest bot is answering…
+              </p>
+            ) : null}
             <div className="mt-6 grid gap-2 sm:grid-cols-2">
               {QUESTIONS.map((question) => (
                 <button
@@ -346,7 +390,7 @@ export function VaultBluffGame({
                   type="button"
                   disabled={pending || round.questions.includes(question)}
                   onClick={() => void act({ kind: "ASK_QUESTION", question })}
-                  className="rounded-md border border-[var(--vq-border)] bg-[var(--vq-surface)] p-3 text-left text-sm hover:border-[var(--vq-teal)] disabled:opacity-35"
+                  className="min-h-11 rounded-md border border-[var(--vq-border)] bg-[var(--vq-surface)] p-3 text-left text-sm hover:border-[var(--vq-teal)] disabled:opacity-35"
                 >
                   {QUESTION_LABELS[question]}
                 </button>
@@ -385,14 +429,27 @@ export function VaultBluffGame({
 
         {round.phase === "ROUND_REVEAL" ? (
           <section aria-labelledby="reveal-title">
-            <StageLabel>Key revealed</StageLabel>
-            <h2 id="reveal-title" className="mt-2 text-3xl font-semibold">
-              {round.winner === "HUMAN" ? "You found the Vault Key." : "The bot found the Vault Key."}
-            </h2>
-            <CasePair highlighted={round.keyCase} revealed />
-            <p className="mt-4 text-sm text-[var(--vq-ink-muted)]">
-              The key was in {round.keyCase === "CASE_A" ? "Case A" : "Case B"}. It awards one round point only.
-            </p>
+            <div className="rounded-[10px] border border-[var(--vq-brass-dim)] bg-[var(--vq-bg-sunken)] p-5">
+              <StageLabel>Key reveal</StageLabel>
+              <h2 id="reveal-title" className="mt-2 text-3xl font-semibold">
+                Vault Key revealed
+              </h2>
+              <CasePair highlighted={round.keyCase} revealed />
+              <p className="mt-4 text-sm text-[var(--vq-ink-muted)]">
+                The key was in {round.keyCase === "CASE_A" ? "Case A" : "Case B"}.
+              </p>
+            </div>
+            <div className="mt-4 rounded-[10px] border border-[var(--vq-border-strong)] bg-[var(--vq-surface)] p-5">
+              <p className="font-[family-name:var(--vq-font-mono)] text-xs uppercase tracking-wider text-[var(--vq-teal)]">
+                Round result
+              </p>
+              <h3 className="mt-2 text-2xl font-semibold">
+                {round.winner === "HUMAN" ? "Point to you" : "Point to the VaultQuest bot"}
+              </h3>
+              <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
+                The Vault Key awards one round point only.
+              </p>
+            </div>
             <button
               type="button"
               disabled={pending}
@@ -416,13 +473,17 @@ export function VaultBluffGame({
         ) : null}
       </div>
 
-      <GameError error={error} />
+      <GameError
+        error={error}
+        retrying={pending || loading}
+        onRetry={retryIntent ? retryLast : null}
+      />
       {!game.session.completed ? (
         <button
           type="button"
           disabled={pending}
           onClick={() => void act({ kind: "FORFEIT" })}
-          className="mt-8 text-xs text-[var(--vq-ink-faint)] underline hover:text-[var(--vq-danger)] disabled:opacity-50"
+          className="mt-8 inline-flex min-h-11 items-center px-2 text-sm text-[var(--vq-ink-faint)] underline hover:text-[var(--vq-danger)] disabled:opacity-50"
         >
           Forfeit match
         </button>
@@ -463,7 +524,7 @@ function MatchResult({
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         <div className="rounded-[10px] border border-[var(--vq-border)] bg-[var(--vq-surface)] p-4">
           <p className="text-xs uppercase tracking-wider text-[var(--vq-ink-faint)]">XP earned</p>
-          <p className="mt-1 font-[family-name:var(--vq-font-mono)] text-2xl text-[var(--vq-brass)]">
+          <p className="mt-1 font-[family-name:var(--vq-font-mono)] text-2xl text-[var(--vq-teal)]">
             +{game.session.xpAwarded} XP
           </p>
           <p className="mt-1 text-xs text-[var(--vq-ink-muted)]">{totalXp} total XP</p>
@@ -497,7 +558,7 @@ function MatchResult({
                 hold_days: earnQuest.holdDays,
               })
             }
-            className="mt-4 inline-flex rounded-md border border-[var(--vq-teal)] px-4 py-2 text-sm font-semibold text-[var(--vq-teal)]"
+            className="mt-4 inline-flex min-h-11 items-center rounded-md border border-[var(--vq-teal)] px-4 py-2 text-sm font-semibold text-[var(--vq-teal)]"
           >
             Open optional quest
           </a>
@@ -527,6 +588,14 @@ function RewardState({
         title="Reward pending"
         body={`${reward.vp} VP pending until ${new Date(reward.availableAt).toLocaleString()}.`}
         accent
+      />
+    );
+  }
+  if (reward?.kind === "blocked" && reward.reason === "daily_grant_exists") {
+    return (
+      <StatusCard
+        title="Daily cap reached"
+        body="1 promotional VP for this UTC day was already granted. Play stays open, and no additional VP was added."
       />
     );
   }
@@ -628,11 +697,36 @@ function StageLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function GameError({ error }: { error: string | null }) {
+function GameError({
+  error,
+  retrying,
+  onRetry,
+}: {
+  error: string | null;
+  retrying: boolean;
+  onRetry: (() => void) | null;
+}) {
   return error ? (
-    <p role="alert" className="mt-5 rounded-md border border-[var(--vq-danger)]/50 bg-[var(--vq-danger)]/10 p-3 text-sm text-[var(--vq-danger)]">
-      {error}
-    </p>
+    <section
+      role="alert"
+      aria-labelledby="vault-bluff-error-title"
+      className="mt-5 rounded-md border border-[var(--vq-danger)]/50 bg-[var(--vq-danger)]/10 p-4"
+    >
+      <h2 id="vault-bluff-error-title" className="font-semibold text-[var(--vq-danger)]">
+        Match connection issue
+      </h2>
+      <p className="mt-1 text-sm text-[var(--vq-ink-muted)]">{error}</p>
+      {onRetry ? (
+        <button
+          type="button"
+          disabled={retrying}
+          onClick={onRetry}
+          className="mt-3 inline-flex min-h-11 items-center rounded-md border border-[var(--vq-danger)]/60 px-4 py-2 text-sm font-semibold text-[var(--vq-ink)] hover:bg-[var(--vq-danger)]/10 disabled:opacity-50"
+        >
+          {retrying ? "Retrying…" : "Retry"}
+        </button>
+      ) : null}
+    </section>
   ) : null;
 }
 
