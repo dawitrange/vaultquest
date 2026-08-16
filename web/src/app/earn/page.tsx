@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { QuestRow } from "@/components/QuestRow";
 import { isDemoCreditEnabled } from "@/lib/actions/ledger";
-import { getServableCategories, QUESTS } from "@/lib/affiliates";
+import { getServableCategories, isSlugServable, QUESTS } from "@/lib/affiliates";
 import { GO_SIGN_IN_PATH } from "@/lib/postback";
 
 export const metadata: Metadata = {
@@ -25,7 +25,16 @@ export default async function EarnPage({
   const session = await auth();
   const signedIn = Boolean(session?.user?.id);
   const [servable, demoEnabled] = await Promise.all([getServableCategories(), isDemoCreditEnabled()]);
-  const quests = QUESTS.map((quest) => ({ quest, available: servable.has(quest.category) }));
+  const pinned = [...new Set(QUESTS.map((q) => q.pinSlug).filter((slug): slug is string => Boolean(slug)))];
+  const pinnedServable = new Set(
+    (await Promise.all(pinned.map(async (slug) => ((await isSlugServable(slug)) ? slug : null)))).filter(
+      (slug): slug is string => Boolean(slug),
+    ),
+  );
+  const quests = QUESTS.map((quest) => ({
+    quest,
+    available: quest.pinSlug ? pinnedServable.has(quest.pinSlug) : servable.has(quest.category),
+  }));
   const anyAvailable = quests.some((q) => q.available);
 
   return (
@@ -33,8 +42,8 @@ export default async function EarnPage({
       <header className="max-w-2xl">
         <h1 className="font-[family-name:var(--vq-font-display)] text-4xl font-bold tracking-tight">Earn</h1>
         <p className="mt-3 text-[var(--vq-ink-muted)]">
-          Pick a quest and start earning Vault points. Finish an offer the way it&apos;s written, the partner confirms
-          it, and your points post after a short hold — then they&apos;re yours to redeem.
+          Quests → pending Vault points → Steam. Finish an offer the way it&apos;s written. We don&apos;t control
+          partner walls — pending can take time.
         </p>
         {signedIn ? null : (
           <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
@@ -53,6 +62,7 @@ export default async function EarnPage({
 
       <div className="mt-6 flex flex-wrap gap-2 text-xs">
         <span className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-2.5 py-1 text-[var(--vq-ink-faint)]">Points post after a 3–14 day hold</span>
+        <span className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-2.5 py-1 text-[var(--vq-ink-faint)]">18+ on partner walls</span>
         <span className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-2.5 py-1 text-[var(--vq-ink-faint)]">Free to join</span>
         <Link href="/proof#earnings" className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-2.5 py-1 text-[var(--vq-ink-muted)] hover:text-[var(--vq-ink)]">How tracking works →</Link>
         <Link href="/rewards" className="rounded-full border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-2.5 py-1 text-[var(--vq-ink-muted)] hover:text-[var(--vq-ink)]">Rewards catalog →</Link>
@@ -74,6 +84,17 @@ export default async function EarnPage({
           ))}
         </div>
       )}
+
+      <section className="mt-10 max-w-2xl space-y-2 text-sm text-[var(--vq-ink-muted)]">
+        <h2 className="font-[family-name:var(--vq-font-display)] text-base font-semibold text-[var(--vq-ink)]">
+          Before you click
+        </h2>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>VaultQuest path: quest → pending VP → Steam. Not instant, not a generator.</li>
+          <li>We don&apos;t control partner walls. Pending can take days.</li>
+          <li>18+ where the partner requires it. Gamehag (third party) is their site and does not pay Vault Points.</li>
+        </ul>
+      </section>
 
       <p className="mt-8 text-xs text-[var(--vq-ink-faint)]">
         Some quests are partner links — we earn a commission when you complete them, which funds your rewards.{" "}

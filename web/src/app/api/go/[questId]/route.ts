@@ -15,7 +15,7 @@ export async function GET(
   }
 
   const session = await auth();
-  if (quest.id === "q-surveys" && !session?.user?.id) {
+  if ((quest.id === "q-surveys" || quest.id === "q-gamehag") && !session?.user?.id) {
     return NextResponse.redirect(new URL(goFailurePath("sign_in"), _req.url));
   }
 
@@ -23,6 +23,7 @@ export async function GET(
     userId: session?.user?.id,
     questId: quest.id,
     category: quest.category,
+    pinSlug: quest.pinSlug,
   });
 
   if (!started) {
