@@ -6,15 +6,17 @@ import { isMarketingHomepageUrl } from "../src/lib/postback";
  * Affiliate inventory seed.
  *
  * Do not run a blind reseed on production. /admin is the flip.
+ * Yield confirmed these prod rows read-only on 2026-08-16. They did not write.
+ * Do not flip any disabled row healthy. Do not invent URLs.
  *
  * Create-if-missing uses the defaults below (disabled placeholders).
- * On update, cpx-survey and freecash-cpa keep their status and url when
- * the row is already healthy, or when url is already a real wall rather
- * than a marketing homepage. Prod Neon already has those two healthy
- * (2026-08-16). Writing seed defaults over them would take earn-live down.
+ * On update, cpx-survey and freecash-cpa keep status and url when the row
+ * is already healthy, or when url is already a real wall rather than a
+ * marketing homepage. Writing seed defaults over those two would take
+ * earn-live down.
  *
- * Every other slug stays a disabled marketing homepage. Do not invent
- * wall URLs. Serving already refuses homepages via isMarketingHomepageUrl.
+ * AdGate and TimeWall stay parked. Every other non-live slug stays a
+ * disabled marketing homepage.
  *
  * Priority follows docs/agents/offers-mix.md §2 + PARTNER_WATERFALL.
  */
@@ -47,8 +49,7 @@ const SEED = [
     url: "https://adgatemedia.com/",
     category: AffiliateCategory.offerwall_backup,
     priority: 3,
-    // Marketing homepage. Do not flip healthy until Ethio pastes a real
-    // AdGate Rewards wall/embed URL. Yield writes that /admin flip. Never invent it.
+    // Parked. Stay disabled. Marketing homepage only. Do not invent a wall URL.
     status: AffiliateHealth.disabled,
     capDaily: 3000,
   },
@@ -58,7 +59,7 @@ const SEED = [
     url: "https://timewall.io/",
     category: AffiliateCategory.offerwall_backup,
     priority: 4,
-    // Self-serve, no traffic minimum. Fastest activation for new sites.
+    // Parked. Stay disabled. Marketing homepage only. Do not invent a wall URL.
     status: AffiliateHealth.disabled,
     capDaily: 2000,
   },
@@ -88,8 +89,8 @@ const SEED = [
     url: "https://www.cpx-research.com/",
     category: AffiliateCategory.survey_wall,
     priority: 2,
-    // Marketing homepage for create-if-missing only. Do not hardcode a wall URL.
-    // Prod already has a healthy offers-host wall from /admin. Update preserves it.
+    // Create-if-missing stays the marketing homepage. Do not hardcode the wall.
+    // Prod healthy id=dce672bc-f0c3-407c-9176-4b1df5448664. Update preserves it.
     status: AffiliateHealth.disabled,
     capDaily: 2000,
   },
@@ -101,8 +102,8 @@ const SEED = [
     url: "https://freecash.com/r/14APDV",
     category: AffiliateCategory.cpa_signup,
     priority: 1,
-    // Referral URL is real. Status stays disabled on create-if-missing.
-    // Update preserves a healthy /admin flip so a reseed cannot disable it.
+    // Referral URL is real. Create-if-missing still ships disabled.
+    // Prod healthy id=cmsm9ac5r0004f6kwagabudpl. Update preserves it.
     status: AffiliateHealth.disabled,
     capDaily: 1000,
   },
@@ -127,6 +128,32 @@ const SEED = [
     status: AffiliateHealth.disabled,
     capDaily: 2000,
   },
+] as const;
+
+/** Yield read-only confirm 2026-08-16. Seed must not overwrite these two. */
+const YIELD_KEEP_HEALTHY = [
+  {
+    slug: "cpx-survey",
+    id: "dce672bc-f0c3-407c-9176-4b1df5448664",
+    url: "https://offers.cpx-research.com/index.php?app_id=35413",
+  },
+  {
+    slug: "freecash-cpa",
+    id: "cmsm9ac5r0004f6kwagabudpl",
+    url: "https://freecash.com/r/14APDV",
+  },
+] as const;
+
+/** Yield read-only confirm 2026-08-16. Stay disabled marketing homepages. */
+const YIELD_LEAVE_DISABLED = [
+  { slug: "lootably-primary", id: "cmsm9ac1k0000f6kw5dd5yorj", url: "https://lootably.com/" },
+  { slug: "bitlabs-survey", id: "cmsm9ac4w0003f6kw08wao825", url: "https://www.bitlabs.ai/" },
+  { slug: "ayet-cpe", id: "cmsm9ac6j0005f6kw7ie3ftoi", url: "https://www.ayetstudios.com/" },
+  { slug: "adgem-cpe", id: "70a306e1-a3ef-48eb-8b3c-e0960d7220dc", url: "https://adgem.com/" },
+  { slug: "torox-backup", id: "cmsm9ac390001f6kwg5k0i2lv", url: "https://torox.io/" },
+  { slug: "adgate-backup", id: "cmsm9ac410002f6kwyvyahtui", url: "https://adgatemedia.com/" },
+  { slug: "timewall-backup", id: "95f2005e-e886-4c77-95a7-d691d01919d2", url: "https://timewall.io/" },
+  { slug: "offerdaddy-backup", id: "5fa1d88e-cc46-47b3-bc16-6dbd6b8f3257", url: "https://offerdaddy.com/" },
 ] as const;
 
 type SeedRow = (typeof SEED)[number];
@@ -169,52 +196,49 @@ export function affiliateSeedUpdate(row: SeedRow, existing: ExistingAffiliate | 
 }
 
 function proveAffiliateSeedUpdate(): void {
-  const cpx = SEED.find((row) => row.slug === "cpx-survey");
-  const freecash = SEED.find((row) => row.slug === "freecash-cpa");
-  const lootably = SEED.find((row) => row.slug === "lootably-primary");
-  assert.ok(cpx && freecash && lootably);
+  for (const row of SEED) {
+    assert.equal(row.status, AffiliateHealth.disabled, `${row.slug} seed default must stay disabled`);
+  }
 
-  const cpxLive = affiliateSeedUpdate(cpx, {
-    slug: "cpx-survey",
-    status: AffiliateHealth.healthy,
-    url: "https://offers.cpx-research.com/index.php?app_id=35413",
-  });
-  assert.equal("url" in cpxLive, false, "second seed must not reset healthy cpx-survey url");
-  assert.equal("status" in cpxLive, false, "second seed must not reset healthy cpx-survey status");
+  const cpxSeed = SEED.find((row) => row.slug === "cpx-survey");
+  assert.ok(cpxSeed);
+  assert.equal(cpxSeed.url, "https://www.cpx-research.com/");
+  assert.notEqual(cpxSeed.url, YIELD_KEEP_HEALTHY[0].url);
 
-  const freecashLive = affiliateSeedUpdate(freecash, {
-    slug: "freecash-cpa",
-    status: AffiliateHealth.healthy,
-    url: "https://freecash.com/r/14APDV",
-  });
-  assert.equal("url" in freecashLive, false, "second seed must not reset healthy freecash-cpa url");
-  assert.equal("status" in freecashLive, false, "second seed must not reset healthy freecash-cpa status");
+  for (const live of YIELD_KEEP_HEALTHY) {
+    const row = SEED.find((item) => item.slug === live.slug);
+    assert.ok(row, live.slug);
+    const update = affiliateSeedUpdate(row, {
+      slug: live.slug,
+      status: AffiliateHealth.healthy,
+      url: live.url,
+    });
+    assert.equal("url" in update, false, `${live.id} ${live.slug} url must survive a second seed`);
+    assert.equal("status" in update, false, `${live.id} ${live.slug} status must survive a second seed`);
+  }
 
-  const cpxWallStillDisabled = affiliateSeedUpdate(cpx, {
+  const cpxWallStillDisabled = affiliateSeedUpdate(cpxSeed, {
     slug: "cpx-survey",
     status: AffiliateHealth.disabled,
-    url: "https://offers.cpx-research.com/index.php?app_id=35413",
+    url: YIELD_KEEP_HEALTHY[0].url,
   });
   assert.equal("url" in cpxWallStillDisabled, false, "real cpx wall url must survive even if still disabled");
   assert.equal("status" in cpxWallStillDisabled, false);
 
-  const cpxPlaceholder = affiliateSeedUpdate(cpx, {
-    slug: "cpx-survey",
-    status: AffiliateHealth.disabled,
-    url: "https://www.cpx-research.com/",
-  });
-  assert.equal(cpxPlaceholder.status, AffiliateHealth.disabled);
-  assert.equal(cpxPlaceholder.url, "https://www.cpx-research.com/");
+  for (const parked of YIELD_LEAVE_DISABLED) {
+    const row = SEED.find((item) => item.slug === parked.slug);
+    assert.ok(row, parked.slug);
+    assert.equal(row.url, parked.url, `${parked.id} ${parked.slug} seed url must stay the marketing homepage`);
+    const update = affiliateSeedUpdate(row, {
+      slug: parked.slug,
+      status: AffiliateHealth.disabled,
+      url: parked.url,
+    });
+    assert.equal(update.status, AffiliateHealth.disabled, `${parked.slug} must stay disabled`);
+    assert.equal(update.url, parked.url, `${parked.slug} must keep its marketing homepage`);
+  }
 
-  const lootablyUpdate = affiliateSeedUpdate(lootably, {
-    slug: "lootably-primary",
-    status: AffiliateHealth.healthy,
-    url: "https://lootably.com/",
-  });
-  assert.equal(lootablyUpdate.status, AffiliateHealth.disabled);
-  assert.equal(lootablyUpdate.url, "https://lootably.com/");
-
-  console.log("seed update prove: ok (second run does not reset healthy cpx-survey / freecash-cpa)");
+  console.log("seed update prove: ok (Yield-confirmed healthy rows survive a second seed)");
 }
 
 async function main() {
