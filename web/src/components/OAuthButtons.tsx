@@ -11,7 +11,7 @@ export function OAuthButtons({
 }) {
   // SSO: wire AUTH_GOOGLE_ID/SECRET + AUTH_DISCORD_ID/SECRET in web/.env + Vercel env to enable Google/Discord — no user-visible hint.
   if (!google && !discord) {
-    return <div className="relative py-2 text-center text-xs text-[var(--vq-ink-faint)]">or continue with email</div>;
+    return null;
   }
 
   return (
