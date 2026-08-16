@@ -23,7 +23,7 @@ Preconditions:
 - **Nav entry.** GET `/how-it-works`. Expect HTTP 200 and heading **How it works**.
 - **Steps present.** Body contains **Create your account**, **Pick a listed quest**, **Pending VP**, **Unlock from the vault**, and a hold range (`3–14` or equivalent).
 - **Next step.** Visible **Sign up** (`/signup`) and/or **See quests** (`/earn`). No **Start earning**, no “we’re live.”
-- **Banned scan.** Body must not contain `generator` or `working codes`. Steam password must not be requested.
+- **Banned scan.** Body must not contain `generator` or `working codes`. Steam password must not be requested. Signup copy is email only: no Google/Discord.
 - **Proof.** Save HTML to `.cursor/skills/verify-vaultquest/artifacts/how-it-works/page.html` plus status code.
 
 ## Gotchas

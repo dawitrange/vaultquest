@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 const STEPS = [
   {
     title: "Create your account",
-    body: "Sign up with email or Google/Discord. Free, about a minute.",
+    body: "Sign up with email. Free, about a minute.",
   },
   {
     title: "Pick a listed quest",

@@ -87,7 +87,7 @@ export function SiteFooter() {
               SAME TEAM SINCE 2020
             </span>
           </div>
-          <Link href="/proof" className="text-xs text-[var(--vq-ink-muted)] hover:text-[var(--vq-teal)] hover:underline">
+          <Link href="/how-it-works" className="text-xs text-[var(--vq-ink-muted)] hover:text-[var(--vq-teal)] hover:underline">
             How it works →
           </Link>
         </div>
