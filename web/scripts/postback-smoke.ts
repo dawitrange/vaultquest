@@ -1323,12 +1323,15 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
         detail: `HTTP ${clickCredit.status} credited=${String(clickRow?.credited)} clickId=${clickLedger?.clickId ?? "none"}`,
       });
 
+      const productionUserId = "cmsm9ktvi0000l4049p7l03xk";
+      const productionClickId = "cmsvy75ry000jl504w7x3q0sl";
+      const productionTxId = "1001165319314";
       const subidDb = createMemoryPostbackDb({
-        users: [userId],
+        users: [productionUserId],
         clicks: [
           {
-            id: clickId,
-            userId,
+            id: productionClickId,
+            userId: productionUserId,
             credited: false,
             questId: "q-surveys",
             affiliateLink: { partner: "cpx" },
@@ -1336,24 +1339,27 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
         ],
       });
       const subidCredit = await handlePostbackRequest({
-        url: "http://localhost/api/postback?secret=x&subid_1=c1&user_id=u&partner=cpx&trans_id=T-subid1&amount_usd=0.50",
+        url: `http://localhost/api/postback?secret=x&subid_1=${productionClickId}&ext_user_id=${productionUserId}&partner=cpx&trans_id=${productionTxId}&vp=91`,
         get: bagGet({
           secret: unitSecret,
           partner: "cpx",
-          subid_1: clickId,
-          user_id: userId,
-          trans_id: "T-subid1",
-          amount_usd: "0.50",
+          subid_1: productionClickId,
+          ext_user_id: productionUserId,
+          trans_id: productionTxId,
+          vp: "91",
         }),
         prisma: subidDb,
         nowMs,
       });
       results.push({
-        name: "subid_1 matching OfferClick prefers click flow",
+        name: "CPX ext_user_id + subid_1 links production-shaped click",
         pass:
           subidCredit.status === 200 &&
-          subidDb.clicks.get(clickId)?.credited === true &&
-          subidDb.ledger[0]?.clickId === clickId,
+          subidCredit.body.user_id === productionUserId &&
+          Number(subidCredit.body.vp) === 91 &&
+          subidDb.clicks.get(productionClickId)?.credited === true &&
+          subidDb.ledger[0]?.clickId === productionClickId &&
+          Boolean(subidDb.ledger[0]?.note?.includes(`tx=${productionTxId}`)),
         detail: `HTTP ${subidCredit.status} clickId=${subidDb.ledger[0]?.clickId ?? "none"}`,
       });
 
