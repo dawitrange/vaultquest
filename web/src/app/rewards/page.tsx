@@ -12,9 +12,9 @@ export const metadata: Metadata = {
 };
 
 const CATALOG = [
-  { id: "steam-5", label: "Steam Wallet $5", costVp: SITE.minRedeemUsd * SITE.vpPerUsd, eta: "24–48h" },
-  { id: "steam-10", label: "Steam Wallet $10", costVp: 10 * SITE.vpPerUsd, eta: "24–48h" },
-  { id: "steam-20", label: "Steam Wallet $20", costVp: 20 * SITE.vpPerUsd, eta: "24–48h" },
+  { id: "steam-5", label: "Steam Wallet $5", costVp: SITE.minRedeemUsd * SITE.vpPerUsd },
+  { id: "steam-10", label: "Steam Wallet $10", costVp: 10 * SITE.vpPerUsd },
+  { id: "steam-20", label: "Steam Wallet $20", costVp: 20 * SITE.vpPerUsd },
 ];
 
 export default async function RewardsPage() {
@@ -28,8 +28,8 @@ export default async function RewardsPage() {
       <header className="max-w-2xl">
         <h1 className="font-[family-name:var(--vq-font-display)] text-4xl font-bold tracking-tight">Rewards</h1>
         <p className="mt-3 text-[var(--vq-ink-muted)]">
-          Unlock Steam credit from the vault. About ${SITE.minRedeemUsd} minimum. We send the code to your
-          VaultQuest account, usually within 24–48 hours.
+          Unlock Steam credit from the vault. About ${SITE.minRedeemUsd} minimum. Manual send after you
+          unlock. We will publish a typical time once we have one.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           {!session?.user ? (
@@ -87,7 +87,7 @@ export default async function RewardsPage() {
             >
               <h2 className="font-[family-name:var(--vq-font-display)] text-lg font-semibold">{item.label}</h2>
               <p className="mt-2 font-[family-name:var(--vq-font-mono)] text-sm text-[var(--vq-teal)]">{item.costVp} VP</p>
-              <p className="mt-1 text-xs text-[var(--vq-ink-faint)]">Code to your account · usually {item.eta}</p>
+              <p className="mt-1 text-xs text-[var(--vq-ink-faint)]">Manual send after unlock. No published SLA yet.</p>
               {session?.user ? (
                 <RedeemButton sku={item.id} disabled={!canRedeem} />
               ) : (

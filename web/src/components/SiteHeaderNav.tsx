@@ -51,7 +51,7 @@ export function SiteHeaderNav({ email, isAdmin }: { email: string | null; isAdmi
           href={email ? "/earn" : "/signup"}
           className="hidden rounded-md bg-[var(--vq-teal)] px-3.5 py-2 text-sm font-semibold text-[var(--vq-bg-deep)] transition hover:bg-[var(--vq-teal-dim)] hover:text-white sm:inline-flex"
         >
-          {email ? "Start earning" : "Sign up"}
+          {email ? "See quests" : "Sign up"}
         </Link>
         <button
           type="button"
@@ -105,7 +105,7 @@ export function SiteHeaderNav({ email, isAdmin }: { email: string | null; isAdmi
                 className="mt-1 block rounded-md bg-[var(--vq-teal)] px-2 py-2 text-center font-semibold text-[var(--vq-bg-deep)]"
                 onClick={() => setOpen(false)}
               >
-                {email ? "Start earning" : "Sign up"}
+                {email ? "See quests" : "Sign up"}
               </Link>
             </li>
           </ul>

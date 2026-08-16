@@ -54,7 +54,7 @@ Harness: `scripts/drive-home-earn.sh` plus browser clicks documented in `feature
 
 - Home logo link: accessible name `VaultQuest — home`
 - Primary nav: `aria-label="Primary"` — links **About**, **How it works**, **Earn**, **Rewards**, **Giveaways**, **Proof & Rules**, **Contact**
-- Home primary CTA: visible text **Start earning** → `/earn`
+- Home primary CTA: visible text **See quests** → `/earn`
 - Header when signed out: **Sign in** → `/login`, **Sign up** → `/signup`
 - Login: heading **Sign in**; fields **Email**, **Password**; submit **Sign in**
 - Signup: heading **Create account**; **Name**, **Email**, **Password**; required age checkbox; submit **Create account**
