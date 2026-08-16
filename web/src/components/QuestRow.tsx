@@ -31,18 +31,33 @@ export function QuestRow({
         <h2 className="mt-1 font-[family-name:var(--vq-font-display)] text-lg font-semibold">{quest.title}</h2>
         <p className="mt-1 text-sm text-[var(--vq-ink-muted)]">{quest.description}</p>
         <p className="mt-2 font-[family-name:var(--vq-font-mono)] text-xs text-[var(--vq-ink-faint)]">
-          Starts via tracked redirect · S2S postback credits VP
+          {quest.hideVpReward
+            ? "Third-party site · opens in a new tab"
+            : "Starts via tracked redirect · S2S postback credits VP"}
         </p>
       </div>
       <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
-        <p className="font-[family-name:var(--vq-font-mono)] text-sm text-[var(--vq-teal)]">+{quest.vpReward} VP</p>
+        {quest.hideVpReward ? null : (
+          <p className="font-[family-name:var(--vq-font-mono)] text-sm text-[var(--vq-teal)]">+{quest.vpReward} VP</p>
+        )}
         {available ? (
-          <Link
-            href={`/api/go/${quest.id}`}
-            className="rounded-md bg-[var(--vq-teal)] px-4 py-2.5 text-center text-sm font-semibold text-[var(--vq-bg-deep)] hover:bg-[var(--vq-teal-dim)] hover:text-white"
-          >
-            Start quest
-          </Link>
+          quest.openInNewTab ? (
+            <a
+              href={`/api/go/${quest.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-md bg-[var(--vq-teal)] px-4 py-2.5 text-center text-sm font-semibold text-[var(--vq-bg-deep)] hover:bg-[var(--vq-teal-dim)] hover:text-white"
+            >
+              {quest.ctaLabel ?? "Start quest"}
+            </a>
+          ) : (
+            <Link
+              href={`/api/go/${quest.id}`}
+              className="rounded-md bg-[var(--vq-teal)] px-4 py-2.5 text-center text-sm font-semibold text-[var(--vq-bg-deep)] hover:bg-[var(--vq-teal-dim)] hover:text-white"
+            >
+              {quest.ctaLabel ?? "Start quest"}
+            </Link>
+          )
         ) : (
           <span
             className="cursor-not-allowed rounded-md border border-[var(--vq-border)] px-4 py-2.5 text-center text-sm font-medium text-[var(--vq-ink-faint)]"
@@ -51,7 +66,7 @@ export function QuestRow({
             Not available yet
           </span>
         )}
-        {signedIn && demoEnabled ? <DemoCreditButton questId={quest.id} /> : null}
+        {signedIn && demoEnabled && !quest.hideVpReward ? <DemoCreditButton questId={quest.id} /> : null}
       </div>
     </article>
   );

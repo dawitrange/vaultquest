@@ -12,7 +12,16 @@ export type Quest = {
   category: AffiliateCategory;
   featured?: boolean;
   holdDays?: number;
+  /** When set, /api/go serves this slug only — not category rotation. */
+  pinSlug?: string;
+  openInNewTab?: boolean;
+  hideVpReward?: boolean;
+  ctaLabel?: string;
 };
+
+export const GAMEHAG_SLUG = "gamehag-cpa";
+export const GAMEHAG_QUEST_ID = "q-gamehag";
+export const GAMEHAG_REFERRAL_URL = "https://gamehag.com/r/TPQBRXGH";
 
 export const QUESTS: Quest[] = [
   {
@@ -57,6 +66,19 @@ export const QUESTS: Quest[] = [
     category: "cpe_play",
     holdDays: 14,
   },
+  {
+    id: GAMEHAG_QUEST_ID,
+    title: "Gamehag (third party)",
+    description: "Third-party offer site. Opens in a new tab. Not a VaultQuest earn path, and it does not pay Vault Points.",
+    effort: "Low",
+    timeHint: "Their site, their tasks",
+    vpReward: 0,
+    category: "cpa_signup",
+    pinSlug: GAMEHAG_SLUG,
+    openInNewTab: true,
+    hideVpReward: true,
+    ctaLabel: "Gamehag (third party)",
+  },
 ];
 
 const FALLBACK: Record<AffiliateCategory, AffiliateCategory[]> = {
@@ -73,7 +95,7 @@ export const PARTNER_WATERFALL: Record<AffiliateCategory, string[]> = {
   offerwall_primary: ["lootably", "torox", "adgate", "offerdaddy", "prime", "timewall"],
   offerwall_backup: ["torox", "adgate", "ayet", "lootably", "offerdaddy", "adgem"],
   survey_wall: ["bitlabs", "cpx", "adgate", "lootably", "prime", "timewall"],
-  cpa_signup: ["freecash", "torox", "adgate", "offerdaddy"],
+  cpa_signup: ["freecash", "gamehag", "torox", "adgate", "offerdaddy"],
   cpe_play: ["ayet", "lootably", "torox", "adgate", "adgem", "offerdaddy"],
 };
 
@@ -208,14 +230,55 @@ export async function markLinkUnhealthy(linkId: string, reason: RotationReason, 
   if (link) await logRotation({ category: link.category, linkId, partner: link.partner, reason, meta: { detail } });
 }
 
+export async function serveAffiliateLinkBySlug(
+  slug: string,
+  opts?: { userId?: string | null },
+): Promise<DbLink | null> {
+  const link = await prisma.affiliateLink.findUnique({ where: { slug } });
+  if (!link) {
+    await logRotation({
+      userId: opts?.userId,
+      category: "cpa_signup",
+      reason: "empty_inventory",
+      meta: { slug, pinned: true },
+    });
+    return null;
+  }
+  if (!isServable(link)) {
+    await logRotation({
+      userId: opts?.userId,
+      category: link.category,
+      linkId: link.id,
+      partner: link.partner,
+      reason: "health",
+      meta: { slug, pinned: true },
+    });
+    return null;
+  }
+  const underCap = await enforceDailyCap(link);
+  if (!underCap) return null;
+  return link;
+}
+
+export async function isSlugServable(slug: string): Promise<boolean> {
+  const link = await prisma.affiliateLink.findUnique({
+    where: { slug },
+    select: { status: true, url: true },
+  });
+  return Boolean(link && link.status === "healthy" && !isMarketingHomepageUrl(link.url));
+}
+
 export async function createOfferClick(opts: {
   userId?: string | null;
   questId: string;
   category: AffiliateCategory;
   geo?: string | null;
   userAgent?: string | null;
+  pinSlug?: string;
 }) {
-  const link = await serveAffiliateLink(opts.category, { userId: opts.userId, geo: opts.geo, userAgent: opts.userAgent });
+  const link = opts.pinSlug
+    ? await serveAffiliateLinkBySlug(opts.pinSlug, { userId: opts.userId })
+    : await serveAffiliateLink(opts.category, { userId: opts.userId, geo: opts.geo, userAgent: opts.userAgent });
   if (!link) return null;
   if (isMarketingHomepageUrl(link.url)) {
     await logRotation({

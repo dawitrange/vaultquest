@@ -151,6 +151,27 @@ async function main() {
     });
   }
 
+  // Create-only. Do not upsert — re-running seed must not touch this row
+  // (or cpx-survey / freecash-cpa). Real /r/ path, not a marketing homepage.
+  // Vercel does not run seed on deploy; production Neon still needs the row.
+  const gamehag = await prisma.affiliateLink.findUnique({ where: { slug: "gamehag-cpa" } });
+  if (!gamehag) {
+    await prisma.affiliateLink.create({
+      data: {
+        slug: "gamehag-cpa",
+        partner: "Gamehag",
+        url: "https://gamehag.com/r/TPQBRXGH",
+        category: AffiliateCategory.cpa_signup,
+        priority: 2,
+        status: AffiliateHealth.healthy,
+        capDaily: 1000,
+      },
+    });
+    console.log("Created gamehag-cpa (healthy, priority 2)");
+  } else {
+    console.log("gamehag-cpa already present — left unchanged");
+  }
+
   console.log(`Seeded ${SEED.length} affiliate links`);
 }
 

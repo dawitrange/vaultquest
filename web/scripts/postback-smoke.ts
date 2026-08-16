@@ -334,6 +334,7 @@ function offlineHmacCases(): CaseResult[] {
       isMarketingHomepageUrl("https://adgatemedia.com/") &&
       isMarketingHomepageUrl("https://www.cpx-research.com/") &&
       isMarketingHomepageUrl("https://www.cpx-research.com/publishers") &&
+      !isMarketingHomepageUrl("https://gamehag.com/r/TPQBRXGH") &&
       !isMarketingHomepageUrl(SMOKE_URL) &&
       !isAllowedCpxWallHost("https://www.cpx-research.com/") &&
       isAllowedCpxWallHost("https://offers.cpx-research.com/") &&

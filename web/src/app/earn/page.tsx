@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { QuestRow } from "@/components/QuestRow";
 import { isDemoCreditEnabled } from "@/lib/actions/ledger";
-import { getServableCategories, QUESTS } from "@/lib/affiliates";
+import { getServableCategories, isSlugServable, QUESTS } from "@/lib/affiliates";
 import { GO_SIGN_IN_PATH } from "@/lib/postback";
 
 export const metadata: Metadata = {
@@ -25,7 +25,16 @@ export default async function EarnPage({
   const session = await auth();
   const signedIn = Boolean(session?.user?.id);
   const [servable, demoEnabled] = await Promise.all([getServableCategories(), isDemoCreditEnabled()]);
-  const quests = QUESTS.map((quest) => ({ quest, available: servable.has(quest.category) }));
+  const pinned = [...new Set(QUESTS.map((q) => q.pinSlug).filter((slug): slug is string => Boolean(slug)))];
+  const pinnedServable = new Set(
+    (await Promise.all(pinned.map(async (slug) => ((await isSlugServable(slug)) ? slug : null)))).filter(
+      (slug): slug is string => Boolean(slug),
+    ),
+  );
+  const quests = QUESTS.map((quest) => ({
+    quest,
+    available: quest.pinSlug ? pinnedServable.has(quest.pinSlug) : servable.has(quest.category),
+  }));
   const anyAvailable = quests.some((q) => q.available);
 
   return (
