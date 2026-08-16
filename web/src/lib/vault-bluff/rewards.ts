@@ -79,7 +79,11 @@ export async function grantGamePromoInTransaction(args: {
   } else if (!blockReason && !isIsolatedBluffCampaign(fundingCampaign)) {
     blockReason = "funding_campaign_not_isolated";
   } else if (!blockReason && reserveVp == null) blockReason = "reserve_not_configured";
-  else if (!blockReason && reserveVp > BLUFF_PROGRAM_CEILING_VP) {
+  else if (
+    !blockReason &&
+    reserveVp != null &&
+    reserveVp > BLUFF_PROGRAM_CEILING_VP
+  ) {
     blockReason = "bluff_program_ceiling_exceeded";
   }
 

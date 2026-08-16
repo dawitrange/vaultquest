@@ -224,6 +224,15 @@ export function applyCommand(
   return state;
 }
 
+export function closeMatchForRematch(
+  state: VaultBluffState,
+  now: string,
+): VaultBluffState {
+  return state.completed
+    ? structuredClone(state)
+    : applyCommand(state, { kind: "FORFEIT", now });
+}
+
 function safeRound(round: VaultBluffRound, isCurrent: boolean): SafeRoundDto {
   const revealed = round.phase === "ROUND_REVEAL" || round.phase === "MATCH_COMPLETE";
   const dto: SafeRoundDto = {

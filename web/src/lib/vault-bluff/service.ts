@@ -8,7 +8,12 @@ import {
   type GamePersona,
 } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { applyCommand, startMatch, toSafeSessionDto } from "./engine";
+import {
+  applyCommand,
+  closeMatchForRematch,
+  startMatch,
+  toSafeSessionDto,
+} from "./engine";
 import { neutralPlayerMemory, updatePlayerMemoryOnce } from "./player-memory";
 import {
   canFulfillVaultBluffPromo,
@@ -33,7 +38,7 @@ type SessionResult = {
   reward: GameRewardResult | null;
 };
 
-function rewardResultFromGrant(
+export function rewardResultFromGrant(
   grant:
     | Pick<
         GameRewardGrant,
@@ -199,9 +204,7 @@ async function closeActiveSessionForRematch(
   closedAt: Date,
 ): Promise<void> {
   const before = parseState(session.state);
-  const closed = before.completed
-    ? before
-    : applyCommand(before, { kind: "FORFEIT", now: closedAt.toISOString() });
+  const closed = closeMatchForRematch(before, closedAt.toISOString());
   const safe = toSafeSessionDto(closed);
   const currentRound = closed.rounds.at(-1);
   if (!currentRound) throw new GameServiceError("NOT_FOUND", "Active round not found");
@@ -464,7 +467,7 @@ export async function applyGameAction(
       }
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2034" &&
+        (error.code === "P2002" || error.code === "P2034") &&
         attempt < 2
       ) {
         continue;

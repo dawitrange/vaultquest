@@ -194,7 +194,7 @@ CPX and partner Earn integrations are not required to play.
 
 Results recorded 2026-08-16:
 
-- `npm run test:vault-bluff`: pass, 14 tests. Coverage includes deterministic replay, illegal transitions, secret redaction, Chooser bot input, immutable placement, server deadlines, neutral memory, forfeit exclusion, completion XP, reward default-off behavior, runtime mint and fulfillment stop, gameplay independence, anti-farm readiness, funding isolation, the $500 ceiling, atomic reward and ledger calls, remaining-reserve and rolling caps, and UTC-day idempotency.
+- `npm run test:vault-bluff`: pass, 18 tests. Coverage includes deterministic replay, illegal transitions, secret redaction, Chooser bot input, immutable placement, server deadlines, rematch closure, neutral memory, forfeit exclusion, completion XP, reward default-off behavior, runtime mint and fulfillment stop, gameplay independence, anti-farm readiness, funding isolation, the $500 ceiling, atomic reward and ledger calls, remaining-reserve and rolling caps, blocked-period eligibility, and persisted reward replay.
 - `npm run vault-bluff:simulate`: pass, 10,000 seeded matches.
 - `npm run vault-bluff:benchmark`: pass, 40 required persona and archetype cells.
 - `npm run vault-bluff:tune`: pass, 1,728 parameter candidates across bluff rate, exploration, memory weight, confidence, delay, and reverse psychology. The report retains `vault-bluff-policy-v1`; runtime weights remain frozen.
@@ -211,5 +211,6 @@ Results recorded 2026-08-16:
 - Local signed-out UI at `http://127.0.0.1:3317/play`: pass on desktop and a 390 px viewport. Primary navigation, disabled reward disclosure, keyboard focus, and responsive layout were verified.
 - Signed-out `/play/vault-bluff`: pass, HTTP 307 to `/login?from=play`.
 - Authenticated gameplay and database API integration were not exercised because no isolated development database or local auth account was available. No production Neon or Vercel resource was read or mutated.
+- The one-active-session and one-pending-daily-grant partial unique indexes require authenticated concurrency tests after this migration is applied to an isolated development Neon branch. They were not applied to production.
 - Migration `20260816193000_vault_bluff_v1` is generated and committed. It was not applied to production or any remote database.
 - Promotional VP remains disabled. Current maximum liability is $0. Budget spent is $0.

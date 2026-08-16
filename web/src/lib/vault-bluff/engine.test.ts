@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { AdaptiveBotPolicy } from "./bot-policy";
-import { applyCommand, startMatch, toSafeSessionDto } from "./engine";
+import {
+  applyCommand,
+  closeMatchForRematch,
+  startMatch,
+  toSafeSessionDto,
+} from "./engine";
 import { neutralPlayerMemory, updatePlayerMemoryOnce } from "./player-memory";
 import { APPROVED_ANSWERS } from "./types";
 
@@ -114,6 +119,18 @@ test("server deadline rejects stale commands without mutating state", () => {
     { message: "This round expired. Forfeit it and start a new match" },
   );
   assert.deepEqual(state, original);
+});
+
+test("rematch closure forfeits an active state before replacement", () => {
+  const active = startMatch({ seed: "rematch-close", persona: "ANALYST", now: START });
+  const closed = closeMatchForRematch(
+    active,
+    "2026-08-16T12:00:01.000Z",
+  );
+  assert.equal(active.completed, false);
+  assert.equal(closed.completed, true);
+  assert.equal(closed.forfeited, true);
+  assert.equal(closed.rounds.at(-1)?.phase, "MATCH_COMPLETE");
 });
 
 test("new memory is neutral and forfeits never train", () => {
