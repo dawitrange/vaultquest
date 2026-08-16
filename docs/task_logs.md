@@ -367,3 +367,4 @@ When user runs `@vault-planner get us verified`, vault-planner appends new dated
 - **Did:** Skip HMAC when `partner=cpx` or `secure_hash` present. Verify `md5(trans_id-appsecurehash)` only when official `secure_hash` (or partner=cpx `hash` equivalent) is sent. Template uses `secure_hash={secure_hash}` not `hash=`. status=2 voids matching EARN; does not unwind REDEEM (flagged). No live smoke. No URL hardcoded. Not earn-live.
 - **Do not:** smoke prod before Yield flip; merge; put secrets in PR.
 - **Next:** Ethio saves postback (no HMAC `hash=`); Yield flips; then smoke.
+- **Skill evidence:** `vault-build-check` PASS. `--probe-prod` 22/22 STAND BY. `--seed-local` 36/36: CPX without HMAC hash → 200; official `secure_hash` MD5 ok; status=2 → VOID. Isolated branch only. Not earn-live.
