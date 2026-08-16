@@ -381,3 +381,4 @@ When user runs `@vault-planner get us verified`, vault-planner appends new dated
 - **Did:** Flags: `CPX_YIELD_FLIP_CONFIRMED=true`, `CPX_CLICK_SMOKE_DONE=true`, earn-live false. Recorded Yield wall `offers.cpx-research.com/index.php?app_id=35413`, click `cmsv1k67w0003jx04ykpzrfn9` (anon, uncredited). Probe will not hit `/api/go/q-surveys` again. MD5 stays. Live URL has no `hash=`. Secret off chat. No merge.
 - **Do not:** fire another go; fire a secret postback; smoke Freecash/homepage; certify earn-live; merge.
 - **Next:** Vercel-side signed postback (secret off chat) → prod pending EARN > 0 → then earn-live.
+- **Skill evidence:** `vault-build-check` PASS. `--probe-prod` 22/22: flip confirmed; click `cmsv1k67w0003jx04ykpzrfn9`; did not fire a second `/api/go/q-surveys`. Secret off chat. Not earn-live. PR #20 was merged to main; this follow-up stays unmerged.
