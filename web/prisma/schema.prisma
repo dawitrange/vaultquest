@@ -28,6 +28,7 @@ model User {
   clicks        OfferClick[]
   contactMessages ContactMessage[]
   passwordResetTokens PasswordResetToken[]
+  giveawayEntries GiveawayEntry[]
 }
 
 model PasswordResetToken {
@@ -160,6 +161,21 @@ model OfferClick {
   @@index([userId])
   @@index([affiliateLinkId, createdAt])
   @@index([createdAt])
+}
+
+model GiveawayEntry {
+  id           String   @id @default(cuid())
+  campaignSlug String
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  email        String
+  reason       String
+  createdAt    DateTime @default(now())
+
+  @@unique([campaignSlug, userId])
+  @@unique([campaignSlug, email])
+  @@index([campaignSlug, createdAt])
 }
 
 enum ContactStatus {

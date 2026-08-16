@@ -25,7 +25,7 @@ const STEPS = [
   },
   {
     title: "Redeem or enter giveaways",
-    body: "Cash out to Steam credit from about $5, or enter our scheduled giveaways with published rules.",
+    body: "Cash out to Steam credit from about $5, or enter the live giveaway at /giveaway with published rules.",
   },
 ];
 

@@ -17,7 +17,10 @@ export default async function LoginPage({
   if (session?.user) redirect("/account");
 
   const params = await searchParams;
-  const from = params.from === "earn" || params.from === "rewards" || params.from === "account" ? params.from : undefined;
+  const from =
+    params.from === "earn" || params.from === "rewards" || params.from === "account" || params.from === "giveaway"
+      ? params.from
+      : undefined;
 
   return (
     <div className="mx-auto max-w-md px-4 py-14 sm:px-6">
