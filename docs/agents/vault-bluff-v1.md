@@ -153,7 +153,7 @@ This freeze does not change the game rules. It controls funding, minting, abuse 
 
 ## Optional Earn recommendation
 
-After the third valid completed match, the game may show at most one optional quest selected through the existing healthy, under-cap affiliate rotation. It cannot pin or hardcode `q-surveys` or another quest. The card must show exact VP, effort, and hold time. It never blocks play or the daily bonus. A click earns no VP. Partner VP posts only after a verified partner postback.
+After the third valid completed match, the game shows one optional Earn slot. A quest in that slot must come from the existing healthy, under-cap affiliate rotation. It cannot pin or hardcode `q-surveys` or another quest. If rotation returns no quest, the slot remains visible with an honest no-healthy-inventory state. A populated card must show exact VP, effort, and hold time. It never blocks play or the daily bonus. A click earns no VP. Partner VP posts only after a verified partner postback.
 
 ## Analytics
 
@@ -174,7 +174,7 @@ Safe properties may include engine version, policy version, persona, completion 
 
 ## Required UI states
 
-The signed-out state exists on the public `/play` explainer only. Authenticated components under `web/src/components/play/` cover new match, Keeper inspection, Chooser questioning, bot-answering status, Keeper response, human Keep or Take, bot Chooser decision, visually separate reveal and round result, match result, reward pending, distinct daily and rolling cap states, and dedicated error recovery with retry. `/play/vault-bluff` never renders a signed-out game panel. The experience must work on mobile and by keyboard. Interactive targets are at least 44 px. Color cannot be the only case identifier. Brass and gold are reserved for the Vault Key, cases, and unlock moments.
+The signed-out state exists on the public `/play` explainer only. Authenticated components under `web/src/components/play/` cover new match, Keeper inspection, Chooser questioning, bot-answering status, Keeper response, bot-choosing status after the second Keeper answer, human Keep or Take, bot Chooser decision, visually separate reveal and round result, match result, reward pending, distinct daily and rolling cap states, populated and empty rotated Earn slots, and dedicated error recovery with retry. `/play/vault-bluff` never renders a signed-out game panel. The experience must work on mobile and by keyboard. Interactive targets are at least 44 px; short chips also have a 44 px minimum width. Color cannot be the only case identifier. Brass and gold are reserved for the Vault Key, cases, and unlock moments.
 
 ## Release and deployment gates
 

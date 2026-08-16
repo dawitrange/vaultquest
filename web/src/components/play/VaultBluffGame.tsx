@@ -314,6 +314,15 @@ export function VaultBluffGame({
               {QUESTION_LABELS[activeQuestion]}
             </h2>
             {round.responses.length > 0 ? <ResponseHistory responses={round.responses} /> : null}
+            {pendingAction === "ANSWER_QUESTION" && round.responses.length === 1 ? (
+              <p
+                role="status"
+                aria-live="polite"
+                className="mt-5 rounded-md border border-[var(--vq-teal)]/40 bg-[var(--vq-teal-glow)] px-4 py-3 text-sm text-[var(--vq-teal)]"
+              >
+                VaultQuest bot is choosing…
+              </p>
+            ) : null}
             <fieldset className="mt-6">
               <legend className="text-sm font-semibold">Approved answer</legend>
               <div className="mt-2 flex flex-wrap gap-2">
@@ -323,7 +332,7 @@ export function VaultBluffGame({
                     type="button"
                     aria-pressed={answer === option}
                     onClick={() => setAnswer(option)}
-                    className={`min-h-11 rounded-md border px-4 py-2 text-sm ${
+                    className={`min-h-11 min-w-11 rounded-md border px-4 py-2 text-sm ${
                       answer === option
                         ? "border-[var(--vq-teal)] bg-[var(--vq-teal-glow)] text-[var(--vq-teal)]"
                         : "border-[var(--vq-border)]"
@@ -559,30 +568,42 @@ function MatchResult({
       >
         Instant rematch
       </button>
-      {completedMatches >= 3 && earnQuest ? (
-        <aside className="mt-8 rounded-[10px] border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] p-5">
-          <p className="text-xs uppercase tracking-wider text-[var(--vq-teal)]">Optional verified quest</p>
-          <h3 className="mt-1 text-lg font-semibold">{earnQuest.title}</h3>
-          <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
-            {earnQuest.vpReward} VP · {earnQuest.effort} effort · {earnQuest.timeHint} · {earnQuest.holdDays}-day hold.
-          </p>
-          <p className="mt-2 text-xs text-[var(--vq-ink-faint)]">
-            Clicking pays nothing. VP posts only after a verified partner completion.
-          </p>
-          <a
-            href={`/api/go/${earnQuest.id}`}
-            onClick={() =>
-              captureClientEvent(PH_EVENTS.vault_bluff_earn_clicked, {
-                quest_id: earnQuest.id,
-                vp: earnQuest.vpReward,
-                hold_days: earnQuest.holdDays,
-              })
-            }
-            className="mt-4 inline-flex min-h-11 items-center rounded-md border border-[var(--vq-teal)] px-4 py-2 text-sm font-semibold text-[var(--vq-teal)]"
-          >
-            Open optional quest
-          </a>
-        </aside>
+      {completedMatches >= 3 ? (
+        earnQuest ? (
+          <aside className="mt-8 rounded-[10px] border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] p-5">
+            <p className="text-xs uppercase tracking-wider text-[var(--vq-teal)]">Optional verified quest</p>
+            <h3 className="mt-1 text-lg font-semibold">{earnQuest.title}</h3>
+            <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
+              {earnQuest.vpReward} VP · {earnQuest.effort} effort · {earnQuest.timeHint} · {earnQuest.holdDays}-day hold.
+            </p>
+            <p className="mt-2 text-xs text-[var(--vq-ink-faint)]">
+              Clicking pays nothing. VP posts only after a verified partner completion.
+            </p>
+            <a
+              href={`/api/go/${earnQuest.id}`}
+              onClick={() =>
+                captureClientEvent(PH_EVENTS.vault_bluff_earn_clicked, {
+                  quest_id: earnQuest.id,
+                  vp: earnQuest.vpReward,
+                  hold_days: earnQuest.holdDays,
+                })
+              }
+              className="mt-4 inline-flex min-h-11 items-center rounded-md border border-[var(--vq-teal)] px-4 py-2 text-sm font-semibold text-[var(--vq-teal)]"
+            >
+              Open optional quest
+            </a>
+          </aside>
+        ) : (
+          <aside className="mt-8 rounded-[10px] border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] p-5">
+            <p className="text-xs uppercase tracking-wider text-[var(--vq-ink-faint)]">
+              Optional verified quest
+            </p>
+            <h3 className="mt-1 text-lg font-semibold">No verified quest available right now</h3>
+            <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
+              The rotation found no healthy partner quest under its cap. Nothing is being hidden or substituted. Check Earn later.
+            </p>
+          </aside>
+        )
       ) : null}
       <p className="mt-6 text-sm text-[var(--vq-ink-muted)]">
         Verified quests remain the main VP source.{" "}
