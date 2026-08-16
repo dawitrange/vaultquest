@@ -2,15 +2,30 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { loginPathForPage, signupPathForPage } from "@/lib/auth-redirect";
 import { NAV } from "@/lib/site";
+import { needsGameExitConfirmation } from "@/lib/vault-bluff/navigation-policy";
 
 export function SiteHeaderNav({ email }: { email: string | null }) {
   const pathname = usePathname();
   const signInHref = loginPathForPage(pathname);
   const signUpHref = signupPathForPage(pathname);
   const [open, setOpen] = useState(false);
+
+  function confirmNavigation(
+    event: MouseEvent<HTMLAnchorElement>,
+    destination: string,
+  ) {
+    if (
+      needsGameExitConfirmation({ currentPath: pathname, destination }) &&
+      !window.confirm(
+        "Leave Vault Bluff? Your current match is saved and will resume when you return.",
+      )
+    ) {
+      event.preventDefault();
+    }
+  }
 
   return (
     <>
@@ -21,6 +36,7 @@ export function SiteHeaderNav({ email }: { email: string | null }) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={(event) => confirmNavigation(event, item.href)}
               className={`inline-flex min-h-11 items-center text-sm transition-colors ${active ? "text-[var(--vq-teal)]" : "text-[var(--vq-ink-muted)] hover:text-[var(--vq-ink)]"}`}
             >
               {item.label}
@@ -33,6 +49,7 @@ export function SiteHeaderNav({ email }: { email: string | null }) {
         {email ? (
           <Link
             href="/account"
+            onClick={(event) => confirmNavigation(event, "/account")}
             className="hidden min-h-11 items-center text-sm text-[var(--vq-ink-muted)] hover:text-[var(--vq-teal)] sm:inline-flex"
           >
             Account
@@ -74,7 +91,10 @@ export function SiteHeaderNav({ email }: { email: string | null }) {
                 <Link
                   href={item.href}
                   className="flex min-h-11 items-center rounded-md px-2 py-2 text-[var(--vq-ink-muted)] hover:bg-[var(--vq-surface)] hover:text-[var(--vq-ink)]"
-                  onClick={() => setOpen(false)}
+                  onClick={(event) => {
+                    confirmNavigation(event, item.href);
+                    if (!event.defaultPrevented) setOpen(false);
+                  }}
                 >
                   {item.label}
                 </Link>
@@ -84,7 +104,11 @@ export function SiteHeaderNav({ email }: { email: string | null }) {
               <Link
                 href={email ? "/account" : signInHref}
                 className="flex min-h-11 items-center px-2 py-2 text-[var(--vq-ink-muted)]"
-                onClick={() => setOpen(false)}
+                onClick={(event) => {
+                  const destination = email ? "/account" : signInHref;
+                  confirmNavigation(event, destination);
+                  if (!event.defaultPrevented) setOpen(false);
+                }}
               >
                 {email ? "Account" : "Sign in"}
               </Link>
