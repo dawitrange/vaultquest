@@ -15,6 +15,7 @@ export const LEGAL_EFFECTIVE = "August 12, 2026";
 export const NAV = [
   { href: "/about", label: "About" },
   { href: "/how-it-works", label: "How it works" },
+  { href: "/play", label: "Play" },
   { href: "/earn", label: "Earn" },
   { href: "/rewards", label: "Rewards" },
   { href: "/giveaways", label: "Giveaways" },
@@ -27,6 +28,7 @@ export const PUBLIC_PATHS = [
   "/",
   "/about",
   "/how-it-works",
+  "/play",
   "/earn",
   "/rewards",
   "/giveaways",

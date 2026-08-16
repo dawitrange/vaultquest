@@ -1,0 +1,169 @@
+# Vault Bluff V1 frozen specification
+
+Status: frozen for implementation  
+Owner: product manager  
+Integration branch: `cursor/vault-bluff-v1-a418`  
+Policy version: `vault-bluff-policy-v1`  
+Engine version: `vault-bluff-engine-v1`  
+Reward policy version: `vault-bluff-reward-v1`  
+Frozen: 2026-08-16
+
+This file is the source of truth for Vault Bluff V1. Implementation and test findings may be appended, but specialists may not change the rules, economy, policy, or architecture below.
+
+## Product and boundaries
+
+Vault Bluff is a polished, bot-first bluff game inside VaultQuest. A new authenticated user can start immediately against a clearly labeled TypeScript bot. The game uses stored aggregate gameplay tendencies to adapt. It does not use a runtime LLM, OpenRouter, unrestricted chat, voice, video, WebSockets, matchmaking, room codes, multiplayer presence, or a game framework.
+
+The game is entertainment and retention, not gambling. The hidden Vault Key determines only the round winner. It never represents cash, VP, a redeemable item, or a random prize. Performance earns XP, ranks, and cosmetics. Verified partner quests remain the main VP source.
+
+All names, copy, visuals, and assets are original VaultQuest work. The UI uses dark navy, teal actions, brass or gold key and case details, Syne and Sora, existing radii, DOM, and CSS. It must not use casino styling, fake people, fake activity, fake counts, easy-money claims, generator claims, or Steam password requests.
+
+## Routes
+
+- `/play` is a public, indexable explanation and an authenticated hub. It shows available and pending VP, a featured Vault Bluff card, daily promotional VP status, XP, rank, cosmetic progress, and an honest note that verified quests remain the main VP source.
+- `/play/vault-bluff` requires authentication. Signed-out users go to `/login?from=play`. It supports persona selection or automatic assignment, a new match, active rounds, results, instant rematch, and one optional rotated Earn recommendation after three completed matches.
+- `Play` is added to primary navigation and `/play` to public sitemap paths.
+- The auth redirect allowlist maps `from=play` to `/play/vault-bluff`.
+
+## Match rules
+
+- One human plays one clearly labeled VaultQuest bot.
+- Each round has two cases and one hidden Vault Key.
+- The server assigns a Keeper and a Chooser. Roles alternate for four rounds, giving each side two Keeper and two Chooser rounds.
+- The Keeper privately inspects the assigned case.
+- The Chooser asks exactly two distinct structured questions, then chooses `Keep my case` or `Take their case`.
+- The questions are:
+  - Is the key inside your case?
+  - Which case should I choose?
+  - What did you see?
+  - Are you telling the truth?
+  - Should I keep mine?
+  - How confident are you?
+- Keeper answers come from approved answer options and include confidence of Certain, Unsure, or Guessing and a Keep or Take recommendation.
+- The UI may show server-measured response duration, confidence, prior answers, contradictions, and recommendation. It has no free text.
+- Whoever ends with the key earns one round point.
+- Four rounds complete the match. Ties are allowed. A rematch starts immediately on request.
+- The server randomly places the key before behavior is evaluated. The bot cannot change placement.
+
+## Fairness and authority
+
+- The server owns placement, legal transitions, bot strategy, answers, confidence, response delay, choice, score, XP, and reward eligibility.
+- A Chooser bot receives a public chooser view that omits key location and all equivalent secret data.
+- A human Chooser never receives the bot Keeper's private inspection data.
+- The client never receives unrevealed placement, RNG state or seed, future bot decisions, private bot observations, or fraud thresholds.
+- Placement is immutable after round creation. Difficulty, persona, and adaptation cannot affect placement or reward eligibility.
+- The client cannot submit placement, bot strategy, bot answers, bot confidence, bot delay, score, XP, or reward fields.
+- The API returns separate public and role-private DTOs. Reveal data appears only after the choice resolves.
+- The deterministic engine must produce the same result for the same seed and command sequence. Tests must prove legal transitions, secret redaction, immutable placement, and that Chooser bot input has no secret state.
+
+## Bot policy and memory
+
+One `AdaptiveBotPolicy` has four parameterized personas:
+
+- Analyst: deliberate, evidence-weighted, lower bluff rate.
+- Showboat: confident, expressive, higher bluff rate.
+- Nervous: less certain, variable timing, moderate bluff rate.
+- Wildcard: broad exploration and reverse-psychology bias.
+
+Personality changes behavior parameters only. It cannot change rules, placement, XP, or rewards.
+
+Player memory stores completed match count, Keep and Take rates, Keeper truth and bluff rates, question frequencies, confidence use, average measured duration, Chooser accuracy, Keeper bluff success, persona performance, and last engine and policy versions. New users get neutral defaults. Updates use rolling exponential decay so roughly the last 20 valid completed matches matter most. Strong personalization requires a minimum sample. Exploration is fixed near 20 percent. One valid completed match updates memory once. Forfeits and incomplete matches do not train. No raw conversation is stored. Runtime data never rewrites global policy weights.
+
+## Simulation and frozen policy
+
+Before release, repeatable TypeScript self-play runs at least 10,000 seeded matches and covers every persona against every archetype:
+
+- Truth-biased
+- Frequent liar
+- Always Keep
+- Always Take
+- Confidence reader
+- Timing reader
+- Random beginner
+- Pattern exploiter
+- Reverse-psychology
+- Adaptive exploiter
+
+Parameter search covers bluff frequency, exploration, memory weight, confidence, delay, and reverse psychology. The retained benchmark is machine-readable. Production uses the versioned frozen `vault-bluff-policy-v1` configuration. Simulation cannot mutate it at runtime.
+
+## Persistence and APIs
+
+The implementation uses:
+
+- `GameSession`
+- `GameRound`
+- `GameAction`
+- `BotPlayerProfile`
+- `GameRewardGrant`
+
+Enums, foreign keys, indexes, and uniqueness constraints prevent duplicate client actions, round completion, profile updates, daily rewards, and ledger entries.
+
+Endpoints:
+
+- `POST /api/games/vault-bluff/sessions`
+- `GET /api/games/vault-bluff/sessions/[sessionId]`
+- `POST /api/games/vault-bluff/sessions/[sessionId]/actions`
+
+Commands include an optimistic session version and unique `clientActionId`. Commands are idempotent. The server rejects stale versions and illegal transitions with structured, safe errors. Actions are append-only. Sessions persist engine and policy versions, timestamps, deadlines, deterministic RNG cursor, and the current authoritative state. Refresh and reconnect load the current safe DTO.
+
+Logs and analytics must never include hidden placement, seed, unrevealed answers, email, raw identity, private state, or fraud thresholds.
+
+## Economy and XP
+
+- 100 VP equals $1.
+- Minimum redeem is 500 VP.
+- Every valid completed match earns XP. Performance changes XP only.
+- Rank and cosmetic progress come from lifetime XP.
+- Wins, losses, rounds, starts, refreshes, incomplete matches, forfeits, clicks, duplicates, automation, and farming never earn VP.
+- The first eligible completed bot match per UTC day may earn 1 promotional VP.
+- The rolling 30-day maximum is 30 promotional VP.
+- Promotional VP stays pending for 24 hours.
+- One reward grant exists per user and UTC reward period.
+- A dedicated transaction creates `GameRewardGrant` and `LedgerEntry` atomically. It does not call `creditAvailable()` or `demoCompleteQuestAction()`.
+- Ledger metadata records the game promo source, session ID, reward policy version, funding campaign, and availability date.
+- A global funded reserve cap and environment kill switch bound liability. The owner can disable game VP without disabling play.
+- The initial reward feature is disabled. It remains disabled until a dedicated reserve and environment kill switch are configured.
+- Current maximum promotional VP liability is $0.
+- Current budget spent is $0.
+
+## Optional Earn recommendation
+
+After the third valid completed match, the game may show at most one optional quest selected through existing healthy, under-cap rotation. The card must show exact VP, effort, and hold time. It never blocks play or the daily bonus. A click earns no VP. Partner VP posts only after a verified partner postback.
+
+## Analytics
+
+`PH_EVENTS` includes:
+
+- `game_hub_viewed`
+- `vault_bluff_started`
+- `vault_bluff_round_completed`
+- `vault_bluff_completed`
+- `vault_bluff_rematch_started`
+- `vault_bluff_persona_selected`
+- `vault_bluff_daily_vp_granted`
+- `vault_bluff_reward_blocked`
+- `vault_bluff_earn_clicked`
+- `vault_bluff_verified_postback`
+
+Safe properties may include engine version, policy version, persona, completion state, round count, XP, reward eligibility, rematch state, and a safe error reason.
+
+## Required UI states
+
+Components under `web/src/components/play/` cover signed out, new match, Keeper inspection, Chooser questioning, Keeper response, Keep or Take, reveal, round result, match result, reward pending, cap reached, and error recovery. The experience must work on mobile and by keyboard. Color cannot be the only case identifier.
+
+## Release and deployment gates
+
+No deployment is part of this work. The migration is generated but not applied to production. Promotional VP cannot be enabled until all of these are true:
+
+1. The owner funds and records a dedicated game promotional reserve.
+2. `VAULT_BLUFF_REWARDS_ENABLED=true` is set intentionally.
+3. `VAULT_BLUFF_FUNDING_CAMPAIGN` names the funded campaign.
+4. `VAULT_BLUFF_RESERVE_VP` is a positive integer no greater than the funded cash reserve times 100 VP per dollar.
+5. The migration is applied first to an isolated non-production Neon branch and API tests pass there.
+6. Vercel auth and local verification secrets are available for deployment verification.
+
+CPX and partner Earn integrations are not required to play.
+
+## Verification record
+
+Test results, benchmark results, migration status, and local blockers will be appended here after implementation. They may report failures and fixes but cannot change the frozen decisions above.

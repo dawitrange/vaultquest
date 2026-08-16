@@ -1,0 +1,376 @@
+import { randomUUID } from "node:crypto";
+import {
+  GameRoundStatus,
+  GameSessionStatus,
+  Prisma,
+  type GamePersona,
+} from "@prisma/client";
+import { prisma } from "@/lib/db";
+import { applyCommand, startMatch, toSafeSessionDto } from "./engine";
+import { neutralPlayerMemory, updatePlayerMemoryOnce } from "./player-memory";
+import { grantGamePromoInTransaction, type GameRewardResult } from "./rewards";
+import {
+  PERSONA_IDS,
+  VAULT_BLUFF_ENGINE_VERSION,
+  VAULT_BLUFF_POLICY_VERSION,
+  type PersonaId,
+  type PlayerMemory,
+  type SafeSessionDto,
+  type VaultBluffCommand,
+  type VaultBluffState,
+} from "./types";
+
+type SessionResult = {
+  id: string;
+  version: number;
+  session: SafeSessionDto;
+  reward: GameRewardResult | null;
+};
+
+function jsonValue(value: unknown): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+function parseState(value: Prisma.JsonValue): VaultBluffState {
+  return value as unknown as VaultBluffState;
+}
+
+function parseMemory(value: Prisma.JsonValue): PlayerMemory {
+  const candidate = value as unknown;
+  if (
+    candidate &&
+    typeof candidate === "object" &&
+    "completedMatches" in candidate &&
+    typeof candidate.completedMatches === "number"
+  ) {
+    return candidate as PlayerMemory;
+  }
+  return neutralPlayerMemory();
+}
+
+function rankFor(totalXp: number): { rank: string; cosmetic: string } {
+  if (totalXp >= 2_000) return { rank: "Vaultmind", cosmetic: "Teal Cipher Case" };
+  if (totalXp >= 800) return { rank: "Keykeeper", cosmetic: "Steel Signal Case" };
+  if (totalXp >= 250) return { rank: "Bluffer", cosmetic: "Brass Tell Case" };
+  return { rank: "Scout", cosmetic: "Brass Starter Case" };
+}
+
+function randomPersona(seed: string): PersonaId {
+  let total = 0;
+  for (const char of seed) total += char.charCodeAt(0);
+  return PERSONA_IDS[total % PERSONA_IDS.length]!;
+}
+
+async function ensureProfile(
+  tx: Prisma.TransactionClient,
+  userId: string,
+): Promise<{ memory: PlayerMemory; totalXp: number }> {
+  const existing = await tx.botPlayerProfile.findUnique({ where: { userId } });
+  if (existing) {
+    return { memory: parseMemory(existing.memory), totalXp: existing.totalXp };
+  }
+  const memory = neutralPlayerMemory();
+  await tx.botPlayerProfile.create({
+    data: {
+      userId,
+      memory: jsonValue(memory),
+      lastEngineVersion: VAULT_BLUFF_ENGINE_VERSION,
+      lastPolicyVersion: VAULT_BLUFF_POLICY_VERSION,
+    },
+  });
+  return { memory, totalXp: 0 };
+}
+
+export async function createGameSession(args: {
+  userId: string;
+  persona?: PersonaId;
+  rematch?: boolean;
+}): Promise<SessionResult> {
+  return prisma.$transaction(async (tx) => {
+    if (!args.rematch) {
+      const active = await tx.gameSession.findFirst({
+        where: { userId: args.userId, status: GameSessionStatus.ACTIVE },
+        orderBy: { updatedAt: "desc" },
+      });
+      if (active) {
+        return {
+          id: active.id,
+          version: active.version,
+          session: toSafeSessionDto(parseState(active.state)),
+          reward: null,
+        };
+      }
+    }
+
+    await ensureProfile(tx, args.userId);
+    const seed = randomUUID();
+    const persona = args.persona ?? randomPersona(seed);
+    const now = new Date();
+    const state = startMatch({ seed, persona, now: now.toISOString() });
+    const safe = toSafeSessionDto(state);
+    const session = await tx.gameSession.create({
+      data: {
+        userId: args.userId,
+        persona: persona as GamePersona,
+        engineVersion: state.engineVersion,
+        policyVersion: state.policyVersion,
+        seed,
+        rngCursor: state.rngCursor,
+        state: jsonValue(state),
+        humanScore: 0,
+        botScore: 0,
+        rounds: {
+          create: {
+            number: 1,
+            humanRole: state.rounds[0]!.humanRole,
+            humanCase: state.rounds[0]!.humanCase,
+            botCase: state.rounds[0]!.botCase,
+            keyCase: state.rounds[0]!.keyCase,
+            publicState: jsonValue(safe.currentRound),
+            startedAt: now,
+          },
+        },
+      },
+    });
+    return { id: session.id, version: session.version, session: safe, reward: null };
+  });
+}
+
+export async function getGameSession(args: {
+  userId: string;
+  sessionId: string;
+}): Promise<SessionResult | null> {
+  const session = await prisma.gameSession.findFirst({
+    where: { id: args.sessionId, userId: args.userId },
+    include: { rewardGrant: true },
+  });
+  if (!session) return null;
+  const reward: GameRewardResult | null = session.rewardGrant
+    ? session.rewardGrant.status === "PENDING" && session.rewardGrant.availableAt
+      ? {
+          kind: "granted",
+          vp: session.rewardGrant.vp,
+          availableAt: session.rewardGrant.availableAt,
+        }
+      : { kind: "blocked", reason: session.rewardGrant.blockReason ?? "not_eligible" }
+    : null;
+  return {
+    id: session.id,
+    version: session.version,
+    session: toSafeSessionDto(parseState(session.state)),
+    reward,
+  };
+}
+
+async function applyActionAttempt(args: {
+  userId: string;
+  sessionId: string;
+  expectedVersion: number;
+  clientActionId: string;
+  command: VaultBluffCommand;
+}): Promise<SessionResult> {
+  return prisma.$transaction(
+    async (tx) => {
+      const session = await tx.gameSession.findFirst({
+        where: { id: args.sessionId, userId: args.userId },
+      });
+      if (!session) throw new GameServiceError("NOT_FOUND", "Game session not found");
+
+      const duplicate = await tx.gameAction.findUnique({
+        where: {
+          sessionId_clientActionId: {
+            sessionId: args.sessionId,
+            clientActionId: args.clientActionId,
+          },
+        },
+      });
+      if (duplicate) {
+        return {
+          id: session.id,
+          version: session.version,
+          session: toSafeSessionDto(parseState(session.state)),
+          reward: null,
+        };
+      }
+      if (session.version !== args.expectedVersion) {
+        throw new GameServiceError("VERSION_CONFLICT", "Session changed. Refresh and try again");
+      }
+
+      const profile = await ensureProfile(tx, args.userId);
+      const before = parseState(session.state);
+      const after = applyCommand(before, args.command, profile.memory);
+      const nextVersion = session.version + 1;
+      const updated = await tx.gameSession.updateMany({
+        where: { id: session.id, userId: args.userId, version: args.expectedVersion },
+        data: {
+          version: nextVersion,
+          status: after.completed
+            ? after.forfeited
+              ? GameSessionStatus.FORFEITED
+              : GameSessionStatus.COMPLETED
+            : GameSessionStatus.ACTIVE,
+          rngCursor: after.rngCursor,
+          state: jsonValue(after),
+          humanScore: after.humanScore,
+          botScore: after.botScore,
+          xpAwarded: after.xpAwarded,
+          completedAt: after.completed ? new Date(args.command.now) : null,
+        },
+      });
+      if (updated.count !== 1) {
+        throw new GameServiceError("VERSION_CONFLICT", "Session changed. Refresh and try again");
+      }
+
+      const beforeRound = before.rounds.at(-1)!;
+      const afterRound = after.rounds.at(-1)!;
+      const persistedRound = await tx.gameRound.findUnique({
+        where: {
+          sessionId_number: { sessionId: session.id, number: beforeRound.number },
+        },
+      });
+      if (!persistedRound) throw new GameServiceError("NOT_FOUND", "Round not found");
+      const safe = toSafeSessionDto(after);
+      const safeBeforeRound = safe.rounds.find((round) => round.number === beforeRound.number)!;
+      const updatedBeforeRound = after.rounds.find(
+        (round) => round.number === beforeRound.number,
+      )!;
+      await tx.gameRound.update({
+        where: { id: persistedRound.id },
+        data: {
+          status: updatedBeforeRound.resolvedAt
+            ? GameRoundStatus.COMPLETED
+            : after.forfeited
+              ? GameRoundStatus.FORFEITED
+              : GameRoundStatus.ACTIVE,
+          publicState: jsonValue(safeBeforeRound),
+          completedAt: updatedBeforeRound.resolvedAt
+            ? new Date(updatedBeforeRound.resolvedAt)
+            : null,
+        },
+      });
+      if (afterRound.number !== beforeRound.number) {
+        await tx.gameRound.create({
+          data: {
+            sessionId: session.id,
+            number: afterRound.number,
+            humanRole: afterRound.humanRole,
+            humanCase: afterRound.humanCase,
+            botCase: afterRound.botCase,
+            keyCase: afterRound.keyCase,
+            publicState: jsonValue(safe.currentRound),
+            startedAt: new Date(afterRound.startedAt),
+          },
+        });
+      }
+
+      await tx.gameAction.create({
+        data: {
+          sessionId: session.id,
+          roundId: persistedRound.id,
+          clientActionId: args.clientActionId,
+          expectedVersion: args.expectedVersion,
+          resultingVersion: nextVersion,
+          kind: args.command.kind,
+          payload: jsonValue(args.command),
+        },
+      });
+
+      let reward: GameRewardResult | null = null;
+      if (after.completed && !after.forfeited) {
+        const trainedMemory = updatePlayerMemoryOnce(profile.memory, after);
+        const totalXp = profile.totalXp + after.xpAwarded;
+        const progress = rankFor(totalXp);
+        const profileUpdate = await tx.botPlayerProfile.updateMany({
+          where: {
+            userId: args.userId,
+            OR: [
+              { lastTrainedSessionId: null },
+              { lastTrainedSessionId: { not: session.id } },
+            ],
+          },
+          data: {
+            completedMatches: { increment: 1 },
+            totalXp,
+            rank: progress.rank,
+            cosmetic: progress.cosmetic,
+            memory: jsonValue(trainedMemory),
+            lastTrainedSessionId: session.id,
+            lastEngineVersion: after.engineVersion,
+            lastPolicyVersion: after.policyVersion,
+          },
+        });
+        if (profileUpdate.count === 1) {
+          await tx.gameSession.update({
+            where: { id: session.id },
+            data: { memoryUpdatedAt: new Date(args.command.now) },
+          });
+          reward = await grantGamePromoInTransaction({
+            tx,
+            userId: args.userId,
+            sessionId: session.id,
+            now: new Date(args.command.now),
+          });
+        }
+      }
+
+      return { id: session.id, version: nextVersion, session: safe, reward };
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
+}
+
+export async function applyGameAction(
+  args: Parameters<typeof applyActionAttempt>[0],
+): Promise<SessionResult> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await applyActionAttempt(args);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2034" &&
+        attempt < 2
+      ) {
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new GameServiceError("VERSION_CONFLICT", "Session changed. Refresh and try again");
+}
+
+export async function getPlayProgress(userId: string) {
+  const [profile, completedMatches, rewards] = await Promise.all([
+    prisma.botPlayerProfile.findUnique({ where: { userId } }),
+    prisma.gameSession.count({
+      where: { userId, status: GameSessionStatus.COMPLETED },
+    }),
+    prisma.gameRewardGrant.findMany({
+      where: { userId, createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+      select: { vp: true, status: true, rewardPeriod: true },
+    }),
+  ]);
+  return {
+    completedMatches,
+    totalXp: profile?.totalXp ?? 0,
+    rank: profile?.rank ?? "Scout",
+    cosmetic: profile?.cosmetic ?? "Brass Starter Case",
+    promoVp30Days: rewards
+      .filter((reward) => reward.status === "PENDING")
+      .reduce((total, reward) => total + reward.vp, 0),
+    rewardedToday: rewards.some(
+      (reward) => reward.rewardPeriod.getTime() === new Date().setUTCHours(0, 0, 0, 0),
+    ),
+    rewardsEnabled: process.env.VAULT_BLUFF_REWARDS_ENABLED === "true",
+  };
+}
+
+export class GameServiceError extends Error {
+  constructor(
+    readonly code: "NOT_FOUND" | "VERSION_CONFLICT",
+    message: string,
+  ) {
+    super(message);
+    this.name = "GameServiceError";
+  }
+}

@@ -4,6 +4,7 @@ const FROM_PATHS: Record<string, string> = {
   rewards: "/rewards",
   account: "/account",
   giveaway: "/giveaway",
+  play: "/play/vault-bluff",
 };
 
 export function pathFromAuthHint(from: string | null | undefined): string {
