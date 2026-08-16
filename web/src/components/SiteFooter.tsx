@@ -49,6 +49,12 @@ export function SiteFooter() {
             <Link href="/how-it-works" className="hover:text-[var(--vq-teal)]">
               How it works
             </Link>
+            <Link href="/earn" className="hover:text-[var(--vq-teal)]">
+              Earn
+            </Link>
+            <Link href="/giveaway" className="hover:text-[var(--vq-teal)]">
+              Roblox giveaway
+            </Link>
             <Link href="/proof" className="hover:text-[var(--vq-teal)]">
               Proof & Rules
             </Link>
