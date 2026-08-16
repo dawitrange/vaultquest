@@ -12,6 +12,7 @@ import {
   giveawayPhase,
   isGiveawayOpen,
 } from "@/lib/giveaway";
+import { PH_EVENTS, captureServerEvent } from "@/lib/posthog-server";
 
 export type GiveawayFormState = { error?: string; ok?: boolean; message?: string };
 
@@ -95,6 +96,10 @@ export async function enterGiveawayAction(
       });
     }
     revalidatePath("/giveaway");
+    await captureServerEvent(session.user.id, PH_EVENTS.giveaway_submit, {
+      campaign_slug: ROBLOX_GIVEAWAY_SLUG,
+      result,
+    });
     return {
       ok: true,
       message:
@@ -143,6 +148,11 @@ export async function enterGiveawayAction(
     name: parsed.data.name,
     email,
     reason: reasonParsed.data,
+  });
+  await captureServerEvent(user.id, PH_EVENTS.signup, { source: "giveaway" });
+  await captureServerEvent(user.id, PH_EVENTS.giveaway_submit, {
+    campaign_slug: ROBLOX_GIVEAWAY_SLUG,
+    result: "created",
   });
 
   try {

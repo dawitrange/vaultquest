@@ -8,6 +8,7 @@ import { authHintFromFormData, pathFromAuthHint } from "@/lib/auth-redirect";
 import { prisma } from "@/lib/db";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { createResetToken, hashResetToken, RESET_TOKEN_TTL_MS, resetLinkForToken } from "@/lib/password-reset";
+import { PH_EVENTS, captureServerEvent } from "@/lib/posthog-server";
 
 const signupSchema = z.object({
   email: z.string().email(),
@@ -37,7 +38,7 @@ export async function signupAction(_prev: AuthFormState, formData: FormData): Pr
   if (existing) return { error: "An account with that email already exists" };
 
   const passwordHash = await hash(parsed.data.password, 12);
-  await prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       email,
       passwordHash,
@@ -45,6 +46,7 @@ export async function signupAction(_prev: AuthFormState, formData: FormData): Pr
       ageConfirmed: true,
     },
   });
+  await captureServerEvent(user.id, PH_EVENTS.signup, { source: "form" });
 
   try {
     await signIn("credentials", {

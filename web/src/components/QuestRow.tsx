@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { DemoCreditButton } from "@/components/DemoCreditButton";
 import type { Quest } from "@/lib/affiliates";
+import { PH_EVENTS, captureClientEvent } from "@/lib/posthog-client";
 
 export function QuestRow({
   quest,
@@ -46,6 +47,7 @@ export function QuestRow({
               href={`/api/go/${quest.id}`}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => captureClientEvent(PH_EVENTS.earn_click, { quest_id: quest.id })}
               className="rounded-md bg-[var(--vq-teal)] px-4 py-2.5 text-center text-sm font-semibold text-[var(--vq-bg-deep)] hover:bg-[var(--vq-teal-dim)] hover:text-white"
             >
               {quest.ctaLabel ?? "Start quest"}
@@ -53,6 +55,7 @@ export function QuestRow({
           ) : (
             <Link
               href={`/api/go/${quest.id}`}
+              onClick={() => captureClientEvent(PH_EVENTS.earn_click, { quest_id: quest.id })}
               className="rounded-md bg-[var(--vq-teal)] px-4 py-2.5 text-center text-sm font-semibold text-[var(--vq-bg-deep)] hover:bg-[var(--vq-teal-dim)] hover:text-white"
             >
               {quest.ctaLabel ?? "Start quest"}

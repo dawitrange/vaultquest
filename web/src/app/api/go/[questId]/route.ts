@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { createOfferClick, getQuest } from "@/lib/affiliates";
+import { PH_EVENTS, captureServerEvent } from "@/lib/posthog-server";
 import { buildGoRedirect, goFailurePath, isMarketingHomepageUrl } from "@/lib/postback";
 
 /** Creates a tracked click and redirects to the rotated partner URL. */
@@ -47,6 +48,12 @@ export async function GET(
   if (!dest.ok) {
     return NextResponse.redirect(new URL(goFailurePath(dest.reason), _req.url));
   }
+
+  await captureServerEvent(session.user.id, PH_EVENTS.go_hop, {
+    quest_id: quest.id,
+    partner: started.link.partner,
+    slug: started.link.slug,
+  });
 
   return NextResponse.redirect(dest.location);
 }
