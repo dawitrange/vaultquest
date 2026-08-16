@@ -109,7 +109,11 @@ export default async function PlayPage() {
       )}
 
       <section className="mt-6 grid gap-5 lg:grid-cols-[1.5fr_1fr]">
-        <article className="relative overflow-hidden rounded-[12px] border border-[var(--vq-border-strong)] bg-[var(--vq-bg-raised)] p-6 sm:p-8">
+        <article
+          className={`relative overflow-hidden rounded-[12px] border border-[var(--vq-border-strong)] bg-[var(--vq-bg-raised)] p-6 sm:p-8 ${
+            signedIn && progress.schemaReady ? "vq-hub-featured" : ""
+          }`}
+        >
           <div className="absolute right-5 top-4 font-[family-name:var(--vq-font-display)] text-6xl text-[var(--vq-brass)]/20" aria-hidden="true">
             ◆
           </div>
@@ -120,15 +124,18 @@ export default async function PlayPage() {
             Vault Bluff
           </h2>
           <p className="mt-3 max-w-xl text-sm text-[var(--vq-ink-muted)]">
-            Inspect your case or question the bot. Ask two structured questions,
-            then keep your case or take theirs. Four rounds. Ties allowed.
+            {signedIn
+              ? "Four rounds against a clearly labeled VaultQuest bot. Resume your active match or start the next one."
+              : "Inspect your case or question the bot. Ask two structured questions, then keep your case or take theirs. Four rounds. Ties allowed."}
           </p>
-          <ul className="mt-5 grid gap-2 text-sm sm:grid-cols-2">
-            <li>Bot opponent is always labeled</li>
-            <li>No free text or hidden rule changes</li>
-            <li>Performance changes XP only</li>
-            <li>Refresh restores the active match</li>
-          </ul>
+          {!signedIn ? (
+            <ul className="mt-5 grid gap-2 text-sm sm:grid-cols-2">
+              <li>Bot opponent is always labeled</li>
+              <li>No free text or hidden rule changes</li>
+              <li>Performance changes XP only</li>
+              <li>Refresh restores the active match</li>
+            </ul>
+          ) : null}
           <Link
             href={signedIn ? "/play/vault-bluff" : "/login?from=play"}
             className="mt-7 inline-flex rounded-md bg-[var(--vq-teal)] px-5 py-3 text-sm font-semibold text-[var(--vq-bg-deep)] hover:bg-[var(--vq-teal-dim)] hover:text-white"

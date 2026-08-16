@@ -178,6 +178,18 @@ Safe properties may include engine version, policy version, persona, completion 
 
 The signed-out state exists on the public `/play` explainer only. Authenticated components under `web/src/components/play/` cover preview-schema unavailable, new match, Keeper inspection, Chooser questioning, bot-answering status, Keeper response, bot-choosing status after the second Keeper answer, human Keep or Take, bot Chooser decision, held reveal with explicit Continue, visually separate round result, match result, reward pending, distinct daily and rolling cap states, populated and empty rotated Earn slots, confirmation-guarded forfeit, and dedicated error recovery with retry. Every human Chooser round first renders at 0 of 2 with no used questions; a short interaction guard prevents the reveal click from landing on a new-round question. Keeper response submission reads the answer, confidence, and recommendation from the submitted form so the visible selection is the sent selection. `/play/vault-bluff` never renders a signed-out game panel. The experience must work on mobile and by keyboard. Interactive targets are at least 44 px; short chips also have a 44 px minimum width. Color cannot be the only case identifier. Brass and gold are reserved for the Vault Key, cases, and unlock moments.
 
+## Motion
+
+Vault Bluff motion uses DOM and CSS only. It adds no Lottie asset, canvas, runtime animation engine, or gameplay transition.
+
+- Bot answering and choosing bars pulse teal only while the request is in flight.
+- Keep and Take are large opposite actions with a press-in state. Keep uses teal; Take uses the existing danger red. Neither uses brass chrome.
+- The key case performs one short reveal settle and keeps a static brass light afterward.
+- A four-dot round rail shows done rounds in ink, the current round in teal, and remaining rounds as outlines alongside `Round N of 4`.
+- Instant rematch gets one brass and teal glow on mount, with no loop.
+- The signed-in ready-state featured card uses one teal border pulse and shorter copy. The signed-out `/play` explainer copy does not change.
+- Under `prefers-reduced-motion`, all new pulse, flip, and glow animations are disabled. The thinking bar remains static, the key case lights without flipping, and action feedback uses no transform.
+
 ## Release and deployment gates
 
 No deployment is part of this work. The migration is generated but not applied to production. Promotional VP cannot be enabled until all of these are true:

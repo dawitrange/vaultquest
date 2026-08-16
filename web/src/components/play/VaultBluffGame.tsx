@@ -331,8 +331,9 @@ export function VaultBluffGame({
             VaultQuest bot · {persona.name}
           </p>
           <h1 className="mt-1 font-[family-name:var(--vq-font-display)] text-3xl font-bold">Vault Bluff</h1>
-          <p className="mt-1 text-sm text-[var(--vq-ink-muted)]">
-            Round {round.number} of 4 · You are the {round.humanRole.toLowerCase()}
+          <RoundRail currentRound={round.number} />
+          <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
+            You are the {round.humanRole.toLowerCase()}
           </p>
         </div>
         <div className="flex gap-5 font-[family-name:var(--vq-font-mono)] text-sm">
@@ -374,7 +375,7 @@ export function VaultBluffGame({
               <p
                 role="status"
                 aria-live="polite"
-                className="mt-5 rounded-md border border-[var(--vq-teal)]/40 bg-[var(--vq-teal-glow)] px-4 py-3 text-sm text-[var(--vq-teal)]"
+                className="vq-bot-thinking mt-5 rounded-md border border-[var(--vq-teal)]/40 bg-[var(--vq-teal-glow)] px-4 py-3 text-sm text-[var(--vq-teal)]"
               >
                 VaultQuest bot is choosing…
               </p>
@@ -442,7 +443,7 @@ export function VaultBluffGame({
               <p
                 role="status"
                 aria-live="polite"
-                className="mt-5 rounded-md border border-[var(--vq-teal)]/40 bg-[var(--vq-teal-glow)] px-4 py-3 text-sm text-[var(--vq-teal)]"
+                className="vq-bot-thinking mt-5 rounded-md border border-[var(--vq-teal)]/40 bg-[var(--vq-teal-glow)] px-4 py-3 text-sm text-[var(--vq-teal)]"
               >
                 VaultQuest bot is answering…
               </p>
@@ -479,7 +480,7 @@ export function VaultBluffGame({
                 type="button"
                 disabled={pending}
                 onClick={() => void act({ kind: "CHOOSE_CASE", choice: "KEEP" })}
-                className="rounded-md bg-[var(--vq-teal)] px-5 py-4 font-semibold text-[var(--vq-bg-deep)] disabled:opacity-50"
+                className="vq-choice-button vq-choice-button--keep rounded-md px-5 py-4 text-lg font-bold disabled:opacity-50"
               >
                 Keep my Case A
               </button>
@@ -487,7 +488,7 @@ export function VaultBluffGame({
                 type="button"
                 disabled={pending}
                 onClick={() => void act({ kind: "CHOOSE_CASE", choice: "TAKE" })}
-                className="rounded-md border border-[var(--vq-brass)] px-5 py-4 font-semibold text-[var(--vq-brass)] disabled:opacity-50"
+                className="vq-choice-button vq-choice-button--take rounded-md border px-5 py-4 text-lg font-bold disabled:opacity-50"
               >
                 Take bot Case B
               </button>
@@ -534,9 +535,6 @@ export function VaultBluffGame({
               <h3 className="mt-2 text-2xl font-semibold">
                 {round.winner === "HUMAN" ? "Point to you" : "Point to the VaultQuest bot"}
               </h3>
-              <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
-                The Vault Key awards one round point only.
-              </p>
             </div>
             {!revealReady ? (
               <p role="status" className="mt-4 text-sm text-[var(--vq-ink-muted)]">
@@ -664,7 +662,7 @@ function MatchResult({
         type="button"
         disabled={pending}
         onClick={onRematch}
-        className="mt-6 rounded-md bg-[var(--vq-teal)] px-5 py-3 font-semibold text-[var(--vq-bg-deep)] disabled:opacity-50"
+        className="vq-rematch-glow mt-6 min-h-11 rounded-md bg-[var(--vq-teal)] px-5 py-3 font-semibold text-[var(--vq-bg-deep)] disabled:opacity-50"
       >
         Instant rematch
       </button>
@@ -784,7 +782,7 @@ function CasePair({ highlighted, revealed = false }: { highlighted?: "CASE_A" | 
           key={caseId}
           className={`grid min-h-28 place-items-center rounded-[10px] border-2 bg-[var(--vq-bg-sunken)] ${
             highlighted === caseId ? "border-[var(--vq-brass)]" : "border-[var(--vq-border)]"
-          }`}
+          } ${revealed && highlighted === caseId ? "vq-case-winner" : ""}`}
         >
           <div className="text-center">
             <span className="block text-3xl text-[var(--vq-brass)]" aria-hidden="true">
@@ -827,6 +825,37 @@ function SelectField({
         ))}
       </select>
     </label>
+  );
+}
+
+function RoundRail({ currentRound }: { currentRound: number }) {
+  return (
+    <div
+      className="vq-round-rail mt-3"
+      role="progressbar"
+      aria-label={`Round ${currentRound} of 4`}
+      aria-valuemin={1}
+      aria-valuemax={4}
+      aria-valuenow={currentRound}
+    >
+      <span className="mr-1 font-[family-name:var(--vq-font-mono)] text-xs text-[var(--vq-ink-muted)]">
+        Round {currentRound} of 4
+      </span>
+      {[1, 2, 3, 4].map((roundNumber) => (
+        <span
+          key={roundNumber}
+          className="vq-round-dot"
+          data-state={
+            roundNumber < currentRound
+              ? "done"
+              : roundNumber === currentRound
+                ? "current"
+                : "remaining"
+          }
+          aria-hidden="true"
+        />
+      ))}
+    </div>
   );
 }
 
