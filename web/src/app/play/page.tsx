@@ -19,6 +19,7 @@ export default async function PlayPage() {
   const signedIn = Boolean(session?.user?.id);
   let balance = { available: 0, pending: 0 };
   let progress = {
+    schemaReady: true,
     completedMatches: 0,
     totalXp: 0,
     rank: "Scout",
@@ -68,8 +69,6 @@ export default async function PlayPage() {
           {[
             ["Available VP", balance.available, "var(--vq-teal)"],
             ["Pending VP", balance.pending, "var(--vq-warn)"],
-            ["Vault Bluff XP", progress.totalXp, "var(--vq-ink)"],
-            ["Completed matches", progress.completedMatches, "var(--vq-ink)"],
           ].map(([label, value, color]) => (
             <div key={String(label)} className="rounded-[10px] border border-[var(--vq-border)] bg-[var(--vq-surface)] p-4">
               <p className="text-xs uppercase tracking-wider text-[var(--vq-ink-faint)]">{label}</p>
@@ -78,6 +77,25 @@ export default async function PlayPage() {
               </p>
             </div>
           ))}
+          {progress.schemaReady ? (
+            <>
+              <div className="rounded-[10px] border border-[var(--vq-border)] bg-[var(--vq-surface)] p-4">
+                <p className="text-xs uppercase tracking-wider text-[var(--vq-ink-faint)]">Vault Bluff XP</p>
+                <p className="mt-1 font-[family-name:var(--vq-font-mono)] text-2xl">{progress.totalXp}</p>
+              </div>
+              <div className="rounded-[10px] border border-[var(--vq-border)] bg-[var(--vq-surface)] p-4">
+                <p className="text-xs uppercase tracking-wider text-[var(--vq-ink-faint)]">Completed matches</p>
+                <p className="mt-1 font-[family-name:var(--vq-font-mono)] text-2xl">{progress.completedMatches}</p>
+              </div>
+            </>
+          ) : (
+            <div className="rounded-[10px] border border-[var(--vq-warn)]/50 bg-[var(--vq-surface)] p-4 sm:col-span-2">
+              <p className="text-xs uppercase tracking-wider text-[var(--vq-warn)]">Vault Bluff unavailable</p>
+              <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
+                This preview database does not have the Vault Bluff migration. Gameplay and promotional VP are safely unavailable.
+              </p>
+            </div>
+          )}
         </section>
       ) : (
         <section className="mt-8 rounded-[10px] border border-[var(--vq-border)] bg-[var(--vq-surface)] p-5" aria-label="Sign in for balance">
@@ -115,7 +133,11 @@ export default async function PlayPage() {
             href={signedIn ? "/play/vault-bluff" : "/login?from=play"}
             className="mt-7 inline-flex rounded-md bg-[var(--vq-teal)] px-5 py-3 text-sm font-semibold text-[var(--vq-bg-deep)] hover:bg-[var(--vq-teal-dim)] hover:text-white"
           >
-            {signedIn ? "Enter Vault Bluff" : "Sign in to play"}
+            {signedIn
+              ? progress.schemaReady
+                ? "Enter Vault Bluff"
+                : "View setup status"
+              : "Sign in to play"}
           </Link>
         </article>
 
@@ -132,6 +154,8 @@ export default async function PlayPage() {
             <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
               {!signedIn
                 ? "Sign in to see your daily promotional VP status."
+                : !progress.schemaReady
+                  ? "Promotional VP is disabled. Connect the isolated QA database and apply the committed migration there before testing."
                 : progress.rewardsEnabled
                 ? progress.rewardedToday
                   ? "1 promotional VP for this UTC day was already granted. Play stays open; no more promo VP is added today."
@@ -139,7 +163,7 @@ export default async function PlayPage() {
                 : "Promotional VP is disabled until a funded reserve and kill switch are configured."}
             </p>
           </article>
-          {signedIn ? (
+          {signedIn && progress.schemaReady ? (
             <article className="rounded-[10px] border border-[var(--vq-border)] bg-[var(--vq-surface)] p-5">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="font-[family-name:var(--vq-font-display)] text-lg font-semibold">
@@ -159,10 +183,12 @@ export default async function PlayPage() {
           ) : (
             <article className="rounded-[10px] border border-[var(--vq-border)] bg-[var(--vq-surface)] p-5">
               <h2 className="font-[family-name:var(--vq-font-display)] text-lg font-semibold">
-                XP and rank
+                {signedIn ? "Progress unavailable" : "XP and rank"}
               </h2>
               <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
-                Sign in to track completed matches, XP, ranks, and earned case cosmetics.
+                {signedIn
+                  ? "XP, ranks, and cosmetics will load after this preview uses the migrated isolated QA database."
+                  : "Sign in to track completed matches, XP, ranks, and earned case cosmetics."}
               </p>
             </article>
           )}

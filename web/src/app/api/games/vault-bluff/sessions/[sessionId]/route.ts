@@ -1,5 +1,9 @@
 import { auth } from "@/auth";
-import { getGameSession } from "@/lib/vault-bluff/service";
+import {
+  VAULT_BLUFF_SCHEMA_UNAVAILABLE_MESSAGE,
+  getGameSession,
+  isVaultBluffSchemaUnavailable,
+} from "@/lib/vault-bluff/service";
 
 export async function GET(
   _request: Request,
@@ -13,7 +17,26 @@ export async function GET(
     );
   }
   const { sessionId } = await context.params;
-  const game = await getGameSession({ userId: session.user.id, sessionId });
+  let game: Awaited<ReturnType<typeof getGameSession>>;
+  try {
+    game = await getGameSession({ userId: session.user.id, sessionId });
+  } catch (error) {
+    if (isVaultBluffSchemaUnavailable(error)) {
+      return Response.json(
+        {
+          error: {
+            code: "GAME_SCHEMA_UNAVAILABLE",
+            message: VAULT_BLUFF_SCHEMA_UNAVAILABLE_MESSAGE,
+          },
+        },
+        { status: 503 },
+      );
+    }
+    return Response.json(
+      { error: { code: "INTERNAL_ERROR", message: "The game could not load safely" } },
+      { status: 500 },
+    );
+  }
   if (!game) {
     return Response.json(
       { error: { code: "NOT_FOUND", message: "Game session not found" } },

@@ -38,6 +38,20 @@ type SessionResult = {
   reward: GameRewardResult | null;
 };
 
+export const VAULT_BLUFF_SCHEMA_UNAVAILABLE_MESSAGE =
+  "Vault Bluff is not available in this preview. Connect the isolated QA database and apply the committed migration there.";
+
+export function isVaultBluffSchemaErrorCode(code: string): boolean {
+  return code === "P2021" || code === "P2022";
+}
+
+export function isVaultBluffSchemaUnavailable(error: unknown): boolean {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    isVaultBluffSchemaErrorCode(error.code)
+  );
+}
+
 export function rewardResultFromGrant(
   grant:
     | Pick<
@@ -479,31 +493,46 @@ export async function applyGameAction(
 }
 
 export async function getPlayProgress(userId: string) {
-  const [profile, completedMatches, rewards] = await Promise.all([
-    prisma.botPlayerProfile.findUnique({ where: { userId } }),
-    prisma.gameSession.count({
-      where: { userId, status: GameSessionStatus.COMPLETED },
-    }),
-    prisma.gameRewardGrant.findMany({
-      where: { userId, createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
-      select: { vp: true, status: true, rewardPeriod: true },
-    }),
-  ]);
-  return {
-    completedMatches,
-    totalXp: profile?.totalXp ?? 0,
-    rank: profile?.rank ?? "Scout",
-    cosmetic: profile?.cosmetic ?? "Brass Starter Case",
-    promoVp30Days: rewards
-      .filter((reward) => reward.status === "PENDING")
-      .reduce((total, reward) => total + reward.vp, 0),
-    rewardedToday: rewards.some(
-      (reward) =>
-        reward.status === GameRewardStatus.PENDING &&
-        reward.rewardPeriod.getTime() === new Date().setUTCHours(0, 0, 0, 0),
-    ),
-    rewardsEnabled: canFulfillVaultBluffPromo(),
-  };
+  try {
+    const [profile, completedMatches, rewards] = await Promise.all([
+      prisma.botPlayerProfile.findUnique({ where: { userId } }),
+      prisma.gameSession.count({
+        where: { userId, status: GameSessionStatus.COMPLETED },
+      }),
+      prisma.gameRewardGrant.findMany({
+        where: { userId, createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+        select: { vp: true, status: true, rewardPeriod: true },
+      }),
+    ]);
+    return {
+      schemaReady: true as const,
+      completedMatches,
+      totalXp: profile?.totalXp ?? 0,
+      rank: profile?.rank ?? "Scout",
+      cosmetic: profile?.cosmetic ?? "Brass Starter Case",
+      promoVp30Days: rewards
+        .filter((reward) => reward.status === "PENDING")
+        .reduce((total, reward) => total + reward.vp, 0),
+      rewardedToday: rewards.some(
+        (reward) =>
+          reward.status === GameRewardStatus.PENDING &&
+          reward.rewardPeriod.getTime() === new Date().setUTCHours(0, 0, 0, 0),
+      ),
+      rewardsEnabled: canFulfillVaultBluffPromo(),
+    };
+  } catch (error) {
+    if (!isVaultBluffSchemaUnavailable(error)) throw error;
+    return {
+      schemaReady: false as const,
+      completedMatches: 0,
+      totalXp: 0,
+      rank: "Unavailable",
+      cosmetic: "Unavailable",
+      promoVp30Days: 0,
+      rewardedToday: false,
+      rewardsEnabled: false,
+    };
+  }
 }
 
 export class GameServiceError extends Error {

@@ -110,6 +110,8 @@ Commands include an optimistic session version and unique `clientActionId`. Comm
 
 Logs and analytics must never include hidden placement, seed, unrevealed answers, email, raw identity, private state, or fraud thresholds.
 
+If the authenticated preview database lacks a Vault Bluff table or column, `/play` and `/play/vault-bluff` render a safe setup-unavailable state instead of crashing. Game APIs return structured `503 GAME_SCHEMA_UNAVAILABLE` responses. The application must never auto-create or auto-migrate game tables. QA connects an isolated development database and applies the committed migration there; production Neon remains untouched.
+
 ## Economy and XP
 
 - 100 VP equals $1.
@@ -174,7 +176,7 @@ Safe properties may include engine version, policy version, persona, completion 
 
 ## Required UI states
 
-The signed-out state exists on the public `/play` explainer only. Authenticated components under `web/src/components/play/` cover new match, Keeper inspection, Chooser questioning, bot-answering status, Keeper response, bot-choosing status after the second Keeper answer, human Keep or Take, bot Chooser decision, visually separate reveal and round result, match result, reward pending, distinct daily and rolling cap states, populated and empty rotated Earn slots, and dedicated error recovery with retry. `/play/vault-bluff` never renders a signed-out game panel. The experience must work on mobile and by keyboard. Interactive targets are at least 44 px; short chips also have a 44 px minimum width. Color cannot be the only case identifier. Brass and gold are reserved for the Vault Key, cases, and unlock moments.
+The signed-out state exists on the public `/play` explainer only. Authenticated components under `web/src/components/play/` cover preview-schema unavailable, new match, Keeper inspection, Chooser questioning, bot-answering status, Keeper response, bot-choosing status after the second Keeper answer, human Keep or Take, bot Chooser decision, visually separate reveal and round result, match result, reward pending, distinct daily and rolling cap states, populated and empty rotated Earn slots, and dedicated error recovery with retry. `/play/vault-bluff` never renders a signed-out game panel. The experience must work on mobile and by keyboard. Interactive targets are at least 44 px; short chips also have a 44 px minimum width. Color cannot be the only case identifier. Brass and gold are reserved for the Vault Key, cases, and unlock moments.
 
 ## Release and deployment gates
 

@@ -3,7 +3,9 @@ import { auth } from "@/auth";
 import { PH_EVENTS, captureServerEvent } from "@/lib/posthog-server";
 import {
   GameServiceError,
+  VAULT_BLUFF_SCHEMA_UNAVAILABLE_MESSAGE,
   applyGameAction,
+  isVaultBluffSchemaUnavailable,
 } from "@/lib/vault-bluff/service";
 import {
   APPROVED_ANSWER_IDS,
@@ -104,6 +106,17 @@ export async function POST(
     await Promise.all(events);
     return Response.json(result);
   } catch (error) {
+    if (isVaultBluffSchemaUnavailable(error)) {
+      return Response.json(
+        {
+          error: {
+            code: "GAME_SCHEMA_UNAVAILABLE",
+            message: VAULT_BLUFF_SCHEMA_UNAVAILABLE_MESSAGE,
+          },
+        },
+        { status: 503 },
+      );
+    }
     if (error instanceof VaultBluffError) {
       return Response.json(
         { error: { code: error.code, message: error.message } },

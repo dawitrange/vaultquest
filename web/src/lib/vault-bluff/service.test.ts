@@ -1,7 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { GameRewardStatus } from "@prisma/client";
-import { rewardResultFromGrant } from "./service";
+import {
+  isVaultBluffSchemaErrorCode,
+  rewardResultFromGrant,
+} from "./service";
+
+test("missing Bluff tables and columns are classified as safe setup failures", () => {
+  assert.equal(isVaultBluffSchemaErrorCode("P2021"), true);
+  assert.equal(isVaultBluffSchemaErrorCode("P2022"), true);
+  assert.equal(isVaultBluffSchemaErrorCode("P2002"), false);
+});
 
 test("persisted completing reward converts to the same replay payload", () => {
   const availableAt = new Date("2026-08-17T12:00:00.000Z");
