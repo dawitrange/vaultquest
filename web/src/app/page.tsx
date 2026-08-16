@@ -27,7 +27,7 @@ const FAQS = [
   },
   {
     q: "How do giveaways work?",
-    a: "Scheduled giveaways publish their rules on /giveaways, and we post winners after each draw.",
+    a: "Scheduled giveaways publish their rules on /giveaway, and we post winners after each draw.",
   },
 ] as const;
 
@@ -78,7 +78,7 @@ export default function HomePage() {
                 Start earning
               </Link>
               <Link
-                href="/giveaways"
+                href="/giveaway"
                 className="inline-flex rounded-md border border-[var(--vq-border-strong)] bg-[var(--vq-bg-deep)]/50 px-5 py-3 text-sm font-semibold text-[var(--vq-ink)] backdrop-blur-sm hover:border-[var(--vq-teal)] hover:text-[var(--vq-teal)]"
               >
                 Join giveaway

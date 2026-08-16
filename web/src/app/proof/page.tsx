@@ -108,8 +108,8 @@ export default function ProofPage() {
           <li>Eligibility: 16+ (or 18+ where local law / partner requires); void where prohibited</li>
           <li>
             Entry: VaultQuest account + optional VP or quest completion as stated per giveaway page (
-            <Link href="/giveaways" className="text-[var(--vq-teal)] hover:underline">
-              /giveaways
+            <Link href="/giveaway" className="text-[var(--vq-teal)] hover:underline">
+              /giveaway
             </Link>
             )
           </li>

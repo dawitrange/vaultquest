@@ -30,6 +30,7 @@ export const PUBLIC_PATHS = [
   "/earn",
   "/rewards",
   "/giveaways",
+  "/giveaway",
   "/proof",
   "/contact",
   "/terms",
