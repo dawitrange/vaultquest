@@ -85,73 +85,90 @@ export function VaultBluffGame({
 
   async function loadSession(sessionId: string) {
     setLoading(true);
-    const response = await fetch(`/api/games/vault-bluff/sessions/${sessionId}`, {
-      cache: "no-store",
-    });
-    if (response.ok) {
-      const result: ApiResult = await response.json();
-      setGame(result);
-    } else if (response.status === 404) {
-      localStorage.removeItem(STORAGE_KEY);
-      setGame(null);
-    } else {
+    try {
+      const response = await fetch(`/api/games/vault-bluff/sessions/${sessionId}`, {
+        cache: "no-store",
+      });
+      if (response.ok) {
+        const result: ApiResult = await response.json();
+        setGame(result);
+      } else if (response.status === 404) {
+        localStorage.removeItem(STORAGE_KEY);
+        setGame(null);
+      } else {
+        setError("Your match could not be restored. Try again.");
+      }
+    } catch {
       setError("Your match could not be restored. Try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) void loadSession(saved);
-    else setLoading(false);
+    queueMicrotask(() => {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) void loadSession(saved);
+      else setLoading(false);
+    });
   }, []);
 
   async function start(persona?: PersonaId, rematch = false) {
     setPending(true);
     setError(null);
-    const response = await fetch("/api/games/vault-bluff/sessions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ persona, rematch }),
-    });
-    const body = await response.json();
-    if (!response.ok) {
-      setError(body?.error?.message ?? "The match could not start.");
-    } else {
-      const result = body as ApiResult;
-      localStorage.setItem(STORAGE_KEY, result.id);
-      setGame(result);
+    try {
+      const response = await fetch("/api/games/vault-bluff/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ persona, rematch }),
+      });
+      const body = await response.json();
+      if (!response.ok) {
+        setError(body?.error?.message ?? "The match could not start.");
+      } else {
+        const result = body as ApiResult;
+        localStorage.setItem(STORAGE_KEY, result.id);
+        setGame(result);
+      }
+    } catch {
+      setError("The match could not start. Check your connection and try again.");
+    } finally {
+      setPending(false);
     }
-    setPending(false);
   }
 
   async function act(command: ClientCommand) {
     if (!game) return;
     setPending(true);
     setError(null);
-    const response = await fetch(
-      `/api/games/vault-bluff/sessions/${game.id}/actions`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          expectedVersion: game.version,
-          clientActionId: crypto.randomUUID(),
-          command,
-        }),
-      },
-    );
-    const body = await response.json();
-    if (!response.ok) {
-      setError(body?.error?.message ?? "That action could not be applied.");
-      if (body?.error?.code === "VERSION_CONFLICT") await loadSession(game.id);
-    } else {
-      setGame(body as ApiResult);
-      setAnswer(null);
-      setConfidence("UNSURE");
-      setRecommendation("KEEP");
+    try {
+      const response = await fetch(
+        `/api/games/vault-bluff/sessions/${game.id}/actions`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            expectedVersion: game.version,
+            clientActionId: crypto.randomUUID(),
+            command,
+          }),
+        },
+      );
+      const body = await response.json();
+      if (!response.ok) {
+        setError(body?.error?.message ?? "That action could not be applied.");
+        if (body?.error?.code === "VERSION_CONFLICT") await loadSession(game.id);
+      } else {
+        setGame(body as ApiResult);
+        setAnswer(null);
+        setConfidence("UNSURE");
+        setRecommendation("KEEP");
+      }
+    } catch {
+      setError("That action could not be sent. Your saved match is unchanged.");
+    } finally {
+      setPending(false);
     }
-    setPending(false);
   }
 
   if (loading) {

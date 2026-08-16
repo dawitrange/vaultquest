@@ -84,6 +84,7 @@ export type VaultBluffRound = {
   choice: Choice | null;
   winner: Side | null;
   startedAt: string;
+  deadlineAt: string;
   resolvedAt: string | null;
 };
 
@@ -159,7 +160,8 @@ export class VaultBluffError extends Error {
       | "INVALID_COMMAND"
       | "DUPLICATE_QUESTION"
       | "QUESTION_LIMIT"
-      | "INVALID_ANSWER",
+      | "INVALID_ANSWER"
+      | "ROUND_EXPIRED",
     message: string,
   ) {
     super(message);

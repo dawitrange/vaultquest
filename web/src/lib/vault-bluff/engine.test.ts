@@ -102,6 +102,20 @@ test("placement is immutable after behavior commands", () => {
   assert.equal(next.rounds[0]?.keyCase, keyCase);
 });
 
+test("server deadline rejects stale commands without mutating state", () => {
+  const state = startMatch({ seed: "expired", persona: "ANALYST", now: START });
+  const original = structuredClone(state);
+  assert.throws(
+    () =>
+      applyCommand(state, {
+        kind: "ACK_INSPECTION",
+        now: "2026-08-24T12:00:00.000Z",
+      }),
+    { message: "This round expired. Forfeit it and start a new match" },
+  );
+  assert.deepEqual(state, original);
+});
+
 test("new memory is neutral and forfeits never train", () => {
   const memory = neutralPlayerMemory();
   assert.equal(memory.keepRate, 0.5);

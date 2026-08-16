@@ -33,7 +33,7 @@ const actionSchema = z.object({
 
 export async function POST(
   request: Request,
-  context: RouteContext<"/api/games/vault-bluff/sessions/[sessionId]/actions">,
+  context: { params: Promise<{ sessionId: string }> },
 ) {
   const authSession = await auth();
   if (!authSession?.user?.id) {

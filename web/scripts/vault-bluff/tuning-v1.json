@@ -1,0 +1,266 @@
+{
+  "tuningVersion": "vault-bluff-tuning-v1",
+  "candidateCount": 1728,
+  "dimensions": {
+    "bluffRate": [
+      0.25,
+      0.4,
+      0.55,
+      0.7
+    ],
+    "explorationRate": [
+      0.15,
+      0.2,
+      0.25
+    ],
+    "memoryWeight": [
+      0.3,
+      0.45,
+      0.6
+    ],
+    "certainRate": [
+      0.35,
+      0.55,
+      0.75,
+      0.85
+    ],
+    "baseDelayMs": [
+      850,
+      1150,
+      1500,
+      1850
+    ],
+    "reversePsychologyRate": [
+      0.15,
+      0.35,
+      0.6
+    ]
+  },
+  "topCandidates": [
+    {
+      "bluffRate": 0.55,
+      "explorationRate": 0.2,
+      "memoryWeight": 0.45,
+      "certainRate": 0.55,
+      "baseDelayMs": 1150,
+      "reversePsychologyRate": 0.35,
+      "score": 0.18000000000000005
+    },
+    {
+      "bluffRate": 0.4,
+      "explorationRate": 0.2,
+      "memoryWeight": 0.45,
+      "certainRate": 0.55,
+      "baseDelayMs": 1150,
+      "reversePsychologyRate": 0.35,
+      "score": 0.1949999999999999
+    },
+    {
+      "bluffRate": 0.55,
+      "explorationRate": 0.2,
+      "memoryWeight": 0.45,
+      "certainRate": 0.55,
+      "baseDelayMs": 1500,
+      "reversePsychologyRate": 0.35,
+      "score": 0.1966666666666667
+    },
+    {
+      "bluffRate": 0.4,
+      "explorationRate": 0.2,
+      "memoryWeight": 0.45,
+      "certainRate": 0.55,
+      "baseDelayMs": 1500,
+      "reversePsychologyRate": 0.35,
+      "score": 0.21166666666666656
+    },
+    {
+      "bluffRate": 0.55,
+      "explorationRate": 0.2,
+      "memoryWeight": 0.45,
+      "certainRate": 0.75,
+      "baseDelayMs": 1150,
+      "reversePsychologyRate": 0.35,
+      "score": 0.2300000000000001
+    },
+    {
+      "bluffRate": 0.4,
+      "explorationRate": 0.2,
+      "memoryWeight": 0.45,
+      "certainRate": 0.75,
+      "baseDelayMs": 1150,
+      "reversePsychologyRate": 0.35,
+      "score": 0.24499999999999994
+    },
+    {
+      "bluffRate": 0.55,
+      "explorationRate": 0.2,
+      "memoryWeight": 0.45,
+      "certainRate": 0.75,
+      "baseDelayMs": 1500,
+      "reversePsychologyRate": 0.35,
+      "score": 0.24666666666666676
+    },
+    {
+      "bluffRate": 0.4,
+      "explorationRate": 0.2,
+      "memoryWeight": 0.45,
+      "certainRate": 0.75,
+      "baseDelayMs": 1500,
+      "reversePsychologyRate": 0.35,
+      "score": 0.2616666666666666
+    },
+    {
+      "bluffRate": 0.55,
+      "explorationRate": 0.2,
+      "memoryWeight": 0.45,
+      "certainRate": 0.55,
+      "baseDelayMs": 850,
+      "reversePsychologyRate": 0.35,
+      "score": 0.28
+    },
+    {
+      "bluffRate": 0.55,
+      "explorationRate": 0.2,
+      "memoryWeight": 0.45,
+      "certainRate": 0.35,
+      "baseDelayMs": 1150,
+      "reversePsychologyRate": 0.35,
+      "score": 0.2800000000000001
+    },
+    {
+      "bluffRate": 0.55,
+      "explorationRate": 0.2,
+      "memoryWeight": 0.45,
+      "certainRate": 0.85,
+      "baseDelayMs": 1150,
+      "reversePsychologyRate": 0.35,
+      "score": 0.2800000000000001
+    },
+    {
+      "bluffRate": 0.4,
+      "explorationRate": 0.2,
+      "memoryWeight": 0.45,
+      "certainRate": 0.35,
+      "baseDelayMs": 1150,
+      "reversePsychologyRate": 0.35,
+      "score": 0.29499999999999993
+    },
+    {
+      "bluffRate": 0.4,
+      "explorationRate": 0.2,
+      "memoryWeight": 0.45,
+      "certainRate": 0.55,
+      "baseDelayMs": 850,
+      "reversePsychologyRate": 0.35,
+      "score": 0.29499999999999993
+    },
+    {
+      "bluffRate": 0.4,
+      "explorationRate": 0.2,
+      "memoryWeight": 0.45,
+      "certainRate": 0.85,
+      "baseDelayMs": 1150,
+      "reversePsychologyRate": 0.35,
+      "score": 0.29499999999999993
+    },
+    {
+      "bluffRate": 0.55,
+      "explorationRate": 0.2,
+      "memoryWeight": 0.45,
+      "certainRate": 0.35,
+      "baseDelayMs": 1500,
+      "reversePsychologyRate": 0.35,
+      "score": 0.29666666666666675
+    },
+    {
+      "bluffRate": 0.55,
+      "explorationRate": 0.2,
+      "memoryWeight": 0.45,
+      "certainRate": 0.85,
+      "baseDelayMs": 1500,
+      "reversePsychologyRate": 0.35,
+      "score": 0.29666666666666675
+    },
+    {
+      "bluffRate": 0.4,
+      "explorationRate": 0.2,
+      "memoryWeight": 0.45,
+      "certainRate": 0.35,
+      "baseDelayMs": 1500,
+      "reversePsychologyRate": 0.35,
+      "score": 0.3116666666666666
+    },
+    {
+      "bluffRate": 0.4,
+      "explorationRate": 0.2,
+      "memoryWeight": 0.45,
+      "certainRate": 0.85,
+      "baseDelayMs": 1500,
+      "reversePsychologyRate": 0.35,
+      "score": 0.3116666666666666
+    },
+    {
+      "bluffRate": 0.55,
+      "explorationRate": 0.2,
+      "memoryWeight": 0.45,
+      "certainRate": 0.55,
+      "baseDelayMs": 1850,
+      "reversePsychologyRate": 0.35,
+      "score": 0.31333333333333335
+    },
+    {
+      "bluffRate": 0.4,
+      "explorationRate": 0.2,
+      "memoryWeight": 0.45,
+      "certainRate": 0.55,
+      "baseDelayMs": 1850,
+      "reversePsychologyRate": 0.35,
+      "score": 0.32833333333333325
+    }
+  ],
+  "selectedPolicyVersion": "vault-bluff-policy-v1",
+  "selectedFrozenPolicy": {
+    "version": "vault-bluff-policy-v1",
+    "minimumPersonalizationMatches": 5,
+    "memoryDecay": 0.9,
+    "personas": {
+      "ANALYST": {
+        "bluffRate": 0.28,
+        "explorationRate": 0.2,
+        "memoryWeight": 0.55,
+        "certainRate": 0.72,
+        "baseDelayMs": 1450,
+        "delayJitterMs": 500,
+        "reversePsychologyRate": 0.18
+      },
+      "SHOWBOAT": {
+        "bluffRate": 0.58,
+        "explorationRate": 0.2,
+        "memoryWeight": 0.42,
+        "certainRate": 0.86,
+        "baseDelayMs": 850,
+        "delayJitterMs": 350,
+        "reversePsychologyRate": 0.38
+      },
+      "NERVOUS": {
+        "bluffRate": 0.4,
+        "explorationRate": 0.2,
+        "memoryWeight": 0.48,
+        "certainRate": 0.32,
+        "baseDelayMs": 1850,
+        "delayJitterMs": 900,
+        "reversePsychologyRate": 0.24
+      },
+      "WILDCARD": {
+        "bluffRate": 0.5,
+        "explorationRate": 0.22,
+        "memoryWeight": 0.3,
+        "certainRate": 0.52,
+        "baseDelayMs": 1100,
+        "delayJitterMs": 1100,
+        "reversePsychologyRate": 0.62
+      }
+    }
+  },
+  "note": "Search report is advisory. Runtime never rewrites the frozen policy."
+}

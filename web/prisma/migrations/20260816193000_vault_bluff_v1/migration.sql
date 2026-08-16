@@ -44,6 +44,7 @@ CREATE TABLE "GameRound" (
   "status" "GameRoundStatus" NOT NULL DEFAULT 'ACTIVE',
   "publicState" JSONB NOT NULL,
   "startedAt" TIMESTAMP(3) NOT NULL,
+  "deadlineAt" TIMESTAMP(3) NOT NULL,
   "completedAt" TIMESTAMP(3),
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "GameRound_pkey" PRIMARY KEY ("id")

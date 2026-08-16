@@ -128,6 +128,7 @@ export async function createGameSession(args: {
             keyCase: state.rounds[0]!.keyCase,
             publicState: jsonValue(safe.currentRound),
             startedAt: now,
+            deadlineAt: new Date(state.rounds[0]!.deadlineAt),
           },
         },
       },
@@ -259,6 +260,7 @@ async function applyActionAttempt(args: {
             keyCase: afterRound.keyCase,
             publicState: jsonValue(safe.currentRound),
             startedAt: new Date(afterRound.startedAt),
+            deadlineAt: new Date(afterRound.deadlineAt),
           },
         });
       }
@@ -326,6 +328,23 @@ export async function applyGameAction(
     try {
       return await applyActionAttempt(args);
     } catch (error) {
+      if (error instanceof GameServiceError && error.code === "VERSION_CONFLICT") {
+        const duplicate = await prisma.gameAction.findUnique({
+          where: {
+            sessionId_clientActionId: {
+              sessionId: args.sessionId,
+              clientActionId: args.clientActionId,
+            },
+          },
+        });
+        if (duplicate) {
+          const current = await getGameSession({
+            userId: args.userId,
+            sessionId: args.sessionId,
+          });
+          if (current) return current;
+        }
+      }
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2034" &&

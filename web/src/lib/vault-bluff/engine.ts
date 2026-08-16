@@ -22,6 +22,7 @@ const bot = new AdaptiveBotPolicy();
 function createRound(state: Pick<VaultBluffState, "seed" | "rngCursor">, number: number, now: string) {
   const keyCase: CaseId =
     seededUnit(state.seed, state.rngCursor) < 0.5 ? "CASE_A" : "CASE_B";
+  const deadlineAt = new Date(Date.parse(now) + 7 * 24 * 60 * 60 * 1000).toISOString();
   return {
     number,
     humanRole: number % 2 === 1 ? "KEEPER" : "CHOOSER",
@@ -34,6 +35,7 @@ function createRound(state: Pick<VaultBluffState, "seed" | "rngCursor">, number:
     choice: null,
     winner: null,
     startedAt: now,
+    deadlineAt,
     resolvedAt: null,
   } satisfies VaultBluffRound;
 }
@@ -112,6 +114,12 @@ export function applyCommand(
   const round = currentRound(state);
   if (state.completed) {
     throw new VaultBluffError("ILLEGAL_TRANSITION", "Match is already complete");
+  }
+  if (command.kind !== "FORFEIT" && Date.parse(command.now) > Date.parse(round.deadlineAt)) {
+    throw new VaultBluffError(
+      "ROUND_EXPIRED",
+      "This round expired. Forfeit it and start a new match",
+    );
   }
 
   switch (command.kind) {
@@ -229,6 +237,7 @@ function safeRound(round: VaultBluffRound, isCurrent: boolean): SafeRoundDto {
     choice: round.choice,
     winner: round.winner,
     startedAt: round.startedAt,
+    deadlineAt: round.deadlineAt,
     resolvedAt: round.resolvedAt,
   };
   if (revealed) dto.keyCase = round.keyCase;

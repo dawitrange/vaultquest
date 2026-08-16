@@ -3,7 +3,7 @@ import { getGameSession } from "@/lib/vault-bluff/service";
 
 export async function GET(
   _request: Request,
-  context: RouteContext<"/api/games/vault-bluff/sessions/[sessionId]">,
+  context: { params: Promise<{ sessionId: string }> },
 ) {
   const session = await auth();
   if (!session?.user?.id) {

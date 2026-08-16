@@ -166,4 +166,24 @@ CPX and partner Earn integrations are not required to play.
 
 ## Verification record
 
-Test results, benchmark results, migration status, and local blockers will be appended here after implementation. They may report failures and fixes but cannot change the frozen decisions above.
+Results recorded 2026-08-16:
+
+- `npm run test:vault-bluff`: pass, 12 tests. Coverage includes deterministic replay, illegal transitions, secret redaction, Chooser bot input, immutable placement, server deadlines, neutral memory, forfeit exclusion, completion XP, reward default-off behavior, atomic reward and ledger calls, rolling and funded caps, and UTC-day idempotency.
+- `npm run vault-bluff:simulate`: pass, 10,000 seeded matches.
+- `npm run vault-bluff:benchmark`: pass, 40 required persona and archetype cells.
+- `npm run vault-bluff:tune`: pass, 1,728 parameter candidates across bluff rate, exploration, memory weight, confidence, delay, and reverse psychology. The report retains `vault-bluff-policy-v1`; runtime weights remain frozen.
+- Persona results over 2,500 matches each:
+  - Analyst bot match win rate 28.92 percent, tie rate 38.80 percent, average bot response 1,700 ms.
+  - Showboat bot match win rate 30.44 percent, tie rate 37.96 percent, average bot response 1,026 ms.
+  - Nervous bot match win rate 28.52 percent, tie rate 39.24 percent, average bot response 2,300 ms.
+  - Wildcard bot match win rate 29.08 percent, tie rate 37.92 percent, average bot response 1,648 ms.
+- `npx prisma generate`: pass.
+- `DATABASE_URL=postgresql://localhost:5432/vaultquest_schema_only npx prisma validate`: pass. The placeholder URL was not contacted.
+- `npx next typegen && npx tsc --noEmit`: pass.
+- `npm run lint`: pass with two pre-existing warnings in `scripts/postback-smoke.ts` and `src/lib/postback-handler.ts`.
+- `bash .cursor/skills/vault-build-check/scripts/check.sh`: pass. The production build compiled, type-checked, and generated all routes. Existing build-time page collection logged the expected missing local `DATABASE_URL`, and the dynamic Open Graph font downloader logged an existing HTTP 400 fallback. Neither failed the build.
+- Local signed-out UI at `http://127.0.0.1:3317/play`: pass on desktop and a 390 px viewport. Primary navigation, disabled reward disclosure, keyboard focus, and responsive layout were verified.
+- Signed-out `/play/vault-bluff`: pass, HTTP 307 to `/login?from=play`.
+- Authenticated gameplay and database API integration were not exercised because no isolated development database or local auth account was available. No production Neon or Vercel resource was read or mutated.
+- Migration `20260816193000_vault_bluff_v1` is generated and committed. It was not applied to production or any remote database.
+- Promotional VP remains disabled. Current maximum liability is $0. Budget spent is $0.

@@ -16,27 +16,28 @@ export const metadata: Metadata = {
 export default async function PlayPage() {
   const session = await auth();
   const signedIn = Boolean(session?.user?.id);
-  const [balance, progress] = session?.user?.id
-    ? await Promise.all([
-        getBalance(session.user.id),
-        getPlayProgress(session.user.id),
-        captureServerEvent(session.user.id, PH_EVENTS.game_hub_viewed, {
-          engine_version: "vault-bluff-engine-v1",
-          policy_version: "vault-bluff-policy-v1",
-        }),
-      ]).then(([userBalance, userProgress]) => [userBalance, userProgress])
-    : [
-        { available: 0, pending: 0 },
-        {
-          completedMatches: 0,
-          totalXp: 0,
-          rank: "Scout",
-          cosmetic: "Brass Starter Case",
-          promoVp30Days: 0,
-          rewardedToday: false,
-          rewardsEnabled: false,
-        },
-      ];
+  let balance = { available: 0, pending: 0 };
+  let progress = {
+    completedMatches: 0,
+    totalXp: 0,
+    rank: "Scout",
+    cosmetic: "Brass Starter Case",
+    promoVp30Days: 0,
+    rewardedToday: false,
+    rewardsEnabled: false,
+  };
+  if (session?.user?.id) {
+    const [userBalance, userProgress] = await Promise.all([
+      getBalance(session.user.id),
+      getPlayProgress(session.user.id),
+      captureServerEvent(session.user.id, PH_EVENTS.game_hub_viewed, {
+        engine_version: "vault-bluff-engine-v1",
+        policy_version: "vault-bluff-policy-v1",
+      }),
+    ]);
+    balance = userBalance;
+    progress = userProgress;
+  }
   const rankProgress = nextRank(progress.totalXp);
   const rankPercent =
     rankProgress.nextTarget === rankProgress.currentFloor

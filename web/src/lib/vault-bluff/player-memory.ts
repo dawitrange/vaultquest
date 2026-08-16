@@ -1,6 +1,5 @@
 import { FROZEN_POLICY } from "./policy-config";
 import {
-  PERSONA_IDS,
   QUESTIONS,
   VAULT_BLUFF_ENGINE_VERSION,
   VAULT_BLUFF_POLICY_VERSION,
@@ -13,12 +12,24 @@ export function neutralPlayerMemory(): PlayerMemory {
     completedMatches: 0,
     keepRate: 0.5,
     keeperTruthRate: 0.5,
-    questionFrequency: Object.fromEntries(QUESTIONS.map((question) => [question, 1 / QUESTIONS.length])),
+    questionFrequency: {
+      KEY_INSIDE_YOUR_CASE: 1 / QUESTIONS.length,
+      WHICH_CASE_SHOULD_I_CHOOSE: 1 / QUESTIONS.length,
+      WHAT_DID_YOU_SEE: 1 / QUESTIONS.length,
+      ARE_YOU_TELLING_THE_TRUTH: 1 / QUESTIONS.length,
+      SHOULD_I_KEEP_MINE: 1 / QUESTIONS.length,
+      HOW_CONFIDENT_ARE_YOU: 1 / QUESTIONS.length,
+    },
     confidenceCertainRate: 0.5,
     averageDurationMs: 1400,
     chooserAccuracy: 0.5,
     keeperBluffSuccess: 0.5,
-    personaPerformance: Object.fromEntries(PERSONA_IDS.map((persona) => [persona, 0.5])),
+    personaPerformance: {
+      ANALYST: 0.5,
+      SHOWBOAT: 0.5,
+      NERVOUS: 0.5,
+      WILDCARD: 0.5,
+    },
     lastEngineVersion: VAULT_BLUFF_ENGINE_VERSION,
     lastPolicyVersion: VAULT_BLUFF_POLICY_VERSION,
   };
@@ -66,12 +77,12 @@ export function updatePlayerMemoryOnce(
   const keeperBluffSuccess = keeperRounds.length
     ? keeperRounds.filter((round) => round.winner === "HUMAN").length / keeperRounds.length
     : 0.5;
-  const observedQuestions = Object.fromEntries(
-    QUESTIONS.map((question) => [
-      question,
-      questions.length ? questions.filter((asked) => asked === question).length / questions.length : 1 / QUESTIONS.length,
-    ]),
-  );
+  const observedQuestions = { ...memory.questionFrequency };
+  for (const question of QUESTIONS) {
+    observedQuestions[question] = questions.length
+      ? questions.filter((asked) => asked === question).length / questions.length
+      : 1 / QUESTIONS.length;
+  }
   const personaPerformance = {
     ...memory.personaPerformance,
     [state.persona]: blend(memory.personaPerformance[state.persona], state.humanScore > state.botScore ? 1 : 0),
@@ -81,12 +92,32 @@ export function updatePlayerMemoryOnce(
     completedMatches: memory.completedMatches + 1,
     keepRate: blend(memory.keepRate, keepRate),
     keeperTruthRate: blend(memory.keeperTruthRate, truthRate),
-    questionFrequency: Object.fromEntries(
-      QUESTIONS.map((question) => [
-        question,
-        blend(memory.questionFrequency[question], observedQuestions[question] ?? 0),
-      ]),
-    ),
+    questionFrequency: {
+      KEY_INSIDE_YOUR_CASE: blend(
+        memory.questionFrequency.KEY_INSIDE_YOUR_CASE,
+        observedQuestions.KEY_INSIDE_YOUR_CASE,
+      ),
+      WHICH_CASE_SHOULD_I_CHOOSE: blend(
+        memory.questionFrequency.WHICH_CASE_SHOULD_I_CHOOSE,
+        observedQuestions.WHICH_CASE_SHOULD_I_CHOOSE,
+      ),
+      WHAT_DID_YOU_SEE: blend(
+        memory.questionFrequency.WHAT_DID_YOU_SEE,
+        observedQuestions.WHAT_DID_YOU_SEE,
+      ),
+      ARE_YOU_TELLING_THE_TRUTH: blend(
+        memory.questionFrequency.ARE_YOU_TELLING_THE_TRUTH,
+        observedQuestions.ARE_YOU_TELLING_THE_TRUTH,
+      ),
+      SHOULD_I_KEEP_MINE: blend(
+        memory.questionFrequency.SHOULD_I_KEEP_MINE,
+        observedQuestions.SHOULD_I_KEEP_MINE,
+      ),
+      HOW_CONFIDENT_ARE_YOU: blend(
+        memory.questionFrequency.HOW_CONFIDENT_ARE_YOU,
+        observedQuestions.HOW_CONFIDENT_ARE_YOU,
+      ),
+    },
     confidenceCertainRate: blend(memory.confidenceCertainRate, certainRate),
     averageDurationMs: blend(memory.averageDurationMs, averageDuration),
     chooserAccuracy: blend(memory.chooserAccuracy, chooserAccuracy),
