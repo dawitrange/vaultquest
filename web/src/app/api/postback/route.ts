@@ -32,7 +32,9 @@ import {
  *           partner=cpx with no HMAC `hash` must not 401. Missing `secure_hash`
  *           skips MD5 (Ethio's current save) and still credits via POSTBACK_SECRET.
  *           status=2 voids a matching PENDING/POSTED EARN; does not unwind REDEEM.
- *           Hook ready ≠ earn-live. No live smoke until Yield flips cpx-survey.
+ *           Live URL has no hash=. MD5 stays for later signed CPX posts.
+ *           Ethio's postback test succeeded. Yield is flipping — do not smoke
+ *           until Yield confirms. Not earn-live until a prod pending VP is visible.
  */
 
 export async function GET(req: NextRequest) {

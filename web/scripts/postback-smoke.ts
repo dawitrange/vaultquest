@@ -24,7 +24,9 @@ import {
   CPX_ALLOWED_WALL_HOSTS,
   CPX_APP_ID,
   CPX_EARN_LIVE_CERTIFIED,
+  CPX_LIVE_SMOKE_ALLOWED,
   CPX_MD5_HOOK_READY,
+  CPX_YIELD_FLIP_CONFIRMED,
   CPX_SECURE_HASH_ENV_NAMES,
   CPX_SLUG,
   HMAC_SECRET_ENV_NAMES,
@@ -139,14 +141,13 @@ Cases:
   10. CPX status=2 voids matching EARN (does not unwind REDEEM) — flagged gap if already spent
 
 Target network: CPX (${CPX_SLUG}). AdGate (${ADGATE_SLUG}) is stalled (under review).
-app_id ${CPX_APP_ID} exists; the wall is real. Yield has NOT flipped /admin
-(waiting on Ethio to save postback). Stand by on live smoke. Smoke only after
-Yield flips ${CPX_SLUG}. Do not hardcode a ${CPX_ALLOWED_WALL_HOSTS[0]} path.
-Do NOT smoke a marketing homepage. Freecash path+duplicate is not Yield and not earn-live.
-WIP stays 2/3. Do not certify earn-live.
+Ethio's CPX postback test succeeded. Live URL has no hash=. Yield is flipping
+${CPX_SLUG} — do not smoke until Yield confirms. After confirm, smoke path is
+CPX / q-surveys only — not Freecash, not a homepage. Do not invent a
+${CPX_ALLOWED_WALL_HOSTS[0]} path. Not earn-live until a prod pending VP is visible.
 
-CPX MD5 hook is ready on /api/postback. POSTBACK_SECRET is already set — not enough.
-After the flip, re-run --probe-prod then smoke with MD5 as the route requires.
+CPX MD5 (md5(trans_id-appsecurehash)) stays for later signed posts. Do not require
+hash= on the live URL while prod still HMAC-checks hash.
 
 Usage:
   bash .cursor/skills/postback-tester/scripts/test.sh --help
@@ -222,27 +223,21 @@ async function probeProd(): Promise<CaseResult[]> {
     detail: `${ADGATE_SLUG} remains disabled at https://adgatemedia.com/. Not the Yield target. Do not smoke the homepage.`,
   });
 
-  const surveysGo = await fetch(`${PROD_ORIGIN}/api/go/q-surveys`, { redirect: "manual" });
-  const surveysLoc = surveysGo.headers.get("location") ?? "";
-  const surveysAbs = surveysLoc ? new URL(surveysLoc, PROD_ORIGIN).toString() : "";
-  const surveysFlipped = Boolean(surveysAbs && isYieldFlippedCpxWallUrl(surveysAbs));
-  const surveysStandby = surveysLoc.includes("error=no_link") || isMarketingHomepageUrl(surveysAbs);
+  const surveyCta = html.includes("/api/go/q-surveys");
   results.push({
-    name: "CPX live smoke standby — wait for Yield /admin flip",
-    pass: surveysStandby || surveysFlipped || surveysGo.status === 307 || surveysGo.status === 302,
-    detail: surveysFlipped
-      ? "FLIP DETECTED on /api/go/q-surveys — --probe-prod does not smoke; run live MD5 smoke next"
-      : surveysStandby
-        ? `STAND BY. app_id ${CPX_APP_ID} exists; wall is real; Yield has not flipped ${CPX_SLUG} (Ethio still saving postback). HTTP ${surveysGo.status}`
-        : `HTTP ${surveysGo.status} loc=${surveysLoc.split("?")[0] || "(none)"} — not flipped, not smoked`,
+    name: "CPX smoke standby — wait for Yield flip confirm",
+    pass: !CPX_LIVE_SMOKE_ALLOWED && !CPX_YIELD_FLIP_CONFIRMED,
+    detail: surveyCta
+      ? `/earn shows q-surveys CTA. Yield is flipping — do not hit /api/go/q-surveys until Yield confirms. Smoke path is CPX only.`
+      : `STAND BY. Ethio postback test succeeded. Yield is flipping ${CPX_SLUG}. No /api/go/q-surveys hit (would create a wall click).`,
   });
 
   results.push({
     name: "CPX MD5 hook ready — earn-live NOT certified",
-    pass: CPX_MD5_HOOK_READY && !CPX_EARN_LIVE_CERTIFIED && !isCpxCreditSafe(),
+    pass: CPX_MD5_HOOK_READY && !CPX_EARN_LIVE_CERTIFIED && !isCpxCreditSafe() && !CPX_LIVE_SMOKE_ALLOWED,
     detail:
-      `Hook ready: md5(trans_id-CPX_SECURE_HASH). app_id ${CPX_APP_ID} exists. ` +
-      "Earn-live not certified. Smoke only after Yield flips cpx-survey.",
+      `Hook ready: md5(trans_id-appsecurehash) on official secure_hash. Live URL has no hash=. ` +
+      "Not earn-live until a production pending VP credit is visible.",
   });
 
   return results;

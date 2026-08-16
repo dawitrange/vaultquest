@@ -12,10 +12,11 @@ import { clicksTodayForLink } from "@/lib/affiliates";
 import { prisma } from "@/lib/db";
 import {
   ADGATE_SLUG,
-  CPX_ALLOWED_WALL_HOSTS,
   CPX_APP_ID,
   CPX_EARN_LIVE_CERTIFIED,
+  CPX_LIVE_SMOKE_ALLOWED,
   CPX_MD5_HOOK_READY,
+  CPX_YIELD_FLIP_CONFIRMED,
   CPX_POSTBACK_TEMPLATE,
   CPX_SLUG,
   cpxSecureHashEnvConfigured,
@@ -68,12 +69,13 @@ export default async function AdminPage() {
       <h1 className="font-[family-name:var(--vq-font-display)] text-4xl font-bold tracking-tight">Admin</h1>
       <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
         Affiliate caps, fulfillment queue, contact inbox. Do not flip a homepage URL to{" "}
-        <code>healthy</code>. AdGate is stalled (under review). CPX app_id{" "}
-        <code>{CPX_APP_ID}</code> exists and the wall is real. Yield has{" "}
-        <strong>not</strong> flipped <code>{CPX_SLUG}</code> — waiting on Ethio to save
-        postback. Stand by on live smoke. Hosts Yield will paste:{" "}
-        <code>{CPX_ALLOWED_WALL_HOSTS[0]}</code> / <code>{CPX_ALLOWED_WALL_HOSTS[1]}</code>.
-        Do not hardcode that URL here. Freecash is not earn-live. WIP stays 2/3.
+        <code>healthy</code>. AdGate is stalled (under review). Ethio&apos;s CPX postback
+        test succeeded. Yield is flipping <code>{CPX_SLUG}</code> (app_id{" "}
+        <code>{CPX_APP_ID}</code>). Flip confirmed: {CPX_YIELD_FLIP_CONFIRMED ? "yes" : "no"}.
+        Live smoke allowed: {CPX_LIVE_SMOKE_ALLOWED ? "yes" : "no — wait for Yield confirm"}.
+        After confirm, smoke path is CPX / <code>q-surveys</code> only — not Freecash, not a
+        homepage. Do not invent a wall URL. Live postback has no <code>hash=</code>.
+        Not earn-live until a production pending VP is visible.
         {CPX_EARN_LIVE_CERTIFIED ? null : (
           <span className="mt-2 block rounded-[8px] border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-3 py-2 text-xs text-[var(--vq-ink)]">
             <strong>Earn-live is not certified. Live smoke is on standby.</strong> Official CPX
@@ -83,7 +85,7 @@ export default async function AdminPage() {
             {CPX_MD5_HOOK_READY ? "ready" : "missing"}. Runtime <code>CPX_SECURE_HASH</code>:{" "}
             {cpxSecureHashEnvConfigured() ? "configured" : "missing"} (name only).{" "}
             <strong>status=2</strong> voids a matching PENDING/POSTED EARN; it does not unwind
-            an already-spent REDEEM. Smoke only after Yield flips <code>{CPX_SLUG}</code>.
+            an already-spent REDEEM. Do not smoke until Yield confirms the flip.
             <span className="mt-2 block break-all font-[family-name:var(--vq-font-mono)] text-[10px] text-[var(--vq-ink-muted)]">
               {CPX_POSTBACK_TEMPLATE}
             </span>
@@ -128,7 +130,7 @@ export default async function AdminPage() {
                   ? ` · homepage — keep ${link.slug} disabled (do not flip /admin)`
                   : ""}
                 {link.slug === CPX_SLUG
-                  ? ` · app_id ${CPX_APP_ID} exists; wall real; Yield has not flipped — wait for Ethio postback save`
+                  ? ` · app_id ${CPX_APP_ID}; Ethio postback test ok; Yield flipping — do not smoke until confirm`
                   : ""}
                 {link.slug === ADGATE_SLUG ? " · AdGate stalled (under review)" : ""}
               </p>

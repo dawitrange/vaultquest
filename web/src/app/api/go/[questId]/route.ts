@@ -26,7 +26,7 @@ export async function GET(
   }
 
   // Never send users (or smoke) at a partner marketing homepage.
-  // app_id 35413 exists; wall is real. Yield flips cpx-survey after Ethio saves postback.
+  // After Yield confirms the cpx-survey flip, smoke path is CPX / q-surveys only.
   if (isMarketingHomepageUrl(started.link.url)) {
     return NextResponse.redirect(new URL("/earn?error=no_link", _req.url));
   }

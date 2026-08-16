@@ -368,3 +368,9 @@ When user runs `@vault-planner get us verified`, vault-planner appends new dated
 - **Do not:** smoke prod before Yield flip; merge; put secrets in PR.
 - **Next:** Ethio saves postback (no HMAC `hash=`); Yield flips; then smoke.
 - **Skill evidence:** `vault-build-check` PASS. `--probe-prod` 22/22 STAND BY. `--seed-local` 36/36: CPX without HMAC hash → 200; official `secure_hash` MD5 ok; status=2 → VOID. Isolated branch only. Not earn-live.
+
+#### Handoff — 2026-08-16 — eng-qa (Ethio test ok; Yield flipping; no smoke)
+- **Task:** #15 keep PR ready. Ethio CPX postback test succeeded. Yield is flipping. Do not smoke yet.
+- **Did:** Status + flags `CPX_YIELD_FLIP_CONFIRMED=false` / `CPX_LIVE_SMOKE_ALLOWED=false`. Probe no longer hits `/api/go/q-surveys`. Live URL has no `hash=`; MD5 stays for later signed posts. After confirm, smoke path is CPX / q-surveys only. Not earn-live until a prod pending VP is visible.
+- **Do not:** smoke Freecash or a homepage; invent a URL; require `hash=` on the live URL; merge; certify earn-live.
+- **Next:** Yield confirms `/admin` flip → CPX-only smoke → earn-live only if prod pending VP is visible.

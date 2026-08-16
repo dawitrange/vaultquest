@@ -87,9 +87,9 @@ const SEED = [
     url: "https://www.cpx-research.com/",
     category: AffiliateCategory.survey_wall,
     priority: 2,
-    // Marketing homepage. Do NOT flip healthy. Do not hardcode a wall URL.
-    // app_id 35413 exists; the wall is real. Yield writes the /admin flip
-    // after Ethio saves the CPX postback. MD5 hook is ready; earn-live is not certified.
+    // Marketing homepage seed only. Do not hardcode a wall URL.
+    // Ethio's CPX postback test succeeded. Yield is flipping this row in /admin.
+    // Do not smoke until Yield confirms. Not earn-live until a prod pending VP.
     status: AffiliateHealth.disabled,
     capDaily: 2000,
   },
