@@ -45,7 +45,8 @@ if grep -qiE "Join [0-9]+ players" "$OUT/earn.html"; then fail "earn contains Jo
 if grep -qiE "(^|[^A-Za-z])Rain([^A-Za-z]|$)" "$OUT/earn.html"; then fail "earn contains Rain"; fi
 if grep -qi "gamehag.com" "$OUT/earn.html"; then fail "earn contains gamehag.com"; fi
 if grep -qi "cashout instantly" "$OUT/earn.html"; then fail "earn claims cashout instantly"; fi
-grep -q "We do not publish a running entry count" "$OUT/earn.html" || fail "earn missing giveaway honesty line"
+grep -q 'href="/giveaway"' "$OUT/earn.html" || fail "earn missing /giveaway link"
+grep -q "Before you click" "$OUT/earn.html" || fail "earn missing honesty footnote"
 
 {
   echo "PASS home-earn"

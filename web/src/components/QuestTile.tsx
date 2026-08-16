@@ -15,33 +15,23 @@ export function QuestTile({
   demoEnabled?: boolean;
 }) {
   const thirdParty = Boolean(quest.hideVpReward);
-  const status = thirdParty ? "Third party" : "Available";
   const cta = quest.ctaLabel ?? "Start quest";
 
   return (
     <article className="flex flex-col rounded-[10px] border border-[var(--vq-border)] bg-[var(--vq-surface)] p-4 transition hover:border-[var(--vq-border-strong)] hover:bg-[var(--vq-surface-hover)]">
       <div className="flex items-start justify-between gap-3">
         <QuestMark quest={quest} />
-        {thirdParty ? null : (
+        {thirdParty ? (
+          <p className="text-sm text-[var(--vq-brass)]">Third party</p>
+        ) : (
           <p className="font-[family-name:var(--vq-font-mono)] text-sm text-[var(--vq-teal)]">+{quest.vpReward} VP</p>
         )}
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        {quest.featured ? (
-          <span className="rounded bg-[var(--vq-teal-glow)] px-2 py-0.5 font-[family-name:var(--vq-font-mono)] text-[10px] uppercase tracking-wider text-[var(--vq-teal)]">
-            Featured
-          </span>
-        ) : null}
-        <span className="font-[family-name:var(--vq-font-mono)] text-xs text-[var(--vq-ink-faint)]">
-          {quest.effort} · {quest.timeHint}
-        </span>
-      </div>
-      <h2 className="mt-2 font-[family-name:var(--vq-font-display)] text-lg font-semibold leading-snug">{quest.title}</h2>
-      <p className="mt-1 line-clamp-2 text-sm text-[var(--vq-ink-muted)]">{quest.description}</p>
-      <p className="mt-3 font-[family-name:var(--vq-font-mono)] text-[11px] uppercase tracking-wider text-[var(--vq-ink-faint)]">
-        {status}
+      <h2 className="mt-3 font-[family-name:var(--vq-font-display)] text-lg font-semibold leading-snug">{quest.title}</h2>
+      <p className="mt-1 text-sm text-[var(--vq-ink-muted)]">
+        {quest.effort} · {quest.timeHint}
       </p>
-      <div className="mt-auto flex flex-col gap-2 pt-3">
+      <div className="mt-auto flex flex-col gap-2 pt-4">
         {quest.openInNewTab ? (
           <a
             href={`/api/go/${quest.id}`}

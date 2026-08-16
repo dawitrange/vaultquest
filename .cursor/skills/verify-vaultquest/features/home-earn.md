@@ -31,6 +31,6 @@ Preconditions:
 
 ## Gotchas
 
-- Header **See quests** vs **Sign up** depends on session. Signed-out header CTA is **Sign up** (`/signup`); the home hero **See quests** still goes to `/earn`. The mock redeem card is labeled sample. No fake Steam code.
+- Header **See quests** vs **Sign up** depends on session. Signed-out header CTA is **Sign up** (`/signup`); the home **See quests** still goes to `/earn`. Home first screen is tiles + grind line + two buttons — no FAQ wall.
 - An empty catalog is a valid honest state. Do not fail the feature for missing **Start quest** unless the recipe required a live rotator.
 - `vaultquest.io` is allowed for this read-only feature; do not sign up there during the run.
