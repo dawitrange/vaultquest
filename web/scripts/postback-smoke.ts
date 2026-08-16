@@ -54,6 +54,7 @@ import {
   verifyCpxSecureHash,
   verifyPostbackHash,
 } from "../src/lib/postback";
+import { listServableQuests } from "../src/lib/affiliates";
 import { pathAfterSignup, pathFromAuthHint } from "../src/lib/auth-redirect";
 import {
   FIRST_TOUCH_COOKIE,
@@ -240,7 +241,7 @@ async function probeProd(): Promise<CaseResult[]> {
     name: "prod /earn Freecash CTA is not earn-live",
     pass: earn.ok,
     detail: freecashCta
-      ? `q-freecash Start quest is present; offerwall empty=${offerwallBlocked}. Freecash path+duplicate is NOT Yield and NOT earn-live.`
+      ? `q-freecash Start quest is present; live still shows Not available yet=${offerwallBlocked} until Track A hide ships. Freecash path+duplicate is NOT Yield and NOT earn-live.`
       : "q-freecash CTA not in HTML",
   });
 
@@ -451,6 +452,21 @@ function offlineHmacCases(): CaseResult[] {
       hasUtm(utmFromUrl) &&
       !hasUtm({}),
     detail: JSON.stringify({ utmFromUrl, mergedUtm, cookieRoundTrip, browserCookie }),
+  });
+
+  const todayServable = listServableQuests(new Set(["survey_wall", "cpa_signup"]));
+  const todayIds = todayServable.map((q) => q.id);
+  const emptyEarn = listServableQuests(new Set());
+  results.push({
+    name: "earn hides dead categories instead of Not available yet tiles",
+    pass:
+      todayIds.length === 2 &&
+      todayIds.includes("q-surveys") &&
+      todayIds.includes("q-freecash") &&
+      !todayIds.includes("q-offerwall") &&
+      !todayIds.includes("q-play") &&
+      emptyEarn.length === 0,
+    detail: `visible=${todayIds.join(",")} empty=${emptyEarn.length}`,
   });
 
   const resetA = createResetToken();
