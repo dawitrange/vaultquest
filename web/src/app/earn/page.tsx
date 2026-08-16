@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { QuestRow } from "@/components/QuestRow";
 import { isDemoCreditEnabled } from "@/lib/actions/ledger";
-import { getServableCategories, listServableQuests } from "@/lib/affiliates";
+import { getServableCategories, QUESTS } from "@/lib/affiliates";
 import { GO_SIGN_IN_PATH } from "@/lib/postback";
 
 export const metadata: Metadata = {
@@ -25,8 +25,8 @@ export default async function EarnPage({
   const session = await auth();
   const signedIn = Boolean(session?.user?.id);
   const [servable, demoEnabled] = await Promise.all([getServableCategories(), isDemoCreditEnabled()]);
-  const quests = listServableQuests(servable);
-  const anyAvailable = quests.length > 0;
+  const quests = QUESTS.map((quest) => ({ quest, available: servable.has(quest.category) }));
+  const anyAvailable = quests.some((q) => q.available);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
@@ -72,8 +72,8 @@ export default async function EarnPage({
         </div>
       ) : (
         <div className="mt-10 flex flex-col gap-4">
-          {quests.map((quest) => (
-            <QuestRow key={quest.id} quest={quest} signedIn={signedIn} demoEnabled={demoEnabled} />
+          {quests.map(({ quest, available }) => (
+            <QuestRow key={quest.id} quest={quest} signedIn={signedIn} available={available} demoEnabled={demoEnabled} />
           ))}
         </div>
       )}

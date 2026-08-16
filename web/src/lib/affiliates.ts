@@ -263,11 +263,6 @@ export function getQuest(questId: string) {
   return QUESTS.find((q) => q.id === questId) ?? null;
 }
 
-/** Earn catalog: hide rows that cannot serve a real offer. Do not render a disabled tile. */
-export function listServableQuests(servable: ReadonlySet<AffiliateCategory>): Quest[] {
-  return QUESTS.filter((quest) => servable.has(quest.category));
-}
-
 /**
  * Categories that can currently serve a real offer — i.e. the category (or a
  * fallback category) has at least one `healthy` affiliate link. Used to gate
