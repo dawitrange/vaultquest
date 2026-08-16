@@ -126,6 +126,28 @@ Logs and analytics must never include hidden placement, seed, unrevealed answers
 - Current maximum promotional VP liability is $0.
 - Current budget spent is $0.
 
+## Profit and security freeze
+
+This freeze does not change the game rules. It controls funding, minting, abuse prevention, and fulfillment.
+
+- Spend remains $0 for this integration work.
+- The total Vault Bluff program ceiling is $500, equal to 50,000 VP at 100 VP per dollar. Do not raise it.
+- The paid advertising cap remains $300. Vault Bluff work cannot raise or spend it.
+- Promotional VP is a redemption liability. It is not cash, income, a deposit, or collectible money.
+- Pending VP remains a liability during its hold. A pending balance is not collectible cash and cannot be represented as money the user already received.
+- The feature remains disabled until a dedicated reserve can cover all minted Vault Bluff promotional VP at 100 VP per dollar.
+- `VAULT_BLUFF_REWARDS_ENABLED` must be `true`, but that enable flag cannot override the kill switch, reserve, anti-farm, or program ceiling checks.
+- `VAULT_BLUFF_VP_KILL_SWITCH` is a separate fail-closed runtime control. Only the exact value `allow` permits mint or fulfillment. Missing, malformed, or `stop` values block both without stopping gameplay. Operators must be able to flip this environment control without a code deployment.
+- Every mint recalculates all unfulfilled Vault Bluff promotional liability. If remaining reserve VP is less than the 1 VP grant liability, the service refuses the mint.
+- `VAULT_BLUFF_RESERVE_VP` cannot exceed 50,000 VP. A larger value fails closed instead of raising the $500 ceiling.
+- `VAULT_BLUFF_ANTI_FARM_READY=true` is required before minting. This flag may only be set after authenticated unique-user controls, reward-path rate limiting, and multi-account detection or review are operating. The database still enforces one grant per user and UTC day and a maximum of 30 promotional VP per rolling 30 days.
+- Repeated sessions, duplicate commands, automation, incomplete games, forfeits, and linked multi-account farms do not earn promotional VP.
+- Vault Bluff funding campaigns must use a dedicated `vault-bluff-` campaign name. Names containing `earn`, `probe`, `roblox`, or `giveaway` fail closed.
+- The $20 `/earn` probe, the $50 Roblox giveaway, the $500 Vault Bluff reserve, and the $300 ad cap are separate budgets and ledgers. Funds, liabilities, grants, and fulfillment records must not move between them.
+- There is no VP-to-Robux conversion. Roblox is not a Vault Bluff or VP fulfillment option.
+- Fulfillment remains official Steam digital gift cards only, and only after VaultQuest has received the cash that backs the redeemable liability. Pending promotional VP cannot trigger fulfillment.
+- The kill switch must stop promotional VP mint and fulfillment while gameplay, XP, ranks, cosmetics, and non-reward match completion continue.
+
 ## Optional Earn recommendation
 
 After the third valid completed match, the game may show at most one optional quest selected through existing healthy, under-cap rotation. The card must show exact VP, effort, and hold time. It never blocks play or the daily bonus. A click earns no VP. Partner VP posts only after a verified partner postback.
@@ -157,10 +179,13 @@ No deployment is part of this work. The migration is generated but not applied t
 
 1. The owner funds and records a dedicated game promotional reserve.
 2. `VAULT_BLUFF_REWARDS_ENABLED=true` is set intentionally.
-3. `VAULT_BLUFF_FUNDING_CAMPAIGN` names the funded campaign.
-4. `VAULT_BLUFF_RESERVE_VP` is a positive integer no greater than the funded cash reserve times 100 VP per dollar.
-5. The migration is applied first to an isolated non-production Neon branch and API tests pass there.
-6. Vercel auth and local verification secrets are available for deployment verification.
+3. `VAULT_BLUFF_VP_KILL_SWITCH=allow` is configured as a runtime control that can be changed without a code deploy.
+4. `VAULT_BLUFF_ANTI_FARM_READY=true` is set only after unique-user, rate-limit, and multi-account controls pass review.
+5. `VAULT_BLUFF_FUNDING_CAMPAIGN` names an isolated `vault-bluff-` campaign and contains none of the blocked cross-budget labels.
+6. `VAULT_BLUFF_RESERVE_VP` is a positive integer no greater than both the funded cash reserve times 100 VP per dollar and the 50,000 VP program ceiling.
+7. Official Steam digital gift-card inventory is purchased only after backing cash is received. No VP-to-Robux path exists.
+8. The migration is applied first to an isolated non-production Neon branch and API tests pass there.
+9. Vercel auth and local verification secrets are available for deployment verification.
 
 CPX and partner Earn integrations are not required to play.
 

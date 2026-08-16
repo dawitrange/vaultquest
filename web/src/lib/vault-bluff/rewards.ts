@@ -9,6 +9,27 @@ import { VAULT_BLUFF_REWARD_POLICY_VERSION } from "./types";
 const PROMO_VP = 1;
 const ROLLING_LIMIT_VP = 30;
 const HOLD_MS = 24 * 60 * 60 * 1000;
+const VP_PER_USD = 100;
+const BLUFF_PROGRAM_CEILING_USD = 500;
+const BLUFF_PROGRAM_CEILING_VP = BLUFF_PROGRAM_CEILING_USD * VP_PER_USD;
+const BLUFF_CAMPAIGN_PREFIX = "vault-bluff-";
+
+export function isVaultBluffVpKillSwitchOpen(): boolean {
+  return process.env.VAULT_BLUFF_VP_KILL_SWITCH === "allow";
+}
+
+export function canFulfillVaultBluffPromo(): boolean {
+  const fundingCampaign = process.env.VAULT_BLUFF_FUNDING_CAMPAIGN?.trim();
+  const reserveVp = positiveInteger(process.env.VAULT_BLUFF_RESERVE_VP);
+  return (
+    process.env.VAULT_BLUFF_REWARDS_ENABLED === "true" &&
+    isVaultBluffVpKillSwitchOpen() &&
+    process.env.VAULT_BLUFF_ANTI_FARM_READY === "true" &&
+    isIsolatedBluffCampaign(fundingCampaign) &&
+    reserveVp != null &&
+    reserveVp <= BLUFF_PROGRAM_CEILING_VP
+  );
+}
 
 function utcDay(date: Date): Date {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
@@ -18,6 +39,13 @@ function positiveInteger(value: string | undefined): number | null {
   if (!value || !/^[1-9]\d*$/.test(value)) return null;
   const parsed = Number(value);
   return Number.isSafeInteger(parsed) ? parsed : null;
+}
+
+function isIsolatedBluffCampaign(value: string | undefined): value is string {
+  return Boolean(
+    value?.startsWith(BLUFF_CAMPAIGN_PREFIX) &&
+      !/(earn|roblox|giveaway|probe)/i.test(value),
+  );
 }
 
 export type GameRewardResult =
@@ -41,7 +69,15 @@ export async function grantGamePromoInTransaction(args: {
   const reserveVp = positiveInteger(process.env.VAULT_BLUFF_RESERVE_VP);
   let blockReason: string | null = null;
   if (!enabled) blockReason = "feature_disabled";
-  else if (!fundingCampaign || reserveVp == null) blockReason = "reserve_not_configured";
+  else if (!isVaultBluffVpKillSwitchOpen()) blockReason = "kill_switch_stopped";
+  else if (process.env.VAULT_BLUFF_ANTI_FARM_READY !== "true") {
+    blockReason = "anti_farm_not_ready";
+  } else if (!isIsolatedBluffCampaign(fundingCampaign)) {
+    blockReason = "funding_campaign_not_isolated";
+  } else if (reserveVp == null) blockReason = "reserve_not_configured";
+  else if (reserveVp > BLUFF_PROGRAM_CEILING_VP) {
+    blockReason = "bluff_program_ceiling_exceeded";
+  }
 
   const rollingStart = new Date(args.now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const userRolling = await args.tx.gameRewardGrant.aggregate({
@@ -60,11 +96,12 @@ export async function grantGamePromoInTransaction(args: {
     const funded = await args.tx.gameRewardGrant.aggregate({
       where: {
         status: GameRewardStatus.PENDING,
-        fundingCampaign,
       },
       _sum: { vp: true },
     });
-    if ((funded._sum.vp ?? 0) + PROMO_VP > reserveVp) {
+    const remainingReserveVp = reserveVp - (funded._sum.vp ?? 0);
+    const grantLiabilityVp = PROMO_VP;
+    if (remainingReserveVp < grantLiabilityVp) {
       blockReason = "funding_cap_reached";
     }
   }
@@ -86,6 +123,8 @@ export async function grantGamePromoInTransaction(args: {
   }
 
   const availableAt = new Date(args.now.getTime() + HOLD_MS);
+  // Pending VP is a redemption liability, not cash and not collectible funds.
+  // Any future fulfillment caller must also pass canFulfillVaultBluffPromo().
   const ledger = await args.tx.ledgerEntry.create({
     data: {
       userId: args.userId,

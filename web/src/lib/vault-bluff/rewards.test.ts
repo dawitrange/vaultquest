@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Prisma } from "@prisma/client";
-import { grantGamePromoInTransaction } from "./rewards";
+import {
+  canFulfillVaultBluffPromo,
+  grantGamePromoInTransaction,
+} from "./rewards";
 
 const NOW = new Date("2026-08-16T12:00:00.000Z");
 
@@ -47,22 +50,24 @@ function withRewardEnvironment(
   values: Record<string, string | undefined>,
   run: () => Promise<void>,
 ) {
-  const previous = {
-    enabled: process.env.VAULT_BLUFF_REWARDS_ENABLED,
-    campaign: process.env.VAULT_BLUFF_FUNDING_CAMPAIGN,
-    reserve: process.env.VAULT_BLUFF_RESERVE_VP,
-  };
+  const keys = [
+    "VAULT_BLUFF_REWARDS_ENABLED",
+    "VAULT_BLUFF_VP_KILL_SWITCH",
+    "VAULT_BLUFF_ANTI_FARM_READY",
+    "VAULT_BLUFF_FUNDING_CAMPAIGN",
+    "VAULT_BLUFF_RESERVE_VP",
+  ] as const;
+  const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
   for (const [key, value] of Object.entries(values)) {
     if (value == null) delete process.env[key];
     else process.env[key] = value;
   }
   return run().finally(() => {
-    if (previous.enabled == null) delete process.env.VAULT_BLUFF_REWARDS_ENABLED;
-    else process.env.VAULT_BLUFF_REWARDS_ENABLED = previous.enabled;
-    if (previous.campaign == null) delete process.env.VAULT_BLUFF_FUNDING_CAMPAIGN;
-    else process.env.VAULT_BLUFF_FUNDING_CAMPAIGN = previous.campaign;
-    if (previous.reserve == null) delete process.env.VAULT_BLUFF_RESERVE_VP;
-    else process.env.VAULT_BLUFF_RESERVE_VP = previous.reserve;
+    for (const key of keys) {
+      const value = previous[key];
+      if (value == null) delete process.env[key];
+      else process.env[key] = value;
+    }
   });
 }
 
@@ -70,6 +75,8 @@ test("promotional VP is disabled by default and writes no ledger entry", async (
   await withRewardEnvironment(
     {
       VAULT_BLUFF_REWARDS_ENABLED: undefined,
+      VAULT_BLUFF_VP_KILL_SWITCH: undefined,
+      VAULT_BLUFF_ANTI_FARM_READY: undefined,
       VAULT_BLUFF_FUNDING_CAMPAIGN: undefined,
       VAULT_BLUFF_RESERVE_VP: undefined,
     },
@@ -88,11 +95,78 @@ test("promotional VP is disabled by default and writes no ledger entry", async (
   );
 });
 
+test("runtime kill switch blocks mint and fulfillment without stopping play", async () => {
+  await withRewardEnvironment(
+    {
+      VAULT_BLUFF_REWARDS_ENABLED: "true",
+      VAULT_BLUFF_VP_KILL_SWITCH: "stop",
+      VAULT_BLUFF_ANTI_FARM_READY: "true",
+      VAULT_BLUFF_FUNDING_CAMPAIGN: "vault-bluff-funded-test",
+      VAULT_BLUFF_RESERVE_VP: "100",
+    },
+    async () => {
+      const fake = fakeTransaction();
+      const result = await grantGamePromoInTransaction({
+        tx: fake.tx,
+        userId: "user-1",
+        sessionId: "session-1",
+        now: NOW,
+      });
+      assert.deepEqual(result, { kind: "blocked", reason: "kill_switch_stopped" });
+      assert.equal(canFulfillVaultBluffPromo(), false);
+      assert.equal(fake.ledgers.length, 0);
+    },
+  );
+});
+
+test("anti-farm readiness, campaign isolation, and $500 ceiling fail closed", async () => {
+  const base = {
+    VAULT_BLUFF_REWARDS_ENABLED: "true",
+    VAULT_BLUFF_VP_KILL_SWITCH: "allow",
+    VAULT_BLUFF_ANTI_FARM_READY: "true",
+    VAULT_BLUFF_FUNDING_CAMPAIGN: "vault-bluff-funded-test",
+    VAULT_BLUFF_RESERVE_VP: "50000",
+  };
+  const cases = [
+    {
+      environment: { ...base, VAULT_BLUFF_ANTI_FARM_READY: "false" },
+      reason: "anti_farm_not_ready",
+    },
+    {
+      environment: {
+        ...base,
+        VAULT_BLUFF_FUNDING_CAMPAIGN: "vault-bluff-roblox-giveaway",
+      },
+      reason: "funding_campaign_not_isolated",
+    },
+    {
+      environment: { ...base, VAULT_BLUFF_RESERVE_VP: "50001" },
+      reason: "bluff_program_ceiling_exceeded",
+    },
+  ];
+  for (const testCase of cases) {
+    await withRewardEnvironment(testCase.environment, async () => {
+      const fake = fakeTransaction();
+      const result = await grantGamePromoInTransaction({
+        tx: fake.tx,
+        userId: "user-1",
+        sessionId: `session-${testCase.reason}`,
+        now: NOW,
+      });
+      assert.deepEqual(result, { kind: "blocked", reason: testCase.reason });
+      assert.equal(canFulfillVaultBluffPromo(), false);
+      assert.equal(fake.ledgers.length, 0);
+    });
+  }
+});
+
 test("configured grant creates reward and pending ledger in one transaction client", async () => {
   await withRewardEnvironment(
     {
       VAULT_BLUFF_REWARDS_ENABLED: "true",
-      VAULT_BLUFF_FUNDING_CAMPAIGN: "funded-test-campaign",
+      VAULT_BLUFF_VP_KILL_SWITCH: "allow",
+      VAULT_BLUFF_ANTI_FARM_READY: "true",
+      VAULT_BLUFF_FUNDING_CAMPAIGN: "vault-bluff-funded-test",
       VAULT_BLUFF_RESERVE_VP: "10",
     },
     async () => {
@@ -104,6 +178,7 @@ test("configured grant creates reward and pending ledger in one transaction clie
         now: NOW,
       });
       assert.equal(result.kind, "granted");
+      assert.equal(canFulfillVaultBluffPromo(), true);
       assert.equal(fake.ledgers.length, 1);
       assert.equal(fake.grants.length, 1);
       assert.equal(fake.ledgers[0]?.vp, 1);
@@ -116,7 +191,9 @@ test("rolling cap and funded reserve prevent additional liability", async () => 
   await withRewardEnvironment(
     {
       VAULT_BLUFF_REWARDS_ENABLED: "true",
-      VAULT_BLUFF_FUNDING_CAMPAIGN: "funded-test-campaign",
+      VAULT_BLUFF_VP_KILL_SWITCH: "allow",
+      VAULT_BLUFF_ANTI_FARM_READY: "true",
+      VAULT_BLUFF_FUNDING_CAMPAIGN: "vault-bluff-funded-test",
       VAULT_BLUFF_RESERVE_VP: "30",
     },
     async () => {

@@ -8,7 +8,11 @@ import {
 import { prisma } from "@/lib/db";
 import { applyCommand, startMatch, toSafeSessionDto } from "./engine";
 import { neutralPlayerMemory, updatePlayerMemoryOnce } from "./player-memory";
-import { grantGamePromoInTransaction, type GameRewardResult } from "./rewards";
+import {
+  canFulfillVaultBluffPromo,
+  grantGamePromoInTransaction,
+  type GameRewardResult,
+} from "./rewards";
 import {
   PERSONA_IDS,
   VAULT_BLUFF_ENGINE_VERSION,
@@ -380,7 +384,7 @@ export async function getPlayProgress(userId: string) {
     rewardedToday: rewards.some(
       (reward) => reward.rewardPeriod.getTime() === new Date().setUTCHours(0, 0, 0, 0),
     ),
-    rewardsEnabled: process.env.VAULT_BLUFF_REWARDS_ENABLED === "true",
+    rewardsEnabled: canFulfillVaultBluffPromo(),
   };
 }
 
