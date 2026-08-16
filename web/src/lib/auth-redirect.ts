@@ -17,8 +17,8 @@ export function authHintFromValue(
 }
 
 export function pathFromAuthHint(from: string | null | undefined): string {
-  if (!from) return "/account";
-  return FROM_PATHS[from] ?? "/account";
+  const hint = authHintFromValue(from);
+  return hint ? FROM_PATHS[hint] : "/account";
 }
 
 export function authHintFromFormData(formData: FormData): string | null {
