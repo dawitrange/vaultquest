@@ -366,7 +366,7 @@ async function probeProd(): Promise<CaseResult[]> {
     name: "CPX smoke standby — wait for Yield flip confirm",
     pass: !CPX_LIVE_SMOKE_ALLOWED && !CPX_YIELD_FLIP_CONFIRMED,
     detail: surveyCta
-      ? `/earn shows q-surveys CTA. Yield flipped cpx-survey to the official offers host + app_id 35413 (healthy). Do not hit /api/go/q-surveys from this runner. Earn-live not certified.`
+      ? `/earn shows q-surveys CTA. Yield flipped cpx-survey to the official offers host + app_id 35413 (healthy). Signed-out /api/go/q-surveys is login-only (checked above). Do not follow through to the CPX wall. Earn-live not certified.`
       : `STAND BY. Ethio postback test succeeded. Yield is flipping ${CPX_SLUG}. No /api/go/q-surveys hit (would create a wall click).`,
   });
 
