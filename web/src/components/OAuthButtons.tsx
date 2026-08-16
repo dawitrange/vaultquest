@@ -13,9 +13,10 @@ export function OAuthButtons({
   redirectTo?: string;
   utm?: UtmTouch;
 }) {
-  // SSO: wire AUTH_GOOGLE_ID/SECRET + AUTH_DISCORD_ID/SECRET in web/.env + Vercel env to enable Google/Discord — no user-visible hint.
+  // SSO: wire AUTH_GOOGLE_ID/SECRET + AUTH_DISCORD_ID/SECRET in web/.env + Vercel env to enable Google/Discord.
+  // No divider when both are off. Email forms on /signup and /login stand alone.
   if (!google && !discord) {
-    return <div className="relative py-2 text-center text-xs text-[var(--vq-ink-faint)]">or continue with email</div>;
+    return null;
   }
 
   return (
