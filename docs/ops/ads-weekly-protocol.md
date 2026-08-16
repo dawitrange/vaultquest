@@ -41,13 +41,19 @@ Every paid and organic destination that can take a query string uses all four:
 | `utm_campaign` | Hyphenated **`brand-waitlist`** unless Manager names another campaign. |
 | `utm_content` | Cell or post id, hyphenated (example: `overnight-a-cell1`, `overnight-a-yt1`). |
 
-Example paid Meta cell:
+Required URL shapes (overnight-a):
 
-`https://www.vaultquest.io/earn?utm_source=facebook&utm_medium=paid&utm_campaign=brand-waitlist&utm_content=overnight-a-cell1`
+Paid Meta cell N:
 
-Example paid YouTube cell:
+`https://www.vaultquest.io/earn?utm_source=facebook&utm_medium=paid&utm_campaign=brand-waitlist&utm_content=overnight-a-cellN`
+
+Paid YouTube:
 
 `https://www.vaultquest.io/earn?utm_source=youtube&utm_medium=paid&utm_campaign=brand-waitlist&utm_content=overnight-a-yt1`
+
+Organic:
+
+`https://www.vaultquest.io/earn?utm_source=facebook&utm_medium=organic&utm_campaign=brand-waitlist&utm_content=overnight-a`
 
 Do not drop UTMs on “just a boost.” Do not invent a second campaign name to look busy.
 
@@ -89,7 +95,7 @@ Stop the cell and report to Manager if either is true:
 1. **24 hours** and **zero** `/earn` landing clicks.
 2. **CPC over $1.** This dies **every cell**. No “let it learn.”
 
-A kill is not a pause-and-hope. Turn the cell off.
+A kill is not a pause-and-hope. Turn the cell off. **$1 CPC dies every cell.**
 
 ---
 
@@ -109,6 +115,8 @@ Do not ship:
 - “Start earning”
 - “Join giveaway”
 - 2020 YouTube explainer as a current claim
+- Homepage as the CTA
+- Freecash as the landing
 
 Path clip `/workspace/fb-assets/vq-path-post.mp4` is **organic-only** unless Manager asks to pay it.
 
@@ -158,6 +166,6 @@ Send both to Manager. Same day. Do not batch only on Friday if a post already sh
 - Facebook Page: https://www.facebook.com/Vaultquest22/
 - YouTube: https://www.youtube.com/@zakai1769
 - Intro post (queued $20 boost, not a tonight-go): https://www.facebook.com/Vaultquest22/posts/pfbid02gLnFKT2z3aRJDJA8TqjiNGXGF7NvhSVXc38cDkno85F7ThKXVHZ424PEZzsDKVwrl
-- Ad account `381799792692602` — restricted when this draft was written; unpaid balance is Ethio’s to pay.
+- Ad account `381799792692602` — restricted when this draft was written; unpaid balance is Ethio’s to pay. Example unpaid: **$25.06**. **DO NOT BOOST TONIGHT.** **$300 held is not a launch.**
 
 Traffic drafts. Traffic does not post, does not open those URLs to publish, and does not spend.
