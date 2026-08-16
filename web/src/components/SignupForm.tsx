@@ -1,17 +1,34 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import Link from "next/link";
 import { signupAction, type AuthFormState } from "@/lib/actions/auth";
+import {
+  UTM_KEYS,
+  firstTouchCookieWrite,
+  hasUtm,
+  parseBrowserUtmCookie,
+  type UtmTouch,
+} from "@/lib/utm";
 
 const initial: AuthFormState = {};
 
-export function SignupForm({ from }: { from?: string }) {
+export function SignupForm({ from, utm = {} }: { from?: string; utm?: UtmTouch }) {
   const [state, action, pending] = useActionState(signupAction, initial);
+
+  useEffect(() => {
+    if (!hasUtm(utm)) return;
+    if (hasUtm(parseBrowserUtmCookie(document.cookie))) return;
+    const write = firstTouchCookieWrite(utm);
+    if (write) document.cookie = write;
+  }, [utm]);
 
   return (
     <form action={action} className="mt-8 space-y-4">
       {from ? <input type="hidden" name="from" value={from} /> : null}
+      {UTM_KEYS.map((key) =>
+        utm[key] ? <input key={key} type="hidden" name={key} value={utm[key]} /> : null,
+      )}
       <label className="block text-sm">
         <span className="text-[var(--vq-ink-muted)]">Name</span>
         <input

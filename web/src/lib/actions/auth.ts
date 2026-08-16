@@ -3,11 +3,22 @@
 import { hash } from "bcryptjs";
 import { AuthError } from "next-auth";
 import { z } from "zod";
+import { cookies } from "next/headers";
 import { signIn } from "@/auth";
-import { authHintFromFormData, pathFromAuthHint } from "@/lib/auth-redirect";
+import { authHintFromFormData, pathAfterSignup, pathFromAuthHint } from "@/lib/auth-redirect";
 import { prisma } from "@/lib/db";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { createResetToken, hashResetToken, RESET_TOKEN_TTL_MS, resetLinkForToken } from "@/lib/password-reset";
+import {
+  FIRST_TOUCH_COOKIE,
+  FIRST_TOUCH_MAX_AGE_SEC,
+  hasUtm,
+  mergeFirstTouch,
+  serializeUtmCookie,
+  utmFromCookieValue,
+  utmFromFormData,
+  type UtmTouch,
+} from "@/lib/utm";
 
 const signupSchema = z.object({
   email: z.string().email(),
@@ -37,12 +48,14 @@ export async function signupAction(_prev: AuthFormState, formData: FormData): Pr
   if (existing) return { error: "An account with that email already exists" };
 
   const passwordHash = await hash(parsed.data.password, 12);
+  const utm = await firstTouchUtmFromRequest(formData);
   await prisma.user.create({
     data: {
       email,
       passwordHash,
       name: parsed.data.name,
       ageConfirmed: true,
+      ...(hasUtm(utm) ? { utm } : {}),
     },
   });
 
@@ -50,7 +63,7 @@ export async function signupAction(_prev: AuthFormState, formData: FormData): Pr
     await signIn("credentials", {
       email,
       password: parsed.data.password,
-      redirectTo: pathFromAuthHint(authHintFromFormData(formData)),
+      redirectTo: pathAfterSignup(),
     });
   } catch (err) {
     if (err instanceof AuthError) {
@@ -166,4 +179,25 @@ export async function resetPasswordAction(
   ]);
 
   return { ok: true, message: "Password updated. You can sign in now." };
+}
+
+export async function rememberFirstTouchUtm(utm: UtmTouch): Promise<void> {
+  if (!hasUtm(utm)) return;
+  try {
+    const jar = await cookies();
+    if (jar.get(FIRST_TOUCH_COOKIE)?.value) return;
+    jar.set(FIRST_TOUCH_COOKIE, serializeUtmCookie(utm), {
+      path: "/",
+      maxAge: FIRST_TOUCH_MAX_AGE_SEC,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
+  } catch {
+    // Cookie jar unavailable (rare). Form hidden fields still persist UTMs on email signup.
+  }
+}
+
+async function firstTouchUtmFromRequest(formData: FormData): Promise<UtmTouch> {
+  const jar = await cookies();
+  return mergeFirstTouch(utmFromFormData(formData), utmFromCookieValue(jar.get(FIRST_TOUCH_COOKIE)?.value));
 }

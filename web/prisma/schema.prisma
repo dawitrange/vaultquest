@@ -20,6 +20,8 @@ model User {
   image         String?
   role          UserRole       @default(USER)
   ageConfirmed  Boolean        @default(false)
+  /// First-touch UTMs from signup URL or vq_ft_utm cookie. Written once.
+  utm           Json?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   accounts      Account[]

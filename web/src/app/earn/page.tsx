@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export default async function EarnPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; from?: string }>;
 }) {
   const params = await searchParams;
   if (params.error === "sign_in") {
@@ -33,15 +33,18 @@ export default async function EarnPage({
       <header className="max-w-2xl">
         <h1 className="font-[family-name:var(--vq-font-display)] text-4xl font-bold tracking-tight">Earn</h1>
         <p className="mt-3 text-[var(--vq-ink-muted)]">
-          Pick a quest and start earning Vault points. Finish an offer the way it&apos;s written, the partner confirms
-          it, and your points post after a short hold — then they&apos;re yours to redeem.
+          Pick a quest. Surveys and Freecash show when they&apos;re up. Finish the offer as written. The partner
+          confirms it, then points post after a 3–14 day hold.
         </p>
+        {params.from === "signup" && signedIn ? (
+          <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">Account&apos;s ready. Pick a quest below.</p>
+        ) : null}
         {signedIn ? null : (
           <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
             <Link href="/signup?from=earn" className="text-[var(--vq-teal)] underline decoration-[var(--vq-border-strong)] underline-offset-2 hover:decoration-[var(--vq-teal)]">
               Sign up
             </Link>{" "}
-            first so your completed quests credit to your account — it&apos;s free.
+            first so completed quests credit to your account.
           </p>
         )}
         {params.error === "no_link" ? (
