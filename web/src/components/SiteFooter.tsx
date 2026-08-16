@@ -43,27 +43,30 @@ export function SiteFooter() {
         </div>
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-[var(--vq-ink-muted)] lg:justify-end lg:text-right">
           <div className="flex w-full flex-wrap gap-x-6 gap-y-2 lg:justify-end">
+            <Link href="/earn" className="hover:text-[var(--vq-teal)]">
+              Earn
+            </Link>
+            <Link href="/rewards" className="hover:text-[var(--vq-teal)]">
+              Rewards
+            </Link>
+            <Link href="/giveaway" className="hover:text-[var(--vq-teal)]">
+              Giveaway
+            </Link>
+            <Link href="/proof" className="hover:text-[var(--vq-teal)]">
+              Proof & Rules
+            </Link>
+            <Link href="/contact" className="hover:text-[var(--vq-teal)]">
+              Contact
+            </Link>
             <Link href="/about" className="hover:text-[var(--vq-teal)]">
               About
             </Link>
             <Link href="/how-it-works" className="hover:text-[var(--vq-teal)]">
               How it works
             </Link>
-            <Link href="/earn" className="hover:text-[var(--vq-teal)]">
-              Earn
-            </Link>
-            <Link href="/giveaway" className="hover:text-[var(--vq-teal)]">
-              Roblox giveaway
-            </Link>
-            <Link href="/proof" className="hover:text-[var(--vq-teal)]">
-              Proof & Rules
-            </Link>
             <a href="mailto:support@vaultquest.io" className="hover:text-[var(--vq-teal)]">
               support@vaultquest.io
             </a>
-            <Link href="/contact" className="hover:text-[var(--vq-teal)]">
-              Contact
-            </Link>
             <Link href="/terms" className="hover:text-[var(--vq-teal)]">
               Terms
             </Link>

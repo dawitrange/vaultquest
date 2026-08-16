@@ -18,9 +18,15 @@ save() {
 }
 
 save "/" "home"
-grep -q "Turn quests into Steam credit" "$OUT/home.html" || fail "home missing headline"
+grep -q "Quests → Vault Points → Steam." "$OUT/home.html" || fail "home missing headline"
 grep -q "See quests" "$OUT/home.html" || fail "home missing See quests CTA"
 if grep -q "Start earning" "$OUT/home.html"; then fail "home still says Start earning"; fi
+if grep -qiE "we.?re live" "$OUT/home.html"; then fail "home still says we're live"; fi
+if grep -q '\$0.25' "$OUT/home.html"; then fail "home contains \$0.25"; fi
+if grep -qi "ACEBET" "$OUT/home.html"; then fail "home contains ACEBET"; fi
+if grep -qiE "Join [0-9]+ players" "$OUT/home.html"; then fail "home contains Join N players"; fi
+if grep -qiE "(^|[^A-Za-z])Rain([^A-Za-z]|$)" "$OUT/home.html"; then fail "home contains Rain"; fi
+if grep -qi "gamehag.com" "$OUT/home.html"; then fail "home contains gamehag.com"; fi
 # Policy denials ("we do not run generators") are allowed. Fail only on scam CTAs.
 if grep -qiE 'working codes|unlimited free steam|guaranteed \$[0-9]' "$OUT/home.html"; then
   fail "home contains banned generator-product copy"
@@ -31,13 +37,22 @@ save "/earn" "earn"
 grep -q ">Earn<" "$OUT/earn.html" || grep -q "Earn" "$OUT/earn.html" || fail "earn missing heading"
 if grep -qi "working codes" "$OUT/earn.html"; then fail "earn contains banned working-codes copy"; fi
 if grep -qi "no survey" "$OUT/earn.html"; then fail "earn contains banned no-survey copy"; fi
+if grep -q "Start earning" "$OUT/earn.html"; then fail "earn still says Start earning"; fi
+if grep -qiE "we.?re live" "$OUT/earn.html"; then fail "earn still says we're live"; fi
+if grep -q '\$0.25' "$OUT/earn.html"; then fail "earn contains \$0.25"; fi
+if grep -qi "ACEBET" "$OUT/earn.html"; then fail "earn contains ACEBET"; fi
+if grep -qiE "Join [0-9]+ players" "$OUT/earn.html"; then fail "earn contains Join N players"; fi
+if grep -qiE "(^|[^A-Za-z])Rain([^A-Za-z]|$)" "$OUT/earn.html"; then fail "earn contains Rain"; fi
+if grep -qi "gamehag.com" "$OUT/earn.html"; then fail "earn contains gamehag.com"; fi
+if grep -qi "cashout instantly" "$OUT/earn.html"; then fail "earn claims cashout instantly"; fi
+grep -q "We do not publish a running entry count" "$OUT/earn.html" || fail "earn missing giveaway honesty line"
 
 {
   echo "PASS home-earn"
   echo "base=$BASE"
   echo "home_status=$(cat "$OUT/home.status")"
   echo "earn_status=$(cat "$OUT/earn.status")"
-  echo "home_headline=Turn quests into Steam credit"
+  echo "home_headline=Quests → Vault Points → Steam."
   echo "home_cta=See quests -> /earn"
   echo "earn_reached=yes"
 } | tee "$OUT/result.txt"

@@ -423,6 +423,26 @@ code,
   color: var(--vq-ink-muted);
 }
 
+.vq-quest-mark {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--vq-border);
+  background: var(--vq-bg-sunken);
+  color: var(--vq-teal);
+  padding: 0.4rem;
+}
+
+.vq-quest-mark[data-kind="third"] {
+  color: var(--vq-brass);
+}
+
+.vq-quest-mark[data-kind="cpe_play"] {
+  color: var(--vq-steel);
+}
+
 @media (min-width: 900px) {
   .vq-demo {
     max-width: none;

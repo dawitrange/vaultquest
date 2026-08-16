@@ -1,7 +1,7 @@
 export const SITE = {
   name: "VaultQuest",
   tagline: "Transparent gaming rewards",
-  headline: "Turn quests into Steam credit",
+  headline: "Quests → Vault Points → Steam.",
   promise: "Complete real partner quests, bank Vault points, and cash out to Steam — or enter our scheduled giveaways.",
   /** Canonical production origin (www). */
   url: "https://www.vaultquest.io",
