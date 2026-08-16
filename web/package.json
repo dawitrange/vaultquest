@@ -10,7 +10,8 @@
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
-    "db:seed": "npx tsx prisma/seed.ts"
+    "db:seed": "npx tsx prisma/seed.ts",
+    "postback:smoke": "npx tsx scripts/postback-smoke.ts"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

@@ -46,7 +46,8 @@ const SEED = [
     url: "https://adgatemedia.com/",
     category: AffiliateCategory.offerwall_backup,
     priority: 3,
-    // Manual 1–2 day review but NO traffic minimum — a realistic approval for us.
+    // Marketing homepage — do NOT flip healthy until Ethio pastes a real
+    // AdGate Rewards wall/embed URL. Yield writes that /admin flip. Never invent it.
     status: AffiliateHealth.disabled,
     capDaily: 3000,
   },
@@ -86,7 +87,9 @@ const SEED = [
     url: "https://www.cpx-research.com/",
     category: AffiliateCategory.survey_wall,
     priority: 2,
-    // Self-serve publisher signup, near-instant — strong first survey wall.
+    // Marketing homepage seed only. Do not hardcode a wall URL.
+    // Ethio's CPX postback test succeeded. Yield is flipping this row in /admin.
+    // Do not smoke until Yield confirms. Not earn-live until a prod pending VP.
     status: AffiliateHealth.disabled,
     capDaily: 2000,
   },

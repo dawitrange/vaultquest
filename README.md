@@ -31,7 +31,9 @@ See **[docs/deploy-vercel.md](docs/deploy-vercel.md)**. Vercel MCP is configured
 |-----|---------|
 | `ADMIN_EMAIL` | Your email → Admin link + `/admin` |
 | `RESEND_API_KEY` + `CONTACT_TO_EMAIL` | Contact form email delivery |
-| `POSTBACK_SECRET` | Offerwall S2S `/api/postback` |
+| `POSTBACK_SECRET` | Offerwall S2S `/api/postback` (shared secret; never commit the value) |
+| `BITLABS_APP_SECRET` | Optional BitLabs HMAC (`hash=` SHA1; SHA256 fallback) |
+| `AYET_HMAC_SECRET` | Optional ayeT HMAC (`hash=`) |
 | `AUTH_GOOGLE_ID/SECRET` | Google OAuth |
 | `AUTH_DISCORD_ID/SECRET` | Discord OAuth |
 

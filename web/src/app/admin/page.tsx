@@ -6,10 +6,22 @@ import {
   CreateAffiliateForm,
   FulfillmentForm,
 } from "@/components/AdminForms";
-import { funnel } from "@/lib/analytics";
+import { exactFraction, funnel } from "@/lib/analytics";
 import { requireAdmin } from "@/lib/admin";
 import { clicksTodayForLink } from "@/lib/affiliates";
 import { prisma } from "@/lib/db";
+import {
+  ADGATE_SLUG,
+  CPX_APP_ID,
+  CPX_EARN_LIVE_CERTIFIED,
+  CPX_LIVE_SMOKE_ALLOWED,
+  CPX_MD5_HOOK_READY,
+  CPX_YIELD_FLIP_CONFIRMED,
+  CPX_POSTBACK_TEMPLATE,
+  CPX_SLUG,
+  cpxSecureHashEnvConfigured,
+  isMarketingHomepageUrl,
+} from "@/lib/postback";
 
 export const metadata: Metadata = { title: "Admin" };
 
@@ -36,28 +48,66 @@ export default async function AdminPage() {
   const clicksMap = Object.fromEntries(clickCounts);
 
   const stats = await funnel(7);
-  const pct = (r: number | null) => (r == null ? "—" : `${Math.round(r * 100)}%`);
+  const recentS2s = await prisma.ledgerEntry.findMany({
+    where: { kind: "EARN", note: { startsWith: "S2S postback" } },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+    select: {
+      id: true,
+      vp: true,
+      status: true,
+      availableAt: true,
+      questId: true,
+      clickId: true,
+      createdAt: true,
+      note: true,
+    },
+  });
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6">
       <h1 className="font-[family-name:var(--vq-font-display)] text-4xl font-bold tracking-tight">Admin</h1>
       <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
-        Affiliate caps, fulfillment queue, contact inbox. Postback URL:{" "}
-        <code className="text-[var(--vq-teal)]">/api/postback?secret=…&click_id=…&vp=…</code>
+        Affiliate caps, fulfillment queue, contact inbox. Do not flip a homepage URL to{" "}
+        <code>healthy</code>. AdGate is stalled (under review). Ethio&apos;s CPX postback
+        test succeeded. Yield is flipping <code>{CPX_SLUG}</code> (app_id{" "}
+        <code>{CPX_APP_ID}</code>). Flip confirmed: {CPX_YIELD_FLIP_CONFIRMED ? "yes" : "no"}.
+        Live smoke allowed: {CPX_LIVE_SMOKE_ALLOWED ? "yes" : "no — wait for Yield confirm"}.
+        After confirm, smoke path is CPX / <code>q-surveys</code> only — not Freecash, not a
+        homepage. Do not invent a wall URL. Live postback has no <code>hash=</code>.
+        Not earn-live until a production pending VP is visible.
+        {CPX_EARN_LIVE_CERTIFIED ? null : (
+          <span className="mt-2 block rounded-[8px] border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-3 py-2 text-xs text-[var(--vq-ink)]">
+            <strong>Earn-live is not certified. Live smoke is on standby.</strong> Official CPX
+            param is <code>secure_hash</code> = <code>md5(trans_id-appsecurehash)</code>. Do not
+            put MD5 on HMAC <code>hash=</code> (current prod would 401).{" "}
+            <code>partner=cpx</code> with no HMAC <code>hash</code> does not 401. MD5 hook{" "}
+            {CPX_MD5_HOOK_READY ? "ready" : "missing"}. Runtime <code>CPX_SECURE_HASH</code>:{" "}
+            {cpxSecureHashEnvConfigured() ? "configured" : "missing"} (name only).{" "}
+            <strong>status=2</strong> voids a matching PENDING/POSTED EARN; it does not unwind
+            an already-spent REDEEM. Do not smoke until Yield confirms the flip.
+            <span className="mt-2 block break-all font-[family-name:var(--vq-font-mono)] text-[10px] text-[var(--vq-ink-muted)]">
+              {CPX_POSTBACK_TEMPLATE}
+            </span>
+          </span>
+        )}
       </p>
 
       <section className="mt-10">
         <h2 className="font-[family-name:var(--vq-font-display)] text-2xl font-semibold">Conversion funnel · last 7 days</h2>
         <p className="mt-1 text-sm text-[var(--vq-ink-faint)]">
-          From the ledger (real data). Pageview/visitor traffic is in Vercel Web Analytics once enabled.
+          From the ledger (real data). Counts are exact — rates are fractions, not rounded percents.
+          Pageview/visitor traffic is in Vercel Web Analytics once enabled.
         </p>
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {[
             { label: "Offer clicks", value: String(stats.offerClicks) },
             { label: "Earn credits", value: String(stats.earnCredits) },
+            { label: "Pending EARN", value: String(stats.pendingEarnCredits) },
+            { label: "S2S credits", value: String(stats.s2sEarnCredits) },
             { label: "Redemptions", value: String(stats.redemptions) },
-            { label: "Click → earn", value: pct(stats.clickToEarnRate) },
-            { label: "Earn → redeem", value: pct(stats.earnToRedeemRate) },
+            { label: "Click → earn", value: exactFraction(stats.earnCredits, stats.offerClicks) },
+            { label: "Earn → redeem", value: exactFraction(stats.redemptions, stats.earnCredits) },
           ].map((s) => (
             <div key={s.label} className="rounded-[10px] border border-[var(--vq-border)] bg-[var(--vq-surface)] p-4">
               <p className="text-xs uppercase tracking-wider text-[var(--vq-ink-faint)]">{s.label}</p>
@@ -76,6 +126,13 @@ export default async function AdminPage() {
               <p className="mb-1 font-[family-name:var(--vq-font-mono)] text-xs text-[var(--vq-ink-faint)]">
                 Clicks today: {clicksMap[link.id] ?? 0}
                 {link.capDaily != null ? ` / ${link.capDaily}` : ""}
+                {isMarketingHomepageUrl(link.url)
+                  ? ` · homepage — keep ${link.slug} disabled (do not flip /admin)`
+                  : ""}
+                {link.slug === CPX_SLUG
+                  ? ` · app_id ${CPX_APP_ID}; Ethio postback test ok; Yield flipping — do not smoke until confirm`
+                  : ""}
+                {link.slug === ADGATE_SLUG ? " · AdGate stalled (under review)" : ""}
               </p>
               <AffiliateEditForm link={link} />
             </div>
@@ -116,6 +173,33 @@ export default async function AdminPage() {
             ))
           )}
         </ul>
+      </section>
+
+      <section className="mt-14">
+        <h2 className="font-[family-name:var(--vq-font-display)] text-2xl font-semibold">S2S postback credits</h2>
+        <p className="mt-1 text-sm text-[var(--vq-ink-faint)]">
+          Ledger rows created by <code className="text-[var(--vq-teal)]">/api/postback</code> (pending VP +{" "}
+          <code>availableAt</code> from holdDays). Demo credits are excluded.
+        </p>
+        {recentS2s.length === 0 ? (
+          <p className="mt-4 text-sm text-[var(--vq-ink-faint)]">No S2S credits yet.</p>
+        ) : (
+          <ul className="mt-4 divide-y divide-[var(--vq-border)] rounded-[10px] border border-[var(--vq-border)] text-sm">
+            {recentS2s.map((row) => (
+              <li key={row.id} className="flex flex-wrap justify-between gap-2 px-4 py-3">
+                <span className="font-[family-name:var(--vq-font-mono)] text-xs">{row.id}</span>
+                <span>
+                  {row.vp} VP · {row.status}
+                  {row.availableAt ? ` · available ${row.availableAt.toISOString()}` : ""}
+                  {row.questId ? ` · ${row.questId}` : ""}
+                  {row.note?.includes("tx=") ? " · has tx_id" : ""}
+                  {row.note?.includes("hmac=ok") ? " · hmac=ok" : ""}
+                  {row.note?.includes("cpx_md5=ok") ? " · cpx_md5=ok" : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="mt-14">

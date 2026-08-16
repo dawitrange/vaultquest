@@ -315,3 +315,63 @@ When user runs `@vault-planner get us verified`, vault-planner appends new dated
 - **Verify:** `npm run lint` clean; `npm run build` OK; prod server (`PORT=3001 npm start`) `/earn` renders empty state with 0 `/api/go/` CTAs + 0 demo buttons; `/terms`+`/privacy` show effective dates, no "Outline draft"; `/proof` no "budget $150" / no "date of first draw".
 - **Owner-only open:** confirm legal operator entity/jurisdiction before publishing it on Privacy §1; finish Facebook/YouTube rename before reapplying; compress 2 MB hero image (P2).
 - **Budget:** $0.
+
+---
+
+### 2026-08-15 — issue #15 production postback smoke (@eng-qa)
+
+#### Handoff — 2026-08-15 — eng-qa
+- **Task:** Production postback smoke (click → pending VP) — GitHub #15 / PR #20
+- **Docs loaded:** `00-master-brief`, `01-brand`, `04-affiliate-constraints`, `product-prd`, `18-launch-orchestration`, `05-platform-vision`, `schema.prisma`, `affiliates.ts`, `api/postback`, `admin/page.tsx`. Missing from this checkout: `docs/19-grok-bot-ops.md`, `docs/ops/kanban-seed.md`, `docs/agents/grok-bots/builder.md`.
+- **Gate:** Engineering MVP in progress — pass. Paid ads still blocked. #13/#14 owner-blocked (not touched).
+- **Budget:** none
+- **Plugins used/skipped:** datadog — skipped: missing MCP config; Vercel MCP — skipped: needsAuth; Neon — used (read prod + isolated branch write for local smoke only)
+- **Did:**
+  - Replaced stub `postback-tester` with `web/scripts/postback-smoke.ts` (offline HMAC, `--probe-prod` no secrets, `--seed-local` first-party `/proof` click → signed postback).
+  - Fail-closed HMAC when `hash=` present and no `BITLABS_*`/`AYET_*` secret; response `hash: "ok"`; admin last-7d exact fractions + Pending EARN + S2S tiles.
+  - Skills: `vault-build-check` PASS (32 routes incl. `/api/admin/funnel`); `postback-tester --help` + `--probe-prod` 10/10; `--seed-local` 18/18 on isolated Neon branch.
+  - Local/branch smoke (not prod): click `cmsv0tg430001jsoy5459rqbc` → ledger `cmsv0tg5t0003jsoyq0d1wf8h` PENDING 500 VP `availableAt=2026-08-22T23:42:20.938Z` (holdDays=7) → duplicate `{ok:true,duplicate:true}` → branch funnel **Offer clicks=132 · Earn credits=2 · Pending EARN=1 · S2S credits=1 · Redemptions=1 · Click → earn 2 / 132 · Earn → redeem 1 / 2**.
+  - Prod last-7d (exact, unchanged by smoke): **Offer clicks=131 · Earn credits=1 · Pending EARN=0 · S2S credits=0 · Redemptions=1 · Click → earn 1 / 131 · Earn → redeem 1 / 1**. Probe click `cmsv0lyky0001jx04hqjbe6uy` (anon, uncredited). `POSTBACK_SECRET` is set (401). No S2S pending on prod.
+- **Next:** Ethio sets partner HMAC env names on Vercel if unset; #13 reseed healthy wall URLs; signed-in prod click + partner/test postback. Re-run tester `--probe-prod` then quote `/admin` tiles. Do not merge until owner reviews.
+- **Open:** Prod credit blocked on Ethio-owned `POSTBACK_SECRET` value + partner HMAC values + #13/#14. Vercel MCP unauthenticated so HMAC env presence unknown. Isolated Neon branch `issue-15-postback-smoke` can be deleted by owner.
+
+#### Handoff — 2026-08-15 — eng-qa (Yield AdGate coordination)
+- **Task:** #15 smoke stays on AdGate; no homepage; no invented wall URL; CPX MD5 flagged
+- **Did:** AdGate macros `{s1}` `{points}` `{payout}` `{conversion_id}` aliased; `/api/go` sets `s1` (user); marketing homepages (incl. `adgatemedia.com/`) refused in rotator + `/api/go`; CPX `secure_hash` → 501 `cpx_md5_not_implemented`; admin shows AdGate template with `secret=…` placeholder; tester documents exact blocker: `adgate-backup` still disabled homepage until Ethio wall URL + `POSTBACK_SECRET` confirm, then Yield `/admin` flip; use AdGate Test Mode if available.
+- **Do not:** smoke `https://adgatemedia.com/`; invent a Rewards URL; switch to CPX; put secrets in the PR.
+- **Next:** wait for Ethio wall/embed URL + Vercel secret confirm → Yield flip → Test Mode click → postback → pending VP. No merge.
+
+#### Handoff — 2026-08-15 — eng-qa (Yield: AdGate stalled, CPX next)
+- **Task:** #15 retarget CPX; flag MD5 gap; no homepage; no /admin flip
+- **Did:** AdGate marked stalled. CPX (`cpx-survey`) is next — wait for Ethio `offers.cpx-research.com` or `wall.cpx-research.com` + app_id; Yield writes the flip. Apex/www CPX hosts treated as marketing (any path). `/api/postback` still refuses CPX (`501` `cpx_md5_not_implemented` `safe:false`) because MD5 `secure_hash` is **not** verified — CPX credit is **not safe**. `POSTBACK_SECRET` already set; not enough. Freecash CTA labeled not Yield / not earn-live. Admin banner calls out the MD5 gap. No invented URL. No /admin flip.
+- **Do not:** smoke `www.cpx-research.com` or `adgatemedia.com/`; invent a wall URL; flip `cpx-survey`; treat a CPX credit as safe; merge.
+- **Next:** Ethio wall URL + app_id → Yield `/admin` flip → implement MD5 before any CPX credit is earn-live. No merge.
+- **Skill evidence (2026-08-15 CPX retarget):** `vault-build-check` PASS (32 routes). `postback-tester --probe-prod` 15/15 PASS (MD5 gap flagged; AdGate stalled; Freecash not earn-live; no secrets sent). `--seed-local` skipped — no localhost server this run.
+
+#### Handoff — 2026-08-15 — eng-qa (Manager: CPX MD5 is #15 scope)
+- **Task:** Implement tested CPX MD5 hook on `/api/postback` in PR #20. No invented URL. Do not certify earn-live. WIP stays 2/3.
+- **Did:** `verifyCpxSecureHash` = `md5(trans_id-CPX_SECURE_HASH)` fail-closed; wall helper `md5(ext_user_id-secret)` unit-tested only. Route 401 `cpx_secure_hash_failed` on mismatch/missing secret. Admin banner: hook ready, earn-live not certified. Tester offline + localhost live MD5. No `/admin` flip. No homepage smoke. No secrets in PR.
+- **Do not:** invent offers./wall. URL; smoke `www.cpx-research.com`; certify earn-live; merge.
+- **Next:** Ethio wall URL + app_id → Yield `/admin` flip → smoke MD5 as the route requires. No merge.
+- **Skill evidence:** `vault-build-check` PASS (32 routes). `postback-tester --probe-prod` 20/20 PASS (no secrets). `--seed-local` 32/32 PASS on isolated Neon branch `issue-15-postback-smoke` (first-party `/proof` only): CPX bad MD5 → 401; valid MD5 → `cpx_md5=ok` PENDING (not earn-live). Prod last-7d unchanged: 131 / 1 / 0 / 0 / 1.
+
+#### Handoff — 2026-08-15 — eng-qa (Manager: app_id 35413 real; stand by)
+- **Task:** #15 keep MD5 hook; record app_id 35413; stand by until Yield flips. WIP 2/3.
+- **Did:** MD5 already in PR. Status updated: app_id 35413 exists; wall is real; Yield has not flipped (Ethio still saving postback). Flip detector `isYieldFlippedCpxWallUrl` — no URL hardcoded in seed/admin. Live smoke on standby. Earn-live not certified.
+- **Do not:** hardcode offers./wall. path; smoke homepage; flip `/admin`; certify earn-live; merge.
+- **Next:** Ethio saves CPX postback → Yield flips `cpx-survey` → re-run `--probe-prod` → live MD5 smoke. No merge.
+- **Skill evidence:** `vault-build-check` PASS. `postback-tester --probe-prod` 20/20 PASS — STAND BY on `/api/go/q-surveys` (HTTP 307 no_link). No secrets. No live smoke.
+
+#### Handoff — 2026-08-15 — eng-qa (Ethio: official secure_hash; no HMAC 401)
+- **Task:** #15 CPX path: official `secure_hash` MD5; missing HMAC `hash` must not 401; flag status=2.
+- **Did:** Skip HMAC when `partner=cpx` or `secure_hash` present. Verify `md5(trans_id-appsecurehash)` only when official `secure_hash` (or partner=cpx `hash` equivalent) is sent. Template uses `secure_hash={secure_hash}` not `hash=`. status=2 voids matching EARN; does not unwind REDEEM (flagged). No live smoke. No URL hardcoded. Not earn-live.
+- **Do not:** smoke prod before Yield flip; merge; put secrets in PR.
+- **Next:** Ethio saves postback (no HMAC `hash=`); Yield flips; then smoke.
+- **Skill evidence:** `vault-build-check` PASS. `--probe-prod` 22/22 STAND BY. `--seed-local` 36/36: CPX without HMAC hash → 200; official `secure_hash` MD5 ok; status=2 → VOID. Isolated branch only. Not earn-live.
+
+#### Handoff — 2026-08-16 — eng-qa (Ethio test ok; Yield flipping; no smoke)
+- **Task:** #15 keep PR ready. Ethio CPX postback test succeeded. Yield is flipping. Do not smoke yet.
+- **Did:** Status + flags `CPX_YIELD_FLIP_CONFIRMED=false` / `CPX_LIVE_SMOKE_ALLOWED=false`. Probe no longer hits `/api/go/q-surveys`. Live URL has no `hash=`; MD5 stays for later signed posts. After confirm, smoke path is CPX / q-surveys only. Not earn-live until a prod pending VP is visible.
+- **Do not:** smoke Freecash or a homepage; invent a URL; require `hash=` on the live URL; merge; certify earn-live.
+- **Next:** Yield confirms `/admin` flip → CPX-only smoke → earn-live only if prod pending VP is visible.
+- **Skill evidence:** `vault-build-check` PASS. `--probe-prod` 22/22: `/earn` already shows `q-surveys` CTA; **did not** hit `/api/go/q-surveys`. STAND BY until Yield confirms. No secrets. Not earn-live.

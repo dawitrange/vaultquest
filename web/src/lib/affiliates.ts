@@ -1,5 +1,6 @@
 import type { AffiliateCategory, AffiliateHealth, AffiliateLink as DbLink } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { isMarketingHomepageUrl } from "@/lib/postback";
 
 export type Quest = {
   id: string;
@@ -216,6 +217,17 @@ export async function createOfferClick(opts: {
 }) {
   const link = await serveAffiliateLink(opts.category, { userId: opts.userId, geo: opts.geo, userAgent: opts.userAgent });
   if (!link) return null;
+  if (isMarketingHomepageUrl(link.url)) {
+    await logRotation({
+      userId: opts.userId,
+      category: opts.category,
+      linkId: link.id,
+      partner: link.partner,
+      reason: "empty_inventory",
+      meta: { homepage: true, slug: link.slug },
+    });
+    return null;
+  }
 
   const click = await prisma.offerClick.create({
     data: {
@@ -261,9 +273,11 @@ export function getQuest(questId: string) {
 export async function getServableCategories(): Promise<Set<AffiliateCategory>> {
   const healthy = await prisma.affiliateLink.findMany({
     where: { status: "healthy" as AffiliateHealth },
-    select: { category: true },
+    select: { category: true, url: true },
   });
-  const healthySet = new Set(healthy.map((h) => h.category));
+  const healthySet = new Set(
+    healthy.filter((h) => !isMarketingHomepageUrl(h.url)).map((h) => h.category),
+  );
   const servable = new Set<AffiliateCategory>();
   (Object.keys(FALLBACK) as AffiliateCategory[]).forEach((cat) => {
     if (FALLBACK[cat].some((c) => healthySet.has(c))) servable.add(cat);
