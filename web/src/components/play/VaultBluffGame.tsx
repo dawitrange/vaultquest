@@ -1,8 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type MouseEvent,
+} from "react";
 import { captureClientEvent, PH_EVENTS } from "@/lib/posthog-client";
+import { canSubmitRevealContinue } from "@/lib/vault-bluff/interaction-guards";
 import { PERSONAS } from "@/lib/vault-bluff/personas";
 import { parseKeeperResponseForm } from "@/lib/vault-bluff/response-form";
 import {
@@ -97,9 +104,11 @@ export function VaultBluffGame({
   const [forfeitConfirmOpen, setForfeitConfirmOpen] = useState(false);
   const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestInFlightRef = useRef(false);
+  const continuePointerArmedRef = useRef(false);
 
   function acceptGameResult(result: ApiResult) {
     if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+    continuePointerArmedRef.current = false;
     setGame(result);
     setForfeitConfirmOpen(false);
     const round = result.session.currentRound;
@@ -163,6 +172,7 @@ export function VaultBluffGame({
   useEffect(
     () => () => {
       if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+      continuePointerArmedRef.current = false;
     },
     [],
   );
@@ -265,6 +275,18 @@ export function VaultBluffGame({
       kind: "ANSWER_QUESTION",
       ...draft,
     });
+  }
+
+  function continueFromReveal(event: MouseEvent<HTMLButtonElement>) {
+    const allowed = canSubmitRevealContinue({
+      revealReady,
+      pending,
+      pointerArmed: continuePointerArmedRef.current,
+      clickDetail: event.detail,
+    });
+    continuePointerArmedRef.current = false;
+    if (!allowed) return;
+    void act({ kind: "NEXT_ROUND" });
   }
 
   if (loading) {
@@ -553,7 +575,16 @@ export function VaultBluffGame({
             <button
               type="button"
               disabled={pending || !revealReady}
-              onClick={() => void act({ kind: "NEXT_ROUND" })}
+              onPointerDown={() => {
+                continuePointerArmedRef.current = revealReady && !pending;
+              }}
+              onPointerCancel={() => {
+                continuePointerArmedRef.current = false;
+              }}
+              onPointerLeave={() => {
+                continuePointerArmedRef.current = false;
+              }}
+              onClick={continueFromReveal}
               className="mt-5 rounded-md bg-[var(--vq-teal)] px-5 py-3 font-semibold text-[var(--vq-bg-deep)] disabled:opacity-50"
             >
               {!revealReady
