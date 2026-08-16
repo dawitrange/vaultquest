@@ -361,3 +361,9 @@ When user runs `@vault-planner get us verified`, vault-planner appends new dated
 - **Do not:** hardcode offers./wall. path; smoke homepage; flip `/admin`; certify earn-live; merge.
 - **Next:** Ethio saves CPX postback → Yield flips `cpx-survey` → re-run `--probe-prod` → live MD5 smoke. No merge.
 - **Skill evidence:** `vault-build-check` PASS. `postback-tester --probe-prod` 20/20 PASS — STAND BY on `/api/go/q-surveys` (HTTP 307 no_link). No secrets. No live smoke.
+
+#### Handoff — 2026-08-15 — eng-qa (Ethio: official secure_hash; no HMAC 401)
+- **Task:** #15 CPX path: official `secure_hash` MD5; missing HMAC `hash` must not 401; flag status=2.
+- **Did:** Skip HMAC when `partner=cpx` or `secure_hash` present. Verify `md5(trans_id-appsecurehash)` only when official `secure_hash` (or partner=cpx `hash` equivalent) is sent. Template uses `secure_hash={secure_hash}` not `hash=`. status=2 voids matching EARN; does not unwind REDEEM (flagged). No live smoke. No URL hardcoded. Not earn-live.
+- **Do not:** smoke prod before Yield flip; merge; put secrets in PR.
+- **Next:** Ethio saves postback (no HMAC `hash=`); Yield flips; then smoke.

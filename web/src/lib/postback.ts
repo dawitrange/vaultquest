@@ -157,9 +157,12 @@ export const CPX_MD5_HOOK_READY = true;
 export const CPX_EARN_LIVE_CERTIFIED = false;
 export const CPX_SECURE_HASH_ENV_NAMES = ["CPX_SECURE_HASH", "CPX_APP_SECRET"] as const;
 
-/** Placeholder-only publisher postback. `{secure_hash}` is CPX's md5(trans_id-secret) macro. */
+/**
+ * Official CPX postback. Use `secure_hash={secure_hash}` — never `hash={secure_hash}`.
+ * Current prod HMAC-checks `hash` and would 401. Ethio is saving without HMAC `hash=`.
+ */
 export const CPX_POSTBACK_TEMPLATE =
-  "https://vaultquest.io/api/postback?secret=…&user_id={user_id}&trans_id={trans_id}&vp={amount_local}&payout_usd={amount_usd}&status={status}&hash={secure_hash}&partner=cpx";
+  "https://vaultquest.io/api/postback?secret=…&user_id={user_id}&trans_id={trans_id}&vp={amount_local}&payout_usd={amount_usd}&status={status}&secure_hash={secure_hash}&partner=cpx";
 
 export function md5Hex(payload: string): string {
   return crypto.createHash("md5").update(payload).digest("hex");
@@ -181,12 +184,32 @@ function timingSafeEqualHex(leftHex: string, rightHex: string): boolean {
   return crypto.timingSafeEqual(left, right);
 }
 
-export function isCpxPostbackRequest(partner: string, secureHash: string): boolean {
-  return partner.trim().toLowerCase() === "cpx" || Boolean(secureHash.trim());
+export function isCpxPartner(partner: string): boolean {
+  return partner.trim().toLowerCase() === "cpx";
+}
+
+/** Official CPX MD5 query param. Do not HMAC-check this value. */
+export function officialCpxSecureHash(secureHash: string): string {
+  return secureHash.trim();
 }
 
 /**
- * Fail-closed CPX postback check. Requires trans_id + hash/secure_hash + env secret.
+ * Skip BitLabs/ayeT HMAC when this is a CPX callback.
+ * Missing HMAC `hash` must not 401. Official MD5 lives on `secure_hash`.
+ */
+export function shouldSkipHmacForCpx(partner: string, secureHash: string): boolean {
+  return isCpxPartner(partner) || Boolean(secureHash.trim());
+}
+
+/** CPX status=2 is reversal/chargeback. status=1 is credit. */
+export function isCpxReversalStatus(status: string): boolean {
+  const s = status.trim().toLowerCase();
+  return s === "2" || s === "chargeback" || s === "reversed";
+}
+
+/**
+ * Fail-closed CPX MD5. Call only when official `secure_hash` (or partner=cpx `hash` equivalent) is present.
+ * Formula: md5(`${trans_id}-${appsecurehash}`).
  */
 export function verifyCpxSecureHash(args: {
   transId: string | null | undefined;

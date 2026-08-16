@@ -11,7 +11,10 @@ import {
   USER_ID_ALIASES,
   VP_ALIASES,
   firstAlias,
-  isCpxPostbackRequest,
+  isCpxPartner,
+  isCpxReversalStatus,
+  officialCpxSecureHash,
+  shouldSkipHmacForCpx,
   verifyCpxSecureHash,
   verifyPostbackHash,
 } from "@/lib/postback";
@@ -24,9 +27,12 @@ import {
  * BitLabs:  GET /api/postback?secret=...&click_id=...&vp=...&hash=HEX_SHA1_HMAC
  *           hash = HEX(SHA1_HMAC(full_url_without_hash, BITLABS_APP_SECRET))
  * ayeT:     same pattern with AYET_HMAC_SECRET if set
- * CPX:      md5(`${trans_id}-${CPX_SECURE_HASH}`) vs hash/secure_hash.
- *           Fail-closed. Hook ready ≠ earn-live. app_id 35413 exists; wall
- *           is real. Yield has not flipped — waiting on Ethio to save postback.
+ * CPX:      official param `secure_hash` = md5(`${trans_id}-${appsecurehash}`).
+ *           Do not put MD5 on HMAC `hash=` — current prod HMAC-checks `hash` and 401s.
+ *           partner=cpx with no HMAC `hash` must not 401. Missing `secure_hash`
+ *           skips MD5 (Ethio's current save) and still credits via POSTBACK_SECRET.
+ *           status=2 voids a matching PENDING/POSTED EARN; does not unwind REDEEM.
+ *           Hook ready ≠ earn-live. No live smoke until Yield flips cpx-survey.
  */
 
 export async function GET(req: NextRequest) {
@@ -63,15 +69,17 @@ async function handlePostback(req: NextRequest) {
   }
 
   const partnerHint = get("partner").toLowerCase();
-  const cpxProvidedHash = get("secure_hash") || (partnerHint === "cpx" ? get("hash") : "");
-  const cpxRequest = isCpxPostbackRequest(partnerHint, get("secure_hash"));
+  const officialMd5 = officialCpxSecureHash(get("secure_hash"));
+  const skipHmac = shouldSkipHmacForCpx(partnerHint, officialMd5);
   let cpxMd5Ok = false;
 
-  if (cpxRequest) {
-    // Fail-closed MD5. POSTBACK_SECRET alone is not enough for CPX.
+  // Official CPX param is secure_hash. Verify MD5 only when that (or partner=cpx
+  // hash= equivalent) is present. Do not 401 for a missing HMAC hash on CPX.
+  const cpxMd5Value = officialMd5 || (isCpxPartner(partnerHint) ? get("hash").trim() : "");
+  if (cpxMd5Value) {
     const cpxCheck = verifyCpxSecureHash({
       transId: firstAlias(get, TX_ID_ALIASES),
-      providedHash: cpxProvidedHash,
+      providedHash: cpxMd5Value,
       secrets: CPX_SECURE_HASH_ENV_NAMES.map((name) => process.env[name]),
     });
     if (!cpxCheck.ok) {
@@ -90,9 +98,8 @@ async function handlePostback(req: NextRequest) {
     cpxMd5Ok = true;
   }
 
-  // BitLabs / ayeT HMAC when hash= is present and this is not a CPX MD5 callback.
-  // Fail-closed: hash without a configured partner HMAC secret is 401.
-  const hashParam = cpxRequest ? "" : get("hash");
+  // BitLabs / ayeT HMAC on hash= only. CPX must skip this — missing hash is OK.
+  const hashParam = skipHmac ? "" : get("hash");
   const hashCheck = verifyPostbackHash({
     url: req.nextUrl.toString(),
     hash: hashParam || null,
@@ -149,6 +156,49 @@ async function handlePostback(req: NextRequest) {
 
   if (!userId) {
     return NextResponse.json({ ok: false, error: "user_id required (click had no user)" }, { status: 400 });
+  }
+
+  // CPX status=2 is reversal/chargeback. Never credit. VOID a matching EARN if
+  // found. Does not unwind an already-spent REDEEM (flagged gap).
+  const txIdEarly = firstAlias(get, TX_ID_ALIASES);
+  if (isCpxReversalStatus(get("status")) && (isCpxPartner(partnerHint) || officialMd5 || cpxMd5Ok)) {
+    if (!txIdEarly) {
+      return NextResponse.json({
+        ok: true,
+        reversed: false,
+        gap: "status_2_no_tx",
+        partner: "cpx",
+      });
+    }
+    const prior = await prisma.ledgerEntry.findFirst({
+      where: { userId, note: { contains: `tx=${txIdEarly}` } },
+    });
+    if (!prior) {
+      return NextResponse.json({
+        ok: true,
+        reversed: false,
+        unmatched: true,
+        tx_id: txIdEarly,
+        partner: "cpx",
+      });
+    }
+    if (prior.status === LedgerStatus.VOID) {
+      return NextResponse.json({ ok: true, reversed: true, duplicate: true, tx_id: txIdEarly });
+    }
+    await prisma.ledgerEntry.update({
+      where: { id: prior.id },
+      data: {
+        status: LedgerStatus.VOID,
+        note: `${prior.note ?? ""} cpx_status=2_void`.trim(),
+      },
+    });
+    return NextResponse.json({
+      ok: true,
+      reversed: true,
+      tx_id: txIdEarly,
+      ledger_id: prior.id,
+      gap: prior.kind === LedgerKind.EARN ? undefined : "status_2_non_earn",
+    });
   }
 
   const questId = get("quest_id") || clickQuestId || undefined;

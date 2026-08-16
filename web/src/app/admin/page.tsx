@@ -76,13 +76,14 @@ export default async function AdminPage() {
         Do not hardcode that URL here. Freecash is not earn-live. WIP stays 2/3.
         {CPX_EARN_LIVE_CERTIFIED ? null : (
           <span className="mt-2 block rounded-[8px] border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] px-3 py-2 text-xs text-[var(--vq-ink)]">
-            <strong>Earn-live is not certified. Live smoke is on standby.</strong> CPX MD5 hook
-            is {CPX_MD5_HOOK_READY ? "ready" : "missing"}:{" "}
-            <code>md5(trans_id-CPX_SECURE_HASH)</code> vs <code>hash</code>/<code>secure_hash</code>.
-            Runtime <code>CPX_SECURE_HASH</code>:{" "}
+            <strong>Earn-live is not certified. Live smoke is on standby.</strong> Official CPX
+            param is <code>secure_hash</code> = <code>md5(trans_id-appsecurehash)</code>. Do not
+            put MD5 on HMAC <code>hash=</code> (current prod would 401).{" "}
+            <code>partner=cpx</code> with no HMAC <code>hash</code> does not 401. MD5 hook{" "}
+            {CPX_MD5_HOOK_READY ? "ready" : "missing"}. Runtime <code>CPX_SECURE_HASH</code>:{" "}
             {cpxSecureHashEnvConfigured() ? "configured" : "missing"} (name only).{" "}
-            <code>POSTBACK_SECRET</code> is already set — that gate alone is not enough.
-            Smoke only after Yield flips <code>{CPX_SLUG}</code>.
+            <strong>status=2</strong> voids a matching PENDING/POSTED EARN; it does not unwind
+            an already-spent REDEEM. Smoke only after Yield flips <code>{CPX_SLUG}</code>.
             <span className="mt-2 block break-all font-[family-name:var(--vq-font-mono)] text-[10px] text-[var(--vq-ink-muted)]">
               {CPX_POSTBACK_TEMPLATE}
             </span>

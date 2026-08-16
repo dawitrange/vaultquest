@@ -30,9 +30,10 @@ Flags: `--help` prints cases without calling; `--probe-prod` public prod checks 
 6. Missing secret → expects 401 or 503
 7. Ledger PENDING + `availableAt` from quest `holdDays`; admin last-7d quoted as exact counts/fractions
 8. Refuse marketing homepages (`adgatemedia.com/`, `www.cpx-research.com/`)
-9. **CPX MD5 hook:** `md5(trans_id-CPX_SECURE_HASH)` vs `hash`/`secure_hash`. Fail-closed. Live happy path only on localhost when `CPX_SECURE_HASH` is set.
-10. Flip detector: `isYieldFlippedCpxWallUrl` (allowed host + `app_id=35413`). `--probe-prod` watches `/api/go/q-surveys` and **stands by** until Yield flips. Does not smoke a homepage. Does not hardcode a wall URL.
-11. Reports PASS/FAIL per case. `--help` needs no server. Live credit needs localhost + env names below.
+9. **CPX MD5:** official param is `secure_hash` = `md5(trans_id-appsecurehash)`. Fail-closed when `secure_hash` is present. `partner=cpx` with **no** HMAC `hash` must **not** 401 (Ethio’s current save). Do not put MD5 on `hash=` — current prod HMAC-checks `hash`.
+10. **CPX status=2:** voids matching PENDING/POSTED EARN. Does **not** unwind REDEEM if already spent (flagged gap).
+11. Flip detector: `isYieldFlippedCpxWallUrl` (allowed host + `app_id=35413`). `--probe-prod` watches `/api/go/q-surveys` and **stands by** until Yield flips. Does not smoke a homepage. Does not hardcode a wall URL.
+12. Reports PASS/FAIL per case. `--help` needs no server. Live credit needs localhost + env names below.
 
 ## Yield target: CPX (stand by)
 
@@ -40,7 +41,7 @@ Flags: `--help` prints cases without calling; `--probe-prod` public prod checks 
 - **CPX** (`cpx-survey`): app_id **35413** exists; the wall URL is real. **Yield has not flipped `/admin`** (waiting on Ethio to save postback).
 - **Stand by on live smoke.** Smoke only after Yield flips `cpx-survey`.
 - Do **not** invent or hardcode an `offers.` / `wall.` path. Do **not** smoke `https://www.cpx-research.com/`.
-- After the flip, re-run `--probe-prod` (should report FLIP DETECTED) then smoke with MD5 as `/api/postback` requires.
+- After the flip, re-run `--probe-prod` (should report FLIP DETECTED) then smoke. Official `secure_hash` is verified; missing HMAC `hash` must not 401.
 - `POSTBACK_SECRET` is already set. Also need `CPX_SECURE_HASH` for MD5.
 - **Hook ready ≠ earn-live.** WIP stays 2/3. Do not certify earn-live.
 - Freecash path + duplicate smoke is **not Yield** and **not earn-live**.

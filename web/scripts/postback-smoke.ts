@@ -32,9 +32,11 @@ import {
   firstAlias,
   isAllowedCpxWallHost,
   isCpxCreditSafe,
+  isCpxReversalStatus,
   isForbiddenProdSmokeTarget,
   isMarketingHomepageUrl,
   isYieldFlippedCpxWallUrl,
+  shouldSkipHmacForCpx,
   signCpxPostbackHash,
   signCpxWallHash,
   signPostbackUrl,
@@ -133,7 +135,8 @@ Cases:
   6. Bad hash → 401
   7. Admin last-7d funnel quoted as exact counts / fractions (never rounded up)
   8. Refuse marketing homepages (adgatemedia.com/, www.cpx-research.com/)
-  9. CPX MD5 hook: md5(trans_id-CPX_SECURE_HASH) fail-closed; earn-live NOT certified
+  9. CPX official secure_hash = md5(trans_id-appsecurehash); missing HMAC hash must not 401
+  10. CPX status=2 voids matching EARN (does not unwind REDEEM) — flagged gap if already spent
 
 Target network: CPX (${CPX_SLUG}). AdGate (${ADGATE_SLUG}) is stalled (under review).
 app_id ${CPX_APP_ID} exists; the wall is real. Yield has NOT flipped /admin
@@ -367,6 +370,16 @@ function offlineHmacCases(): CaseResult[] {
     pass: !missingTx.ok && missingTx.reason === "cpx trans_id missing",
     detail: missingTx.reason ?? "expected fail-closed",
   });
+  results.push({
+    name: "CPX skips HMAC when partner=cpx and hash missing",
+    pass: shouldSkipHmacForCpx("cpx", "") && !shouldSkipHmacForCpx("adgate", ""),
+    detail: "Ethio save without hash={secure_hash} must not HMAC-401",
+  });
+  results.push({
+    name: "CPX status=2 is reversal",
+    pass: isCpxReversalStatus("2") && !isCpxReversalStatus("1"),
+    detail: "status=2 chargeback; status=1 credit",
+  });
 
   return results;
 }
@@ -576,11 +589,25 @@ async function liveCases(baseUrl: string): Promise<CaseResult[]> {
     detail: `HTTP ${adgate.status} tx_id=${adgateTx} ledger=${adgateLedger?.id ?? "none"} status=${adgateLedger?.status ?? "none"}`,
   });
 
+  const cpxNoHmac = new URL(`${origin}/api/postback`);
+  cpxNoHmac.searchParams.set("secret", postbackSecret);
+  cpxNoHmac.searchParams.set("user_id", userId);
+  cpxNoHmac.searchParams.set("click_id", userId);
+  cpxNoHmac.searchParams.set("vp", "12");
+  cpxNoHmac.searchParams.set("partner", "cpx");
+  cpxNoHmac.searchParams.set("trans_id", `cpx-nohash-${Date.now()}`);
+  const cpxUnsigned = await fetchJson(cpxNoHmac.toString());
+  results.push({
+    name: "CPX partner without HMAC hash does not 401",
+    pass: cpxUnsigned.status === 200 && cpxUnsigned.json.ok === true,
+    detail: `HTTP ${cpxUnsigned.status} ok=${String(cpxUnsigned.json.ok)} — Ethio save without hash= must smoke after flip`,
+  });
+
   const cpxBad = await fetchJson(
     `${origin}/api/postback?secret=${encodeURIComponent(postbackSecret)}&user_id=${encodeURIComponent(userId)}&click_id=${encodeURIComponent(userId)}&vp=10&partner=cpx&trans_id=cpx-bad&secure_hash=deadbeef`,
   );
   results.push({
-    name: "CPX bad MD5 fail-closed (not earn-live)",
+    name: "CPX bad official secure_hash fail-closed",
     pass: cpxBad.status === 401 && cpxBad.json.error === "cpx_secure_hash_failed" && cpxBad.json.safe === false,
     detail: `HTTP ${cpxBad.status} error=${String(cpxBad.json.error ?? "")} reason=${String(cpxBad.json.reason ?? "")}`,
   });
@@ -588,10 +615,10 @@ async function liveCases(baseUrl: string): Promise<CaseResult[]> {
   const cpxSecret = firstCpxSecret();
   if (!cpxSecret) {
     results.push({
-      name: "CPX valid MD5 live credit",
+      name: "CPX valid official secure_hash live credit",
       pass: true,
       detail:
-        "SKIPPED — set CPX_SECURE_HASH locally to exercise the happy path. Hook is unit-tested. Earn-live not certified.",
+        "SKIPPED — set CPX_SECURE_HASH locally to exercise official secure_hash. Hook is unit-tested. Earn-live not certified.",
     });
   } else {
     const cpxTx = `cpx-smoke-${Date.now()}`;
@@ -603,13 +630,13 @@ async function liveCases(baseUrl: string): Promise<CaseResult[]> {
     cpxUrl.searchParams.set("vp", "25");
     cpxUrl.searchParams.set("partner", "cpx");
     cpxUrl.searchParams.set("trans_id", cpxTx);
-    cpxUrl.searchParams.set("hash", cpxHash);
+    cpxUrl.searchParams.set("secure_hash", cpxHash);
     const cpxOk = await fetchJson(cpxUrl.toString());
     const cpxLedger = await prisma.ledgerEntry.findFirst({
       where: { userId, note: { contains: `tx=${cpxTx}` } },
     });
     results.push({
-      name: "CPX valid MD5 live credit (localhost only)",
+      name: "CPX valid official secure_hash (localhost only)",
       pass:
         cpxOk.status === 200 &&
         cpxOk.json.ok === true &&
@@ -623,6 +650,17 @@ async function liveCases(baseUrl: string): Promise<CaseResult[]> {
       name: "CPX duplicate trans_id",
       pass: cpxDup.status === 200 && cpxDup.json.ok === true && cpxDup.json.duplicate === true,
       detail: `HTTP ${cpxDup.status} duplicate=${String(cpxDup.json.duplicate)}`,
+    });
+    const cpxRev = new URL(cpxUrl.toString());
+    cpxRev.searchParams.set("status", "2");
+    const cpxRevRes = await fetchJson(cpxRev.toString());
+    const cpxVoided = await prisma.ledgerEntry.findFirst({
+      where: { userId, note: { contains: `tx=${cpxTx}` } },
+    });
+    results.push({
+      name: "CPX status=2 voids matching EARN",
+      pass: cpxRevRes.status === 200 && cpxRevRes.json.reversed === true && cpxVoided?.status === "VOID",
+      detail: `HTTP ${cpxRevRes.status} reversed=${String(cpxRevRes.json.reversed)} status=${cpxVoided?.status ?? "none"} — does not unwind REDEEM`,
     });
   }
 
