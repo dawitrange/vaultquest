@@ -2,8 +2,9 @@
 
 import { AuthError } from "next-auth";
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
+import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
+import { z } from "zod";
 import { auth, signIn } from "@/auth";
 import { prisma } from "@/lib/db";
 import { sendPasswordResetEmail } from "@/lib/email";
@@ -13,7 +14,7 @@ import {
   giveawayPhase,
   isGiveawayOpen,
 } from "@/lib/giveaway";
-import { submitSignedOutGiveaway } from "@/lib/giveaway-registration";
+import { authenticateGiveawayEntrant, submitSignedOutGiveaway } from "@/lib/giveaway-registration";
 import { resetLinkForToken } from "@/lib/password-reset";
 import { PH_EVENTS, captureServerEvent } from "@/lib/posthog-server";
 
@@ -190,11 +191,12 @@ export async function enterGiveawayAction(
     }),
   ]);
 
+  let postSignInPath: Awaited<ReturnType<typeof authenticateGiveawayEntrant>>;
   try {
-    await signIn("credentials", {
+    postSignInPath = await authenticateGiveawayEntrant({
       email: registration.email,
-      password: registration.temporaryPassword,
-      redirectTo: "/giveaway?entered=1",
+      temporaryPassword: registration.temporaryPassword,
+      signIn,
     });
   } catch (err) {
     if (err instanceof AuthError) {
@@ -203,5 +205,5 @@ export async function enterGiveawayAction(
     throw err;
   }
 
-  return { ok: true };
+  redirect(postSignInPath);
 }

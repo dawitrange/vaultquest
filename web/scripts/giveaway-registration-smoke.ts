@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { compare } from "bcryptjs";
 import { ROBLOX_GIVEAWAY_SLUG } from "../src/lib/giveaway";
 import {
+  authenticateGiveawayEntrant,
+  GIVEAWAY_ENTRY_PATH,
   submitSignedOutGiveaway,
   type GiveawayRegistrationStore,
 } from "../src/lib/giveaway-registration";
@@ -95,6 +97,27 @@ async function main() {
   assert.ok(storedReset, "set-password token must be stored as a hash");
   assert.equal(storedReset.userId, created.userId);
   assert.equal(storedReset.expiresAt.getTime(), now + RESET_TOKEN_TTL_MS);
+
+  let signInCall:
+    | {
+        provider: "credentials";
+        options: { email: string; password: string; redirect: false };
+      }
+    | undefined;
+  const postSignInPath = await authenticateGiveawayEntrant({
+    email: created.email,
+    temporaryPassword: created.temporaryPassword,
+    async signIn(provider, options) {
+      signInCall = { provider, options };
+    },
+  });
+  assert.ok(signInCall, "credentials sign-in must run");
+  assert.equal(signInCall.provider, "credentials");
+  assert.equal(signInCall.options.redirect, false, "Auth.js must set the preview session without redirecting");
+  assert.equal("redirectTo" in signInCall.options, false, "Auth.js must not resolve a callback against AUTH_URL");
+  assert.equal(postSignInPath, GIVEAWAY_ENTRY_PATH);
+  assert.equal(new URL(postSignInPath, "https://vaultquest-pr-46.example").origin, "https://vaultquest-pr-46.example");
+  assert.equal(new URL(postSignInPath, "https://production.example").origin, "https://production.example");
 
   const existing = await submitSignedOutGiveaway(submission);
   assert.deepEqual(existing, { kind: "existing" });

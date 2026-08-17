@@ -3,6 +3,8 @@ import { hash } from "bcryptjs";
 import { z } from "zod";
 import { createResetToken, RESET_TOKEN_TTL_MS } from "@/lib/password-reset";
 
+export const GIVEAWAY_ENTRY_PATH = "/giveaway?entered=1";
+
 export type GiveawayRegistrationStore = {
   findUserIdByEmail(email: string): Promise<string | null>;
   createUserWithEntry(args: {
@@ -26,6 +28,26 @@ type GiveawayRegistrationResult =
       temporaryPassword: string;
       resetToken: string;
     };
+
+export async function authenticateGiveawayEntrant(args: {
+  email: string;
+  temporaryPassword: string;
+  signIn: (
+    provider: "credentials",
+    options: {
+      email: string;
+      password: string;
+      redirect: false;
+    },
+  ) => Promise<unknown>;
+}): Promise<typeof GIVEAWAY_ENTRY_PATH> {
+  await args.signIn("credentials", {
+    email: args.email,
+    password: args.temporaryPassword,
+    redirect: false,
+  });
+  return GIVEAWAY_ENTRY_PATH;
+}
 
 const registrationSchema = z.object({
   name: z.string().trim().min(1, "Enter your name").max(80),
