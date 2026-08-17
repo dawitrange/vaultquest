@@ -3,6 +3,7 @@
 import { AuthError } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { auth, signIn } from "@/auth";
 import { prisma } from "@/lib/db";
 import { sendPasswordResetEmail } from "@/lib/email";
@@ -27,6 +28,14 @@ function closedOrUpcomingError(): GiveawayFormState {
     return { error: `Entries open ${ROBLOX_GIVEAWAY_WINDOW_LABEL}.` };
   }
   return { error: `This giveaway closed ${ROBLOX_GIVEAWAY_WINDOW_LABEL}.` };
+}
+
+function isDuplicateEmailError(error: unknown): boolean {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") {
+    return false;
+  }
+  const target = error.meta?.target;
+  return Array.isArray(target) && target.includes("email");
 }
 
 async function upsertEntry(args: {
@@ -110,48 +119,55 @@ export async function enterGiveawayAction(
     };
   }
 
-  const registration = await submitSignedOutGiveaway({
-    campaignSlug: ROBLOX_GIVEAWAY_SLUG,
-    formData,
-    store: {
-      async findUserIdByEmail(email) {
-        const user = await prisma.user.findUnique({
-          where: { email },
-          select: { id: true },
-        });
-        return user?.id ?? null;
-      },
-      createUserWithEntry(args) {
-        return prisma.$transaction(async (tx) => {
-          const user = await tx.user.create({
-            data: {
-              email: args.email,
-              passwordHash: args.passwordHash,
-              name: args.name,
-              ageConfirmed: true,
-            },
-          });
-          await tx.giveawayEntry.create({
-            data: {
-              campaignSlug: args.campaignSlug,
-              userId: user.id,
-              name: args.name,
-              email: args.email,
-              reason: args.reason,
-            },
-          });
-          await tx.passwordResetToken.create({
-            data: {
-              userId: user.id,
-              tokenHash: args.resetTokenHash,
-              expiresAt: args.resetTokenExpiresAt,
-            },
-          });
-          return { userId: user.id };
-        });
-      },
-    },
-  });
+  const registration = await (async (): Promise<Awaited<ReturnType<typeof submitSignedOutGiveaway>>> => {
+    try {
+      return await submitSignedOutGiveaway({
+        campaignSlug: ROBLOX_GIVEAWAY_SLUG,
+        formData,
+        store: {
+          async findUserIdByEmail(email) {
+            const user = await prisma.user.findUnique({
+              where: { email },
+              select: { id: true },
+            });
+            return user?.id ?? null;
+          },
+          createUserWithEntry(args) {
+            return prisma.$transaction(async (tx) => {
+              const user = await tx.user.create({
+                data: {
+                  email: args.email,
+                  passwordHash: args.passwordHash,
+                  name: args.name,
+                  ageConfirmed: true,
+                },
+              });
+              await tx.giveawayEntry.create({
+                data: {
+                  campaignSlug: args.campaignSlug,
+                  userId: user.id,
+                  name: args.name,
+                  email: args.email,
+                  reason: args.reason,
+                },
+              });
+              await tx.passwordResetToken.create({
+                data: {
+                  userId: user.id,
+                  tokenHash: args.resetTokenHash,
+                  expiresAt: args.resetTokenExpiresAt,
+                },
+              });
+              return { userId: user.id };
+            });
+          },
+        },
+      });
+    } catch (error) {
+      if (isDuplicateEmailError(error)) return { kind: "existing" };
+      throw error;
+    }
+  })();
 
   if (registration.kind === "invalid") {
     return { error: registration.error };
@@ -162,15 +178,17 @@ export async function enterGiveawayAction(
     };
   }
 
-  await sendPasswordResetEmail({
-    to: registration.email,
-    resetUrl: resetLinkForToken(registration.resetToken),
-  });
-  await captureServerEvent(registration.userId, PH_EVENTS.signup, { source: "giveaway" });
-  await captureServerEvent(registration.userId, PH_EVENTS.giveaway_submit, {
-    campaign_slug: ROBLOX_GIVEAWAY_SLUG,
-    result: "created",
-  });
+  await Promise.allSettled([
+    sendPasswordResetEmail({
+      to: registration.email,
+      resetUrl: resetLinkForToken(registration.resetToken),
+    }),
+    captureServerEvent(registration.userId, PH_EVENTS.signup, { source: "giveaway" }),
+    captureServerEvent(registration.userId, PH_EVENTS.giveaway_submit, {
+      campaign_slug: ROBLOX_GIVEAWAY_SLUG,
+      result: "created",
+    }),
+  ]);
 
   try {
     await signIn("credentials", {
