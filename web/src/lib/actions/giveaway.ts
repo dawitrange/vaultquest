@@ -3,6 +3,7 @@
 import { AuthError } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { auth, signIn } from "@/auth";
@@ -14,7 +15,11 @@ import {
   giveawayPhase,
   isGiveawayOpen,
 } from "@/lib/giveaway";
-import { authenticateGiveawayEntrant, submitSignedOutGiveaway } from "@/lib/giveaway-registration";
+import {
+  authenticateGiveawayEntrant,
+  hasNewSessionCookie,
+  submitSignedOutGiveaway,
+} from "@/lib/giveaway-registration";
 import { resetLinkForToken } from "@/lib/password-reset";
 import { PH_EVENTS, captureServerEvent } from "@/lib/posthog-server";
 
@@ -191,6 +196,7 @@ export async function enterGiveawayAction(
     }),
   ]);
 
+  const cookiesBeforeSignIn = (await cookies()).getAll();
   let postSignInPath: Awaited<ReturnType<typeof authenticateGiveawayEntrant>>;
   try {
     postSignInPath = await authenticateGiveawayEntrant({
@@ -203,6 +209,10 @@ export async function enterGiveawayAction(
       return { error: "Entry saved, but sign-in failed. Use Sign in, then come back to /giveaway." };
     }
     throw err;
+  }
+  const cookiesAfterSignIn = (await cookies()).getAll();
+  if (!hasNewSessionCookie(cookiesBeforeSignIn, cookiesAfterSignIn)) {
+    return { error: "Entry saved, but sign-in failed. Use Sign in, then come back to /giveaway." };
   }
 
   redirect(postSignInPath);

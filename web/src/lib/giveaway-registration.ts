@@ -5,6 +5,21 @@ import { createResetToken, RESET_TOKEN_TTL_MS } from "@/lib/password-reset";
 
 export const GIVEAWAY_ENTRY_PATH = "/giveaway?entered=1";
 
+type CookieRecord = { name: string; value: string };
+
+function isSessionCookieName(name: string): boolean {
+  return /^(?:__Secure-)?authjs\.session-token(?:\.\d+)?$/.test(name);
+}
+
+export function hasNewSessionCookie(before: CookieRecord[], after: CookieRecord[]): boolean {
+  const previous = new Map(
+    before.filter((cookie) => isSessionCookieName(cookie.name)).map((cookie) => [cookie.name, cookie.value]),
+  );
+  return after.some(
+    (cookie) => isSessionCookieName(cookie.name) && cookie.value.length > 0 && previous.get(cookie.name) !== cookie.value,
+  );
+}
+
 export type GiveawayRegistrationStore = {
   findUserIdByEmail(email: string): Promise<string | null>;
   createUserWithEntry(args: {

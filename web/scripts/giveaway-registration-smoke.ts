@@ -4,6 +4,7 @@ import { ROBLOX_GIVEAWAY_SLUG } from "../src/lib/giveaway";
 import {
   authenticateGiveawayEntrant,
   GIVEAWAY_ENTRY_PATH,
+  hasNewSessionCookie,
   submitSignedOutGiveaway,
   type GiveawayRegistrationStore,
 } from "../src/lib/giveaway-registration";
@@ -118,6 +119,23 @@ async function main() {
   assert.equal(postSignInPath, GIVEAWAY_ENTRY_PATH);
   assert.equal(new URL(postSignInPath, "https://vaultquest-pr-46.example").origin, "https://vaultquest-pr-46.example");
   assert.equal(new URL(postSignInPath, "https://production.example").origin, "https://production.example");
+  assert.equal(hasNewSessionCookie([], []), false, "a resolved sign-in without a session cookie must not redirect");
+  assert.equal(
+    hasNewSessionCookie(
+      [{ name: "__Secure-authjs.session-token", value: "old-value" }],
+      [{ name: "__Secure-authjs.session-token", value: "old-value" }],
+    ),
+    false,
+    "an unchanged stale session cookie must not count as a new session",
+  );
+  assert.equal(
+    hasNewSessionCookie(
+      [{ name: "authjs.callback-url", value: "callback-value" }],
+      [{ name: "__Secure-authjs.session-token", value: "new-value" }],
+    ),
+    true,
+    "a newly written preview session cookie must allow the relative redirect",
+  );
 
   const existing = await submitSignedOutGiveaway(submission);
   assert.deepEqual(existing, { kind: "existing" });
