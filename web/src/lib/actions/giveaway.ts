@@ -1,24 +1,25 @@
 "use server";
 
-import { hash } from "bcryptjs";
 import { AuthError } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth, signIn } from "@/auth";
 import { prisma } from "@/lib/db";
+import { sendPasswordResetEmail } from "@/lib/email";
 import {
   ROBLOX_GIVEAWAY_SLUG,
   ROBLOX_GIVEAWAY_WINDOW_LABEL,
   giveawayPhase,
   isGiveawayOpen,
 } from "@/lib/giveaway";
+import { submitSignedOutGiveaway } from "@/lib/giveaway-registration";
+import { resetLinkForToken } from "@/lib/password-reset";
 import { PH_EVENTS, captureServerEvent } from "@/lib/posthog-server";
 
 export type GiveawayFormState = { error?: string; ok?: boolean; message?: string };
 
 const reasonSchema = z.string().trim().min(8, "Write a short reason (at least 8 characters)").max(500);
 const nameSchema = z.string().trim().min(1).max(80);
-const emailSchema = z.string().trim().email();
 
 function closedOrUpcomingError(): GiveawayFormState {
   const phase = giveawayPhase();
@@ -109,56 +110,72 @@ export async function enterGiveawayAction(
     };
   }
 
-  const parsed = z
-    .object({
-      name: nameSchema,
-      email: emailSchema,
-      password: z.string().min(8, "Password must be at least 8 characters"),
-    })
-    .safeParse({
-      name: formData.get("name"),
-      email: formData.get("email"),
-      password: formData.get("password"),
-    });
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  const registration = await submitSignedOutGiveaway({
+    campaignSlug: ROBLOX_GIVEAWAY_SLUG,
+    formData,
+    store: {
+      async findUserIdByEmail(email) {
+        const user = await prisma.user.findUnique({
+          where: { email },
+          select: { id: true },
+        });
+        return user?.id ?? null;
+      },
+      createUserWithEntry(args) {
+        return prisma.$transaction(async (tx) => {
+          const user = await tx.user.create({
+            data: {
+              email: args.email,
+              passwordHash: args.passwordHash,
+              name: args.name,
+              ageConfirmed: true,
+            },
+          });
+          await tx.giveawayEntry.create({
+            data: {
+              campaignSlug: args.campaignSlug,
+              userId: user.id,
+              name: args.name,
+              email: args.email,
+              reason: args.reason,
+            },
+          });
+          await tx.passwordResetToken.create({
+            data: {
+              userId: user.id,
+              tokenHash: args.resetTokenHash,
+              expiresAt: args.resetTokenExpiresAt,
+            },
+          });
+          return { userId: user.id };
+        });
+      },
+    },
+  });
+
+  if (registration.kind === "invalid") {
+    return { error: registration.error };
   }
-
-  const email = parsed.data.email.toLowerCase();
-  const existing = await prisma.user.findUnique({ where: { email } });
-
-  if (existing) {
+  if (registration.kind === "existing") {
     return {
       error: "An account with that email already exists. Sign in, then enter so we don't create a second account.",
     };
   }
 
-  const passwordHash = await hash(parsed.data.password, 12);
-  const user = await prisma.user.create({
-    data: {
-      email,
-      passwordHash,
-      name: parsed.data.name,
-      ageConfirmed: true,
-    },
+  await sendPasswordResetEmail({
+    to: registration.email,
+    resetUrl: resetLinkForToken(registration.resetToken),
   });
-
-  await upsertEntry({
-    userId: user.id,
-    name: parsed.data.name,
-    email,
-    reason: reasonParsed.data,
-  });
-  await captureServerEvent(user.id, PH_EVENTS.signup, { source: "giveaway" });
-  await captureServerEvent(user.id, PH_EVENTS.giveaway_submit, {
+  await captureServerEvent(registration.userId, PH_EVENTS.signup, { source: "giveaway" });
+  await captureServerEvent(registration.userId, PH_EVENTS.giveaway_submit, {
     campaign_slug: ROBLOX_GIVEAWAY_SLUG,
     result: "created",
   });
 
   try {
     await signIn("credentials", {
-      email,
-      password: parsed.data.password,
+      email: registration.email,
+      password: registration.temporaryPassword,
       redirectTo: "/giveaway?entered=1",
     });
   } catch (err) {
