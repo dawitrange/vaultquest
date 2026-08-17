@@ -39,35 +39,18 @@ export function GiveawayForm({
           Entering as <span className="text-[var(--vq-ink)]">{defaultEmail}</span>. Same account as /earn.
         </p>
       ) : (
-        <>
-          <label className="block text-sm">
-            <span className="text-[var(--vq-ink-muted)]">Email</span>
-            <input
-              type="email"
-              name="email"
-              required
-              defaultValue={defaultEmail}
-              disabled={disabled}
-              autoComplete="email"
-              className="mt-1 w-full rounded-md border border-[var(--vq-border)] bg-[var(--vq-bg-sunken)] px-3 py-2 text-[var(--vq-ink)] disabled:opacity-50"
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="text-[var(--vq-ink-muted)]">Password</span>
-            <input
-              type="password"
-              name="password"
-              required
-              disabled={disabled}
-              autoComplete="new-password"
-              minLength={8}
-              className="mt-1 w-full rounded-md border border-[var(--vq-border)] bg-[var(--vq-bg-sunken)] px-3 py-2 text-[var(--vq-ink)] disabled:opacity-50"
-            />
-            <span className="mt-1 block text-xs text-[var(--vq-ink-faint)]">
-              Creates a VaultQuest account so you do not type this email twice on /earn.
-            </span>
-          </label>
-        </>
+        <label className="block text-sm">
+          <span className="text-[var(--vq-ink-muted)]">Email</span>
+          <input
+            type="email"
+            name="email"
+            required
+            defaultValue={defaultEmail}
+            disabled={disabled}
+            autoComplete="email"
+            className="mt-1 w-full rounded-md border border-[var(--vq-border)] bg-[var(--vq-bg-sunken)] px-3 py-2 text-[var(--vq-ink)] disabled:opacity-50"
+          />
+        </label>
       )}
       <label className="block text-sm">
         <span className="text-[var(--vq-ink-muted)]">Why you should get it</span>
@@ -94,7 +77,7 @@ export function GiveawayForm({
         disabled={disabled || pending}
         className="rounded-md bg-[var(--vq-teal)] px-4 py-2.5 text-sm font-semibold text-[var(--vq-bg-deep)] disabled:opacity-60"
       >
-        {pending ? "Saving…" : signedIn ? "Enter giveaway" : "Create account and enter"}
+        {pending ? "Saving…" : "Enter giveaway"}
       </button>
       {signedIn ? null : (
         <p className="text-sm text-[var(--vq-ink-muted)]">
