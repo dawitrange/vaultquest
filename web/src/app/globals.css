@@ -1692,30 +1692,6 @@ code,
   gap: 0.45rem;
 }
 
-.vq-faceoff__quests-tab {
-  position: fixed;
-  z-index: 55;
-  top: 4.4rem;
-  left: 1rem;
-  display: inline-flex;
-  min-height: 44px;
-  align-items: center;
-  border: 1px solid var(--vq-border-strong);
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
-  background: rgba(6, 21, 29, 0.94);
-  color: var(--vq-teal);
-  font-family: var(--vq-font-mono);
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.vq-faceoff__quests-tab:hover,
-.vq-faceoff__quests-tab:focus-visible {
-  border-color: var(--vq-teal);
-}
-
 .vq-faceoff__header-controls .vq-faceoff__help-icon {
   position: static;
 }

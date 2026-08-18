@@ -23,10 +23,3 @@ export function shouldRenderVaultBluffFaceoff(
       phase === "MATCH_COMPLETE")
   );
 }
-
-export function shouldShowFaceoffQuests(
-  faceoffEnabled: boolean,
-  cpxServable: boolean,
-) {
-  return faceoffEnabled && cpxServable;
-}

@@ -2,17 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { FaceoffQuestsTab } from "@/components/play/FaceoffQuestsTab";
 import { VaultBluffGame } from "@/components/play/VaultBluffGame";
-import {
-  getRotatedEarnRecommendation,
-  isSlugServable,
-} from "@/lib/affiliates";
-import { CPX_SLUG } from "@/lib/postback";
-import {
-  isVaultBluffFaceoffEnabled,
-  shouldShowFaceoffQuests,
-} from "@/lib/vault-bluff/faceoff-presentation";
+import { getRotatedEarnRecommendation } from "@/lib/affiliates";
+import { isVaultBluffFaceoffEnabled } from "@/lib/vault-bluff/faceoff-presentation";
 import { getPlayProgress } from "@/lib/vault-bluff/service";
 
 export const metadata: Metadata = {
@@ -24,9 +16,6 @@ export const metadata: Metadata = {
 export default async function VaultBluffPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login?from=play");
-  const faceoffEnabled = isVaultBluffFaceoffEnabled(
-    process.env.VAULT_BLUFF_FACEOFF_UI,
-  );
 
   const progress = await getPlayProgress(session.user.id);
   if (!progress.schemaReady) {
@@ -55,12 +44,6 @@ export default async function VaultBluffPage() {
       </div>
     );
   }
-  const cpxQuestReady = faceoffEnabled
-    ? shouldShowFaceoffQuests(
-        faceoffEnabled,
-        await isSlugServable(CPX_SLUG),
-      )
-    : false;
   const earnQuest =
     progress.completedMatches >= 3
       ? await getRotatedEarnRecommendation({
@@ -70,27 +53,24 @@ export default async function VaultBluffPage() {
       : null;
 
   return (
-    <>
-      {cpxQuestReady ? (
-        <FaceoffQuestsTab />
-      ) : null}
-      <VaultBluffGame
-        faceoffEnabled={faceoffEnabled}
-        completedMatches={progress.completedMatches}
-        initialTotalXp={progress.totalXp}
-        earnQuest={
-          earnQuest
-            ? {
-                id: earnQuest.id,
-                title: earnQuest.title,
-                vpReward: earnQuest.vpReward,
-                effort: earnQuest.effort,
-                timeHint: earnQuest.timeHint,
-                holdDays: earnQuest.holdDays ?? 3,
-              }
-            : null
-        }
-      />
-    </>
+    <VaultBluffGame
+      faceoffEnabled={isVaultBluffFaceoffEnabled(
+        process.env.VAULT_BLUFF_FACEOFF_UI,
+      )}
+      completedMatches={progress.completedMatches}
+      initialTotalXp={progress.totalXp}
+      earnQuest={
+        earnQuest
+          ? {
+              id: earnQuest.id,
+              title: earnQuest.title,
+              vpReward: earnQuest.vpReward,
+              effort: earnQuest.effort,
+              timeHint: earnQuest.timeHint,
+              holdDays: earnQuest.holdDays ?? 3,
+            }
+          : null
+      }
+    />
   );
 }
