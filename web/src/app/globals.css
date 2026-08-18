@@ -2105,9 +2105,22 @@ code,
 @media (max-width: 380px) {
   .vq-faceoff {
     padding-top: 4.25rem;
+    padding-bottom: calc(10rem + env(safe-area-inset-bottom));
   }
 
   .vq-faceoff__opponent {
     margin-inline: auto;
+  }
+
+  .vq-faceoff__question-chips {
+    position: fixed;
+    z-index: 20;
+    right: 1rem;
+    bottom: 0;
+    left: 1rem;
+    width: auto;
+    margin: 0;
+    padding: 0.75rem 0 calc(0.75rem + env(safe-area-inset-bottom));
+    background: rgba(6, 21, 29, 0.98);
   }
 }

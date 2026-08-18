@@ -237,12 +237,10 @@ function DecisionTable({
         {selectedPrompt ? (
           <>
             <div className="vq-faceoff__selected-prompt">
-              <span
-                className="vq-faceoff__chip"
-                aria-label={`Chosen question: ${selectedPrompt.label}`}
-              >
+              <p className="vq-faceoff__chip">
+                <span className="sr-only">Chosen question: </span>
                 {selectedPrompt.label}
-              </span>
+              </p>
             </div>
             <div className="vq-faceoff__choices" aria-label="Choose a case">
               <button
@@ -432,8 +430,13 @@ function Progress({
         ))}
         <small className="vq-faceoff__round-count">{round.number}/4</small>
       </div>
-      <p aria-label={`Score ${humanScore} to ${botScore}`}>
-        {humanScore} - {botScore}
+      <p>
+        <span className="sr-only">
+          Score {humanScore} to {botScore}
+        </span>
+        <span aria-hidden="true">
+          {humanScore} - {botScore}
+        </span>
       </p>
     </div>
   );
