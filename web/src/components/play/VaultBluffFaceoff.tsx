@@ -62,15 +62,24 @@ export function VaultBluffFaceoff({
 
   return (
     <main className="vq-faceoff" aria-labelledby="faceoff-opponent">
-      <button
-        type="button"
-        aria-label="How to play"
-        aria-pressed={hintVisible}
-        onClick={() => setHintVisible(true)}
-        className="vq-faceoff__help-icon"
-      >
-        ?
-      </button>
+      <div className="vq-faceoff__header-controls">
+        <button
+          type="button"
+          aria-label="How to play"
+          aria-pressed={hintVisible}
+          onClick={() => setHintVisible(true)}
+          className="vq-faceoff__help-icon"
+        >
+          ?
+        </button>
+        <span
+          role="img"
+          aria-label="Settings are not part of this QA cycle"
+          className="vq-faceoff__gear-icon"
+        >
+          <GearIcon />
+        </span>
+      </div>
 
       <section className="vq-faceoff__table" aria-label="Vault Bluff table">
         <BotMark />
@@ -153,9 +162,19 @@ function DecisionTable({
 }) {
   return (
     <>
-      <div className="vq-faceoff__cases" aria-label="Two sealed cases">
-        <CaseCard label="Yours" tone="human" />
-        <CaseCard label={personaName} tone="bot" />
+      {hintVisible ? (
+        <div id="faceoff-hint" className="vq-faceoff__hint">
+          <p>Take the shiny case.</p>
+          <button type="button" onClick={onSkip}>
+            Skip
+          </button>
+        </div>
+      ) : null}
+      <div className="vq-faceoff__arena">
+        <div className="vq-faceoff__cases" aria-label="Two sealed cases">
+          <CaseCard label="A · Yours" tone="human" />
+          <CaseCard label={`B · ${personaName}`} tone="bot" />
+        </div>
       </div>
       <div className="vq-faceoff__choices" aria-label="Choose a case">
         <button
@@ -175,14 +194,6 @@ function DecisionTable({
           Take
         </button>
       </div>
-      {hintVisible ? (
-        <div id="faceoff-hint" className="vq-faceoff__hint">
-          <p>Keep or take.</p>
-          <button type="button" onClick={onSkip}>
-            Skip
-          </button>
-        </div>
-      ) : null}
       <Progress
         round={round}
         humanScore={humanScore}
@@ -216,17 +227,19 @@ function RevealTable({
   const lines = revealLines(round);
   return (
     <>
-      <div className="vq-faceoff__cases vq-faceoff__cases--reveal">
-        <CaseCard
-          label="Yours"
-          tone="human"
-          status={round.keyCase === "CASE_A" ? "Key" : "Sealed"}
-        />
-        <CaseCard
-          label={personaName}
-          tone="bot"
-          status={round.keyCase === "CASE_B" ? "Key" : "Sealed"}
-        />
+      <div className="vq-faceoff__arena vq-faceoff__arena--reveal">
+        <div className="vq-faceoff__cases vq-faceoff__cases--reveal">
+          <CaseCard
+            label="A · Yours"
+            tone="human"
+            status={round.keyCase === "CASE_A" ? "Key" : "Sealed"}
+          />
+          <CaseCard
+            label={`B · ${personaName}`}
+            tone="bot"
+            status={round.keyCase === "CASE_B" ? "Key" : "Sealed"}
+          />
+        </div>
       </div>
       <dl className="vq-faceoff__reveal">
         {lines.map((line) => (
@@ -327,6 +340,7 @@ function Progress({
             }
           />
         ))}
+        <small className="vq-faceoff__round-count">{round.number}/4</small>
       </div>
       <p>
         {humanScore} - {botScore}
@@ -381,5 +395,19 @@ function BotMark() {
     <span className="vq-faceoff__bot-mark" aria-hidden="true">
       <span />
     </span>
+  );
+}
+
+function GearIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <path
+        d="M12 8.4a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 0 0 0-7.2Zm7 4.8 1.4 1.1-1.7 3-1.7-.7a8 8 0 0 1-2 1.2l-.3 1.8h-3.4l-.3-1.8a8 8 0 0 1-2-1.2l-1.7.7-1.7-3L7 13.2a8 8 0 0 1 0-2.4L5.6 9.7l1.7-3 1.7.7a8 8 0 0 1 2-1.2l.3-1.8h3.4l.3 1.8a8 8 0 0 1 2 1.2l1.7-.7 1.7 3-1.4 1.1a8 8 0 0 1 0 2.4Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

@@ -80,14 +80,17 @@ test("Faceoff decision renders the quiet play-immediately table", () => {
 
   assert.equal(html.match(/\(bot\)/gi)?.length, 1);
   assert.match(html, />Showboat</);
-  assert.match(html, />Yours</);
+  assert.match(html, />A · Yours</);
+  assert.match(html, />B · Showboat</);
   assert.equal(html.match(/>Sealed</g)?.length, 2);
   assert.match(html, />Keep</);
   assert.match(html, />Take</);
-  assert.match(html, />Keep or take\.</);
+  assert.match(html, />Take the shiny case\.</);
   assert.match(html, />Skip</);
   assert.match(html, /aria-label="How to play"/);
+  assert.match(html, /aria-label="Settings are not part of this QA cycle"/);
   assert.match(html, /aria-label="Round 2 of 4"/);
+  assert.match(html, />2\/4</);
   assert.match(html, />1 - 1</);
   assert.doesNotMatch(html, /Signal|Outcome|Rematch|Explore|Done/);
 });
