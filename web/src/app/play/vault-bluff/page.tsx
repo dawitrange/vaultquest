@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { VaultBluffGame } from "@/components/play/VaultBluffGame";
 import { getRotatedEarnRecommendation } from "@/lib/affiliates";
+import { isVaultBluffFaceoffEnabled } from "@/lib/vault-bluff/faceoff-presentation";
 import { getPlayProgress } from "@/lib/vault-bluff/service";
 
 export const metadata: Metadata = {
@@ -53,6 +54,7 @@ export default async function VaultBluffPage() {
 
   return (
     <VaultBluffGame
+      faceoffEnabled={isVaultBluffFaceoffEnabled()}
       completedMatches={progress.completedMatches}
       initialTotalXp={progress.totalXp}
       earnQuest={

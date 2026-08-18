@@ -23,8 +23,12 @@ import {
   type Recommendation,
   type SafeSessionDto,
 } from "@/lib/vault-bluff/types";
+import {
+  VaultBluffFaceoff,
+  VaultBluffFaceoffLoading,
+} from "./VaultBluffFaceoff";
 
-type ApiResult = {
+export type ApiResult = {
   id: string;
   version: number;
   session: SafeSessionDto;
@@ -34,7 +38,7 @@ type ApiResult = {
     | null;
 };
 
-type ClientCommand =
+export type ClientCommand =
   | { kind: "ACK_INSPECTION" }
   | { kind: "ASK_QUESTION"; question: (typeof QUESTIONS)[number] }
   | {
@@ -52,7 +56,7 @@ type RetryIntent =
   | { kind: "start"; persona?: PersonaId; rematch: boolean }
   | { kind: "action"; command: ClientCommand };
 
-type EarnQuest = {
+export type EarnQuest = {
   id: string;
   title: string;
   vpReward: number;
@@ -82,10 +86,12 @@ const ANSWER_LABELS: Record<ApprovedAnswer, string> = {
 };
 
 export function VaultBluffGame({
+  faceoffEnabled = false,
   completedMatches,
   initialTotalXp,
   earnQuest,
 }: {
+  faceoffEnabled?: boolean;
   completedMatches: number;
   initialTotalXp: number;
   earnQuest: EarnQuest | null;
@@ -105,6 +111,7 @@ export function VaultBluffGame({
   const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestInFlightRef = useRef(false);
   const continuePointerArmedRef = useRef(false);
+  const faceoffAutoStartAttemptedRef = useRef(false);
 
   function acceptGameResult(result: ApiResult) {
     if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
@@ -251,6 +258,24 @@ export function VaultBluffGame({
     }
   }
 
+  useEffect(() => {
+    if (
+      !faceoffEnabled ||
+      loading ||
+      pending ||
+      game ||
+      error ||
+      faceoffAutoStartAttemptedRef.current
+    ) {
+      return;
+    }
+    faceoffAutoStartAttemptedRef.current = true;
+    void start();
+    // The controller owns the one-time Faceoff bootstrap. The action function
+    // intentionally stays outside the dependency list so a render cannot retry it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error, faceoffEnabled, game, loading, pending]);
+
   function retryLast() {
     if (!retryIntent) return;
     if (retryIntent.kind === "restore") {
@@ -290,6 +315,9 @@ export function VaultBluffGame({
   }
 
   if (loading) {
+    if (faceoffEnabled) {
+      return <VaultBluffFaceoffLoading message="Restoring your match..." />;
+    }
     return (
       <GameShell>
         <p role="status" className="text-[var(--vq-ink-muted)]">Restoring your match...</p>
@@ -298,6 +326,15 @@ export function VaultBluffGame({
   }
 
   if (!game) {
+    if (faceoffEnabled) {
+      return (
+        <VaultBluffFaceoffLoading
+          message={error ?? "Preparing the BOT table..."}
+          retrying={pending}
+          onRetry={retryIntent ? retryLast : null}
+        />
+      );
+    }
     return (
       <GameShell>
         <section aria-labelledby="choose-persona">
@@ -353,6 +390,44 @@ export function VaultBluffGame({
   const persona = PERSONAS[game.session.persona];
   const activeQuestion =
     round.humanRole === "KEEPER" ? round.questions[round.responses.length] : undefined;
+
+  if (faceoffEnabled) {
+    return (
+      <VaultBluffFaceoff
+        game={game}
+        completedMatches={completedMatches}
+        initialTotalXp={initialTotalXp}
+        earnQuest={earnQuest}
+        activeQuestion={activeQuestion}
+        answer={answer}
+        confidence={confidence}
+        recommendation={recommendation}
+        pending={pending}
+        pendingAction={pendingAction}
+        revealReady={revealReady}
+        roundControlsReady={roundControlsReady}
+        forfeitConfirmOpen={forfeitConfirmOpen}
+        error={error}
+        retryAvailable={Boolean(retryIntent)}
+        onAnswerChange={setAnswer}
+        onConfidenceChange={setConfidence}
+        onRecommendationChange={setRecommendation}
+        onKeeperResponseSubmit={submitKeeperResponse}
+        onAction={(command) => void act(command)}
+        onRematch={() => void start(game.session.persona, true)}
+        onNewBot={() => void start()}
+        onRetry={retryLast}
+        onForfeitConfirmChange={setForfeitConfirmOpen}
+        onContinue={continueFromReveal}
+        onContinuePointerDown={() => {
+          continuePointerArmedRef.current = revealReady && !pending;
+        }}
+        onContinuePointerReset={() => {
+          continuePointerArmedRef.current = false;
+        }}
+      />
+    );
+  }
 
   return (
     <GameShell>
