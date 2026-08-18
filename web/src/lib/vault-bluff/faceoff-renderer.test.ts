@@ -6,13 +6,13 @@ import { VaultBluffFaceoff } from "@/components/play/VaultBluffFaceoff";
 import type { ApiResult } from "@/components/play/VaultBluffGame";
 import type { SafeRoundDto } from "./types";
 
-function gameResult(complete = false): ApiResult {
+function decisionGame(): ApiResult {
   const currentRound: SafeRoundDto = {
-    number: complete ? 4 : 2,
+    number: 2,
     humanRole: "CHOOSER",
     humanCase: "CASE_A",
     botCase: "CASE_B",
-    phase: complete ? "MATCH_COMPLETE" : "CHOOSER_DECISION",
+    phase: "CHOOSER_DECISION",
     questions: ["KEY_INSIDE_YOUR_CASE", "HOW_CONFIDENT_ARE_YOU"],
     responses: [
       {
@@ -28,12 +28,11 @@ function gameResult(complete = false): ApiResult {
         recommendation: "TAKE",
       },
     ],
-    choice: complete ? "TAKE" : null,
-    winner: complete ? "HUMAN" : null,
+    choice: null,
+    winner: null,
     startedAt: "2026-08-18T00:00:00.000Z",
     deadlineAt: "2026-08-18T00:01:00.000Z",
-    resolvedAt: complete ? "2026-08-18T00:00:10.000Z" : null,
-    ...(complete ? { keyCase: "CASE_B" } : {}),
+    resolvedAt: null,
   };
 
   return {
@@ -46,68 +45,42 @@ function gameResult(complete = false): ApiResult {
       persona: "SHOWBOAT",
       rounds: [currentRound],
       currentRound,
-      humanScore: complete ? 3 : 1,
+      humanScore: 1,
       botScore: 1,
-      completed: complete,
+      completed: false,
       forfeited: false,
-      xpAwarded: complete ? 40 : 0,
+      xpAwarded: 0,
     },
   };
 }
 
-function renderFaceoff(game: ApiResult) {
-  return renderToStaticMarkup(
+test("Faceoff renders only the quiet play-immediately table", () => {
+  const html = renderToStaticMarkup(
     createElement(VaultBluffFaceoff, {
-      game,
-      initialTotalXp: 0,
-      activeQuestion: undefined,
-      answer: null,
-      confidence: "UNSURE",
-      recommendation: "KEEP",
+      game: decisionGame(),
       pending: false,
-      pendingAction: null,
-      revealReady: true,
-      roundControlsReady: true,
-      forfeitConfirmOpen: false,
       error: null,
       retryAvailable: false,
-      onAnswerChange: () => undefined,
-      onConfidenceChange: () => undefined,
-      onRecommendationChange: () => undefined,
-      onKeeperResponseSubmit: (event) => event.preventDefault(),
       onAction: () => undefined,
-      onRematch: () => undefined,
-      onNewBot: () => undefined,
       onRetry: () => undefined,
-      onForfeitConfirmChange: () => undefined,
-      onContinue: () => undefined,
-      onContinuePointerDown: () => undefined,
-      onContinuePointerReset: () => undefined,
     }),
   );
-}
-
-test("Faceoff board keeps one bot mark and truthful finite progress", () => {
-  const html = renderFaceoff(gameResult());
-  const mainBoard = html.match(/<main[\s\S]*<\/main>/)?.[0];
 
   assert.equal(html.match(/\(bot\)/gi)?.length, 1);
-  assert.match(html, /Round 2 of 4/);
-  assert.match(html, /Keep Case A · K/);
-  assert.match(html, /Take Case B · T/);
-  assert.ok(mainBoard);
-  assert.doesNotMatch(mainBoard, /href="\/earn"|\/api\/go\//);
-  assert.doesNotMatch(mainBoard, /Tell strength/);
-  assert.doesNotMatch(mainBoard, /Dramatization|Always a BOT|no live player/i);
-});
+  assert.match(html, />Showboat</);
+  assert.match(html, />Yours</);
+  assert.equal(html.match(/>Sealed</g)?.length, 2);
+  assert.match(html, />Keep</);
+  assert.match(html, />Take</);
+  assert.match(html, />Keep or take\.</);
+  assert.match(html, />Skip</);
+  assert.match(html, /aria-label="How to play"/);
+  assert.match(html, /aria-label="Round 2 of 4"/);
+  assert.match(html, />1 - 1</);
 
-test("Faceoff match result renders four equal explicit next actions", () => {
-  const html = renderFaceoff(gameResult(true));
-
-  for (const label of ["Rematch", "New BOT", "Explore VaultQuest", "Done"]) {
-    assert.match(html, new RegExp(`>${label}<`));
-  }
-  assert.match(html, /href="\/earn"/);
-  assert.doesNotMatch(html, /\/api\/go\/|\bVP\b/);
-  assert.doesNotMatch(html, /Instant rematch/);
+  assert.doesNotMatch(
+    html,
+    /Tell strength|Match settings|BOT signal|Outcome|Rematch|New BOT|Explore|Done/,
+  );
+  assert.doesNotMatch(html, /href="\/earn"|\/api\/go\/|\bVP\b/);
 });

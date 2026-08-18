@@ -10,6 +10,7 @@ import {
 } from "react";
 import { captureClientEvent, PH_EVENTS } from "@/lib/posthog-client";
 import { canSubmitRevealContinue } from "@/lib/vault-bluff/interaction-guards";
+import { shouldRenderVaultBluffFaceoff } from "@/lib/vault-bluff/faceoff-presentation";
 import { PERSONAS } from "@/lib/vault-bluff/personas";
 import { parseKeeperResponseForm } from "@/lib/vault-bluff/response-form";
 import {
@@ -391,38 +392,15 @@ export function VaultBluffGame({
   const activeQuestion =
     round.humanRole === "KEEPER" ? round.questions[round.responses.length] : undefined;
 
-  if (faceoffEnabled) {
+  if (shouldRenderVaultBluffFaceoff(faceoffEnabled, round.phase)) {
     return (
       <VaultBluffFaceoff
         game={game}
-        initialTotalXp={initialTotalXp}
-        activeQuestion={activeQuestion}
-        answer={answer}
-        confidence={confidence}
-        recommendation={recommendation}
         pending={pending}
-        pendingAction={pendingAction}
-        revealReady={revealReady}
-        roundControlsReady={roundControlsReady}
-        forfeitConfirmOpen={forfeitConfirmOpen}
         error={error}
         retryAvailable={Boolean(retryIntent)}
-        onAnswerChange={setAnswer}
-        onConfidenceChange={setConfidence}
-        onRecommendationChange={setRecommendation}
-        onKeeperResponseSubmit={submitKeeperResponse}
         onAction={(command) => void act(command)}
-        onRematch={() => void start(game.session.persona, true)}
-        onNewBot={() => void start()}
         onRetry={retryLast}
-        onForfeitConfirmChange={setForfeitConfirmOpen}
-        onContinue={continueFromReveal}
-        onContinuePointerDown={() => {
-          continuePointerArmedRef.current = revealReady && !pending;
-        }}
-        onContinuePointerReset={() => {
-          continuePointerArmedRef.current = false;
-        }}
       />
     );
   }
