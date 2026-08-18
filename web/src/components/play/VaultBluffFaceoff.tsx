@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type MouseEventHandler } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type MouseEventHandler,
+} from "react";
 import {
   VAULT_BLUFF_FACEOFF_PROMPTS,
   type VaultBluffFaceoffPrompt,
@@ -69,6 +74,9 @@ export function VaultBluffFaceoff({
     roundNumber: number;
     prompt: VaultBluffFaceoffPrompt;
   } | null>(null);
+  const [controlNotice, setControlNotice] = useState<
+    "help" | "settings" | null
+  >(null);
   const persona = PERSONAS[game.session.persona];
   const round = game.session.currentRound;
   const selectedPrompt =
@@ -79,20 +87,43 @@ export function VaultBluffFaceoff({
   return (
     <main className="vq-faceoff" aria-labelledby="faceoff-opponent">
       <div className="vq-faceoff__header-controls">
-        <span
-          role="img"
+        <button
+          type="button"
           aria-label="How to play"
+          aria-expanded={controlNotice === "help"}
+          aria-controls="faceoff-control-notice"
+          onClick={() =>
+            setControlNotice((current) => (current === "help" ? null : "help"))
+          }
           className="vq-faceoff__help-icon"
         >
           ?
-        </span>
-        <span
-          role="img"
-          aria-label="Settings are not part of this QA cycle"
+        </button>
+        <button
+          type="button"
+          aria-label="Settings"
+          aria-expanded={controlNotice === "settings"}
+          aria-controls="faceoff-control-notice"
+          onClick={() =>
+            setControlNotice((current) =>
+              current === "settings" ? null : "settings",
+            )
+          }
           className="vq-faceoff__gear-icon"
         >
           <GearIcon />
-        </span>
+        </button>
+        {controlNotice ? (
+          <p
+            id="faceoff-control-notice"
+            role="status"
+            className="vq-faceoff__control-notice"
+          >
+            {controlNotice === "help"
+              ? "Ask one question. Then Keep or Take."
+              : "Game settings are fixed for Faceoff."}
+          </p>
+        ) : null}
       </div>
 
       <section className="vq-faceoff__table" aria-label="Vault Bluff table">
@@ -188,6 +219,12 @@ function DecisionTable({
   onChoice: (choice: Choice) => void;
   onPrompt: (prompt: VaultBluffFaceoffPrompt) => void;
 }) {
+  const keepChoiceRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (selectedPrompt) keepChoiceRef.current?.focus();
+  }, [selectedPrompt]);
+
   return (
     <>
       <div className="vq-faceoff__arena">
@@ -200,17 +237,16 @@ function DecisionTable({
         {selectedPrompt ? (
           <>
             <div className="vq-faceoff__selected-prompt">
-              <button
-                type="button"
-                aria-pressed="true"
-                disabled
+              <span
                 className="vq-faceoff__chip"
+                aria-label={`Chosen question: ${selectedPrompt.label}`}
               >
                 {selectedPrompt.label}
-              </button>
+              </span>
             </div>
             <div className="vq-faceoff__choices" aria-label="Choose a case">
               <button
+                ref={keepChoiceRef}
                 type="button"
                 disabled={pending}
                 onClick={() => onChoice("KEEP")}
@@ -237,7 +273,6 @@ function DecisionTable({
                 key={prompt.id}
                 type="button"
                 disabled={pending}
-                aria-pressed="false"
                 className="vq-faceoff__chip"
                 onClick={() => onPrompt(prompt)}
               >
@@ -373,18 +408,18 @@ function Progress({
   result?: boolean;
 }) {
   return (
-    <div
-      className="vq-faceoff__progress"
-      data-result={result}
-      role="progressbar"
-      aria-label={`Round ${round.number} of 4`}
-      aria-valuemin={1}
-      aria-valuemax={4}
-      aria-valuenow={round.number}
-    >
-      <div className="vq-faceoff__pips" aria-hidden="true">
+    <div className="vq-faceoff__progress" data-result={result}>
+      <div
+        className="vq-faceoff__pips"
+        role="progressbar"
+        aria-label={`Round ${round.number} of 4`}
+        aria-valuemin={1}
+        aria-valuemax={4}
+        aria-valuenow={round.number}
+      >
         {[1, 2, 3, 4].map((roundNumber) => (
           <span
+            aria-hidden="true"
             key={roundNumber}
             data-state={
               round.phase === "MATCH_COMPLETE" || roundNumber < round.number
@@ -397,7 +432,7 @@ function Progress({
         ))}
         <small className="vq-faceoff__round-count">{round.number}/4</small>
       </div>
-      <p>
+      <p aria-label={`Score ${humanScore} to ${botScore}`}>
         {humanScore} - {botScore}
       </p>
     </div>

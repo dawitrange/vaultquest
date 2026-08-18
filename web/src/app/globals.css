@@ -1706,6 +1706,27 @@ code,
   color: var(--vq-warn);
 }
 
+.vq-faceoff__gear-icon:hover,
+.vq-faceoff__gear-icon:focus-visible {
+  border-color: var(--vq-warn);
+  background: rgba(224, 179, 90, 0.08);
+}
+
+.vq-faceoff__control-notice {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  width: min(16rem, calc(100vw - 2rem));
+  border: 1px solid var(--vq-border-strong);
+  border-radius: 8px;
+  padding: 0.7rem 0.8rem;
+  background: rgba(6, 21, 29, 0.98);
+  color: var(--vq-ink-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  text-align: left;
+}
+
 .vq-faceoff__table {
   width: min(100%, 58rem);
 }
@@ -1990,7 +2011,9 @@ code,
 }
 
 .vq-faceoff__selected-prompt .vq-faceoff__chip {
+  display: inline-flex;
   min-height: 28px;
+  align-items: center;
   border-color: var(--vq-teal);
   border-radius: 999px;
   background: rgba(45, 212, 191, 0.08);
@@ -2018,7 +2041,7 @@ code,
   }
 
   .vq-faceoff__arena {
-    height: 35rem;
+    height: clamp(24rem, 58dvh, 35rem);
     margin-top: -0.25rem;
   }
 
@@ -2051,7 +2074,7 @@ code,
   }
 
   .vq-faceoff__chip {
-    min-height: 34px;
+    min-height: 44px;
     padding-block: 0.3rem;
   }
 
@@ -2060,11 +2083,13 @@ code,
   }
 
   .vq-faceoff__choices {
-    position: static;
+    position: sticky;
+    z-index: 10;
+    bottom: 0;
     width: 100%;
     margin: 0;
-    padding: 0;
-    background: transparent;
+    padding: 0.75rem 0 calc(0.75rem + env(safe-area-inset-bottom));
+    background: rgba(6, 21, 29, 0.96);
   }
 
   .vq-faceoff__choice {
@@ -2074,5 +2099,15 @@ code,
 
   .vq-faceoff__arena--reveal {
     height: 17rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .vq-faceoff {
+    padding-top: 4.25rem;
+  }
+
+  .vq-faceoff__opponent {
+    margin-inline: auto;
   }
 }

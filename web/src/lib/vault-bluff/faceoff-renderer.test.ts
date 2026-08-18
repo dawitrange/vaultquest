@@ -105,9 +105,11 @@ test("Faceoff decision renders the ask-once table", () => {
   assert.doesNotMatch(html, />Keep</);
   assert.doesNotMatch(html, />Take</);
   assert.doesNotMatch(html, /Take the shiny case|Skip/);
-  assert.match(html, /aria-label="How to play"/);
-  assert.match(html, /aria-label="Settings are not part of this QA cycle"/);
+  assert.match(html, /<button[^>]+aria-label="How to play"/);
+  assert.match(html, /<button[^>]+aria-label="Settings"/);
+  assert.doesNotMatch(html, /aria-pressed/);
   assert.match(html, /aria-label="Round 2 of 4"/);
+  assert.match(html, /aria-label="Score 1 to 1"/);
   assert.match(html, />2\/4</);
   assert.match(html, />1 - 1</);
   assert.doesNotMatch(html, /Signal|Outcome|Rematch|Explore|Done/);
