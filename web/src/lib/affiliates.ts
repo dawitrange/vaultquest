@@ -1,6 +1,12 @@
 import type { AffiliateCategory, AffiliateHealth, AffiliateLink as DbLink } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { GAMEHAG_REFERRAL_URL, GAMEHAG_SLUG, isExactGamehagReferralUrl, isMarketingHomepageUrl } from "@/lib/postback";
+import {
+  CPX_SLUG,
+  GAMEHAG_REFERRAL_URL,
+  GAMEHAG_SLUG,
+  isExactGamehagReferralUrl,
+  isMarketingHomepageUrl,
+} from "@/lib/postback";
 
 export { GAMEHAG_REFERRAL_URL, GAMEHAG_SLUG };
 
@@ -22,6 +28,7 @@ export type Quest = {
 };
 
 export const GAMEHAG_QUEST_ID = "q-gamehag";
+export const CPX_SURVEY_QUEST_ID = "q-surveys";
 
 export const QUESTS: Quest[] = [
   {
@@ -47,7 +54,7 @@ export const QUESTS: Quest[] = [
     holdDays: 5,
   },
   {
-    id: "q-surveys",
+    id: CPX_SURVEY_QUEST_ID,
     title: "Survey wall",
     description: "Share opinions when surveys are available. Availability varies by country.",
     effort: "Low",
@@ -55,6 +62,7 @@ export const QUESTS: Quest[] = [
     vpReward: 80,
     category: "survey_wall",
     holdDays: 3,
+    pinSlug: CPX_SLUG,
   },
   {
     id: "q-play",

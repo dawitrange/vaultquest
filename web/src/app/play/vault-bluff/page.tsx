@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { FaceoffQuestsTab } from "@/components/play/FaceoffQuestsTab";
 import { VaultBluffGame } from "@/components/play/VaultBluffGame";
 import { getRotatedEarnRecommendation } from "@/lib/affiliates";
 import { isVaultBluffFaceoffEnabled } from "@/lib/vault-bluff/faceoff-presentation";
@@ -16,6 +17,9 @@ export const metadata: Metadata = {
 export default async function VaultBluffPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login?from=play");
+  const faceoffEnabled = isVaultBluffFaceoffEnabled(
+    process.env.VAULT_BLUFF_FACEOFF_UI,
+  );
 
   const progress = await getPlayProgress(session.user.id);
   if (!progress.schemaReady) {
@@ -53,24 +57,27 @@ export default async function VaultBluffPage() {
       : null;
 
   return (
-    <VaultBluffGame
-      faceoffEnabled={isVaultBluffFaceoffEnabled(
-        process.env.VAULT_BLUFF_FACEOFF_UI,
-      )}
-      completedMatches={progress.completedMatches}
-      initialTotalXp={progress.totalXp}
-      earnQuest={
-        earnQuest
-          ? {
-              id: earnQuest.id,
-              title: earnQuest.title,
-              vpReward: earnQuest.vpReward,
-              effort: earnQuest.effort,
-              timeHint: earnQuest.timeHint,
-              holdDays: earnQuest.holdDays ?? 3,
-            }
-          : null
-      }
-    />
+    <>
+      {faceoffEnabled ? (
+        <FaceoffQuestsTab />
+      ) : null}
+      <VaultBluffGame
+        faceoffEnabled={faceoffEnabled}
+        completedMatches={progress.completedMatches}
+        initialTotalXp={progress.totalXp}
+        earnQuest={
+          earnQuest
+            ? {
+                id: earnQuest.id,
+                title: earnQuest.title,
+                vpReward: earnQuest.vpReward,
+                effort: earnQuest.effort,
+                timeHint: earnQuest.timeHint,
+                holdDays: earnQuest.holdDays ?? 3,
+              }
+            : null
+        }
+      />
+    </>
   );
 }
