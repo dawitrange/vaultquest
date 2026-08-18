@@ -395,9 +395,7 @@ export function VaultBluffGame({
     return (
       <VaultBluffFaceoff
         game={game}
-        completedMatches={completedMatches}
         initialTotalXp={initialTotalXp}
-        earnQuest={earnQuest}
         activeQuestion={activeQuestion}
         answer={answer}
         confidence={confidence}

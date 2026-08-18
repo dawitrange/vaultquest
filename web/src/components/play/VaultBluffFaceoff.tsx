@@ -13,7 +13,6 @@ import {
   VAULT_BLUFF_ROUND_COUNT,
 } from "@/lib/vault-bluff/faceoff-presentation";
 import { PERSONAS } from "@/lib/vault-bluff/personas";
-import { captureClientEvent, PH_EVENTS } from "@/lib/posthog-client";
 import {
   APPROVED_ANSWERS,
   QUESTION_LABELS,
@@ -27,14 +26,11 @@ import {
 import type {
   ApiResult,
   ClientCommand,
-  EarnQuest,
 } from "./VaultBluffGame";
 
 type FaceoffProps = {
   game: ApiResult;
-  completedMatches: number;
   initialTotalXp: number;
-  earnQuest: EarnQuest | null;
   activeQuestion: QuestionId | undefined;
   answer: ApprovedAnswer | null;
   confidence: Confidence;
@@ -478,51 +474,12 @@ function MatchComplete(props: FaceoffProps) {
           Done
         </Link>
       </div>
-      <EarnRecommendation earnQuest={props.earnQuest} />
       <p className="mt-3 text-xs text-[var(--vq-ink-faint)]">
         +{game.session.xpAwarded} XP ·{" "}
         {props.initialTotalXp + game.session.xpAwarded} total
       </p>
       <RewardsOff />
     </section>
-  );
-}
-
-function EarnRecommendation({ earnQuest }: { earnQuest: EarnQuest | null }) {
-  return (
-    <aside className="mt-4 rounded-[10px] border border-[var(--vq-info)] bg-[var(--vq-bg-raised)] p-4">
-      <p className="text-xs uppercase tracking-wider text-[var(--vq-info)]">
-        Explore · after match only
-      </p>
-      {earnQuest ? (
-        <>
-          <h3 className="mt-1 font-semibold">{earnQuest.title}</h3>
-          <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
-            {earnQuest.vpReward} VP · {earnQuest.effort} · {earnQuest.timeHint}
-          </p>
-          <p className="mt-2 text-xs text-[var(--vq-ink-faint)]">
-            Optional. Clicking pays nothing.
-          </p>
-          <a
-            href={`/api/go/${earnQuest.id}`}
-            onClick={() =>
-              captureClientEvent(PH_EVENTS.vault_bluff_earn_clicked, {
-                quest_id: earnQuest.id,
-                vp: earnQuest.vpReward,
-                hold_days: earnQuest.holdDays,
-              })
-            }
-            className="mt-3 inline-flex min-h-11 items-center rounded-md border border-[var(--vq-border-strong)] px-4 py-2 text-sm font-semibold"
-          >
-            Explore quest
-          </a>
-        </>
-      ) : (
-        <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
-          The match is over. Explore VaultQuest or choose Done.
-        </p>
-      )}
-    </aside>
   );
 }
 

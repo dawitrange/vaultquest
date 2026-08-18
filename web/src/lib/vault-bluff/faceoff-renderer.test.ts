@@ -59,9 +59,7 @@ function renderFaceoff(game: ApiResult) {
   return renderToStaticMarkup(
     createElement(VaultBluffFaceoff, {
       game,
-      completedMatches: 0,
       initialTotalXp: 0,
-      earnQuest: null,
       activeQuestion: undefined,
       answer: null,
       confidence: "UNSURE",
@@ -98,6 +96,7 @@ test("Faceoff board keeps one bot mark and truthful finite progress", () => {
   assert.match(html, /Keep Case A · K/);
   assert.match(html, /Take Case B · T/);
   assert.ok(mainBoard);
+  assert.doesNotMatch(mainBoard, /href="\/earn"|\/api\/go\//);
   assert.doesNotMatch(mainBoard, /Tell strength/);
   assert.doesNotMatch(mainBoard, /Dramatization|Always a BOT|no live player/i);
 });
@@ -108,5 +107,7 @@ test("Faceoff match result renders four equal explicit next actions", () => {
   for (const label of ["Rematch", "New BOT", "Explore VaultQuest", "Done"]) {
     assert.match(html, new RegExp(`>${label}<`));
   }
+  assert.match(html, /href="\/earn"/);
+  assert.doesNotMatch(html, /\/api\/go\/|\bVP\b/);
   assert.doesNotMatch(html, /Instant rematch/);
 });
