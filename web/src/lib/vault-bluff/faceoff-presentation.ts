@@ -6,7 +6,7 @@ export const VAULT_BLUFF_FACEOFF_PROMPTS = [
   {
     id: "HEAVY",
     label: "Heavy?",
-    line: "The shine's a bluff.",
+    line: "The shine’s a bluff.",
   },
   {
     id: "BOTH_SEALED",
