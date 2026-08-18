@@ -35,8 +35,6 @@ export function VaultBluffFaceoffLoading({
   retrying?: boolean;
   onRetry?: (() => void) | null;
 }) {
-  const keepCommand = faceoffTableCommand(round, "KEEP");
-  const takeCommand = faceoffTableCommand(round, "TAKE");
   return (
     <main className="vq-faceoff vq-faceoff--loading">
       <p role="status">{message}</p>
@@ -167,6 +165,8 @@ function DecisionTable({
   onAction: (command: ClientCommand) => void;
   onSkip: () => void;
 }) {
+  const keepCommand = faceoffTableCommand(round, "KEEP");
+  const takeCommand = faceoffTableCommand(round, "TAKE");
   return (
     <>
       {hintVisible ? (

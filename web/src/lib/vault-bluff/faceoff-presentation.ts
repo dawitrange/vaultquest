@@ -1,6 +1,14 @@
 import type { RoundPhase } from "./types";
 
 export const VAULT_BLUFF_ROUND_COUNT = 4;
+const FACE_OFF_PHASES: readonly RoundPhase[] = [
+  "KEEPER_INSPECTION",
+  "KEEPER_RESPONSE",
+  "CHOOSER_QUESTIONING",
+  "CHOOSER_DECISION",
+  "ROUND_REVEAL",
+  "MATCH_COMPLETE",
+];
 
 export function isVaultBluffFaceoffEnabled(
   value: string | undefined,
@@ -15,7 +23,7 @@ export function roundProgressLabel(roundNumber: number) {
 
 export function shouldRenderVaultBluffFaceoff(
   enabled: boolean,
-  _phase: RoundPhase,
+  phase: RoundPhase,
 ) {
-  return enabled;
+  return enabled && FACE_OFF_PHASES.includes(phase);
 }
