@@ -94,7 +94,7 @@ test("Faceoff decision renders the ask-once table", () => {
   const html = renderPhase("CHOOSER_DECISION");
 
   assert.equal(html.match(/\(bot\)/gi)?.length, 1);
-  assert.match(html, />Showboat</);
+  assert.match(html, />Showboat <small>\(bot\)<\/small>/);
   assert.match(html, /aria-label="Case A, yours, sealed"/);
   assert.match(html, /aria-label="Case B, Showboat, sealed"/);
   assert.equal(html.match(/class="sr-only">Sealed</g)?.length, 2);
