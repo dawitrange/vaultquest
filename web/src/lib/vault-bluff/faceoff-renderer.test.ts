@@ -161,30 +161,32 @@ test("Faceoff table verbs dispatch legal commands for each V1 phase", () => {
   });
 });
 
-test("one Faceoff table click can run legal commands through round resolution", () => {
-  let state = startMatch({
-    seed: "faceoff-one-click",
-    persona: "SHOWBOAT",
-    now: "2026-08-18T00:00:00.000Z",
-  });
-  let commandCount = 0;
+test("one Keep or Take click can run legal commands through round resolution", () => {
+  for (const choice of ["KEEP", "TAKE"] as const) {
+    let state = startMatch({
+      seed: `faceoff-one-click-${choice.toLowerCase()}`,
+      persona: "SHOWBOAT",
+      now: "2026-08-18T00:00:00.000Z",
+    });
+    let commandCount = 0;
 
-  while (state.rounds.at(-1)?.phase !== "ROUND_REVEAL") {
-    const command = faceoffTableCommand(
-      toSafeSessionDto(state).currentRound,
-      "KEEP",
-    );
-    assert.ok(command);
-    commandCount += 1;
-    state = applyCommand(
-      state,
-      withNow(command, `2026-08-18T00:00:0${commandCount}.000Z`),
-    );
-    assert.ok(commandCount <= 4);
+    while (state.rounds.at(-1)?.phase !== "ROUND_REVEAL") {
+      const command = faceoffTableCommand(
+        toSafeSessionDto(state).currentRound,
+        choice,
+      );
+      assert.ok(command);
+      commandCount += 1;
+      state = applyCommand(
+        state,
+        withNow(command, `2026-08-18T00:00:0${commandCount}.000Z`),
+      );
+      assert.ok(commandCount <= 4);
+    }
+
+    assert.equal(state.rounds.at(-1)?.phase, "ROUND_REVEAL");
+    assert.equal(commandCount, 3);
   }
-
-  assert.equal(state.rounds.at(-1)?.phase, "ROUND_REVEAL");
-  assert.equal(commandCount, 3);
 });
 
 test("Faceoff reveal contains only signal, read, outcome, and Continue", () => {
