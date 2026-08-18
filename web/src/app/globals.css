@@ -2112,6 +2112,22 @@ code,
     margin-inline: auto;
   }
 
+  .vq-faceoff__arena {
+    height: 20rem;
+  }
+
+  .vq-faceoff__arena .vq-faceoff__cases {
+    top: 12%;
+  }
+
+  .vq-faceoff__decision-footer .vq-faceoff__progress {
+    position: fixed;
+    z-index: 21;
+    right: 1rem;
+    bottom: calc(16.5rem + env(safe-area-inset-bottom));
+    left: 1rem;
+  }
+
   .vq-faceoff__question-chips {
     position: fixed;
     z-index: 20;
@@ -2122,5 +2138,27 @@ code,
     margin: 0;
     padding: 0.75rem 0;
     background: rgba(6, 21, 29, 0.98);
+  }
+
+  .vq-faceoff__decision-footer:has(.vq-faceoff__choices)
+    .vq-faceoff__progress {
+    bottom: calc(13rem + env(safe-area-inset-bottom));
+  }
+
+  .vq-faceoff__selected-prompt {
+    position: fixed;
+    z-index: 21;
+    right: 1rem;
+    bottom: calc(11.5rem + env(safe-area-inset-bottom));
+    left: 1rem;
+  }
+
+  .vq-faceoff__choices {
+    position: fixed;
+    z-index: 20;
+    right: 1rem;
+    bottom: calc(5.75rem + env(safe-area-inset-bottom));
+    left: 1rem;
+    width: auto;
   }
 }
