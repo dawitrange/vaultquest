@@ -13,34 +13,43 @@ export function roundProgressLabel(roundNumber: number) {
 }
 
 export function revealSequence(round: SafeRoundDto) {
+  const lastResponse = round.responses.at(-1);
   const botSignal =
     round.humanRole === "KEEPER"
       ? round.choice === "KEEP"
-        ? "BOT kept Case B."
+        ? "Kept Case B."
         : round.choice === "TAKE"
-          ? "BOT took Case A."
-          : "BOT decision unavailable."
-      : round.responses.length > 0
-        ? "BOT responses locked."
-        : "BOT signal recorded.";
+          ? "Took Case A."
+          : "No signal."
+      : lastResponse
+        ? humanizeAnswer(lastResponse.answer)
+        : "No signal.";
   const yourRead =
     round.humanRole === "CHOOSER"
       ? round.choice === "KEEP"
-        ? "You kept Case A."
+        ? "Keep"
         : round.choice === "TAKE"
-          ? "You took Case B."
-          : "Your choice is unavailable."
-      : "Your structured responses were locked.";
+          ? "Take"
+          : "No choice."
+      : "Responses locked.";
   const outcome =
     round.winner === "HUMAN"
-      ? "You earned the round point."
+      ? "You win this round."
       : round.winner === "BOT"
-        ? "BOT earned the round point."
-        : "Round outcome unavailable.";
+        ? "Bot wins this round."
+        : "No outcome.";
 
   return [
     { label: "BOT signal", body: botSignal },
     { label: "Your read", body: yourRead },
     { label: "Outcome", body: outcome },
   ] as const;
+}
+
+function humanizeAnswer(answer: string) {
+  return answer
+    .toLowerCase()
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }

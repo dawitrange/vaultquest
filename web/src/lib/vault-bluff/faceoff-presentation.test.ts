@@ -53,5 +53,6 @@ test("reveal presentation keeps BOT signal, read, and outcome in order", () => {
     revealSequence(round).map((step) => step.label),
     ["BOT signal", "Your read", "Outcome"],
   );
-  assert.equal(revealSequence(round)[1].body, "You took Case B.");
+  assert.equal(revealSequence(round)[1].body, "Take");
+  assert.equal(revealSequence(round)[2].body, "You win this round.");
 });

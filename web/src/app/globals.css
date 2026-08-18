@@ -1084,3 +1084,214 @@ code,
     animation: none !important;
   }
 }
+
+/* Bot Faceoff QA shell: one table, one hint, finite rounds. */
+.vq-faceoff__grid {
+  grid-template-columns: 9rem minmax(0, 1fr);
+  max-width: 92rem;
+}
+
+.vq-faceoff__main {
+  min-height: calc(100dvh - 6rem);
+}
+
+.vq-faceoff__topbar {
+  align-items: center;
+}
+
+.vq-faceoff__help-button {
+  display: inline-flex;
+  min-width: 7rem;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--vq-teal);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  color: var(--vq-teal);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.vq-faceoff__opponent {
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+}
+
+.vq-faceoff__bot-mark {
+  width: 48px;
+  height: 48px;
+  flex-basis: 48px;
+}
+
+.vq-faceoff__bot-mark::before {
+  border-right-width: 15px;
+  border-bottom-width: 26px;
+  border-left-width: 15px;
+}
+
+.vq-faceoff__round {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-block: 1px solid var(--vq-border);
+  font-family: var(--vq-font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.vq-faceoff__score {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 0.75rem;
+  font-family: var(--vq-font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.vq-faceoff__hint {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  border: 1px solid var(--vq-teal);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  color: var(--vq-ink-muted);
+  font-size: 0.8rem;
+}
+
+.vq-faceoff__hint span {
+  margin-right: 0.5rem;
+  color: var(--vq-teal);
+  font-family: var(--vq-font-mono);
+  text-transform: uppercase;
+}
+
+.vq-faceoff__hint button {
+  min-width: 56px;
+  min-height: 44px;
+  border: 1px solid var(--vq-border-strong);
+  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+}
+
+.vq-faceoff__choices {
+  margin-top: 0.75rem;
+}
+
+.vq-faceoff__case {
+  min-height: 120px;
+}
+
+.vq-faceoff__reveal-panel {
+  margin-top: 0.75rem;
+  border: 1px solid var(--vq-teal);
+  border-radius: 10px;
+  padding: 1rem;
+  background: rgba(12, 35, 46, 0.78);
+}
+
+.vq-faceoff__reveal-steps {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 0.75rem;
+}
+
+.vq-faceoff__why {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  border: 1px solid var(--vq-info);
+  border-radius: 8px;
+  padding: 0.65rem 0.8rem;
+  color: var(--vq-ink-muted);
+  font-size: 0.8rem;
+}
+
+.vq-faceoff__why span {
+  color: var(--vq-info);
+  font-weight: 700;
+}
+
+.vq-faceoff__continue {
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.75rem;
+  border: 1px solid var(--vq-border-strong);
+  border-radius: 8px;
+  background: var(--vq-bg-raised);
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .vq-faceoff__grid {
+    display: block;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+
+  .vq-faceoff__main {
+    min-height: calc(100dvh - 4rem);
+  }
+
+  .vq-faceoff__topbar {
+    position: sticky;
+    z-index: 20;
+    top: 0;
+    padding-block: 0.5rem;
+    background: rgba(6, 22, 30, 0.97);
+  }
+
+  .vq-faceoff__help-button {
+    min-width: 6rem;
+  }
+
+  .vq-faceoff__opponent {
+    align-items: center;
+  }
+
+  .vq-faceoff__round {
+    margin-inline: -1rem;
+    padding-inline: 1rem;
+  }
+
+  .vq-faceoff__choices {
+    position: sticky;
+    z-index: 25;
+    right: auto;
+    bottom: 0;
+    left: auto;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    padding: 0.7rem 0 calc(0.7rem + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--vq-border);
+  }
+
+  .vq-faceoff__choice {
+    min-height: 56px;
+  }
+
+  .vq-faceoff__hint {
+    align-items: flex-start;
+  }
+
+  .vq-faceoff__hint p {
+    padding-block: 0.55rem;
+  }
+
+  .vq-faceoff__reveal-panel {
+    padding: 0.9rem;
+  }
+}

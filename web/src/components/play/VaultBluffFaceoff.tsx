@@ -2,8 +2,6 @@
 
 import Link from "next/link";
 import {
-  useEffect,
-  useRef,
   useState,
   type FormEventHandler,
   type MouseEventHandler,
@@ -62,8 +60,6 @@ type FaceoffProps = {
   onContinuePointerReset: () => void;
 };
 
-type TellStrength = "NONE" | "SUBTLE" | "NOTICEABLE";
-
 export function VaultBluffFaceoffLoading({
   message,
   retrying = false,
@@ -82,9 +78,6 @@ export function VaultBluffFaceoffLoading({
         <p role="status" className="mt-3 text-[var(--vq-ink-muted)]">
           {message}
         </p>
-        <p className="mt-2 text-sm text-[var(--vq-ink-faint)]">
-          BOT / scripted opponent
-        </p>
         {onRetry ? (
           <button
             type="button"
@@ -101,31 +94,13 @@ export function VaultBluffFaceoffLoading({
 }
 
 export function VaultBluffFaceoff(props: FaceoffProps) {
-  const {
-    game,
-    pending,
-    forfeitConfirmOpen,
-    onForfeitConfirmChange,
-  } = props;
+  const { game, pending, forfeitConfirmOpen, onForfeitConfirmChange } = props;
   const round = game.session.currentRound;
   const persona = PERSONAS[game.session.persona];
-  const gearRef = useRef<HTMLButtonElement>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [tellStrength, setTellStrength] = useState<TellStrength>("SUBTLE");
-  const [reducedMotion, setReducedMotion] = useState(false);
-  const [compactRail, setCompactRail] = useState(true);
-
-  function closeSettings() {
-    setSettingsOpen(false);
-    queueMicrotask(() => gearRef.current?.focus());
-  }
+  const [hintVisible, setHintVisible] = useState(true);
 
   return (
-    <div
-      className={`vq-faceoff min-h-[calc(100dvh-4rem)] overflow-x-clip ${
-        reducedMotion ? "vq-faceoff--reduced-motion" : ""
-      } ${compactRail ? "vq-faceoff--compact-rail" : ""}`}
-    >
+    <div className="vq-faceoff min-h-[calc(100dvh-4rem)] overflow-x-clip">
       <div className="vq-faceoff__grid">
         <nav className="vq-faceoff__rail" aria-label="Vault Bluff sections">
           <p className="font-[family-name:var(--vq-font-mono)] text-[0.65rem] uppercase tracking-wider text-[var(--vq-teal)]">
@@ -137,9 +112,6 @@ export function VaultBluffFaceoff(props: FaceoffProps) {
           <span className="vq-faceoff__rail-link vq-faceoff__rail-link--active">
             Bot Faceoff
           </span>
-          <a href="#faceoff-help" className="vq-faceoff__rail-link">
-            How to play
-          </a>
           <p className="mt-auto pt-8 font-[family-name:var(--vq-font-mono)] text-[0.65rem] uppercase text-[var(--vq-warn)]">
             Game rewards are off
           </p>
@@ -155,23 +127,16 @@ export function VaultBluffFaceoff(props: FaceoffProps) {
                 BOT Faceoff
               </p>
               <h1 className="mt-1 hidden font-[family-name:var(--vq-font-display)] text-2xl font-semibold md:block">
-                Make the call across the table.
+                {faceoffHeading(round.phase)}
               </h1>
             </div>
-            <div className="flex items-center gap-2">
-              <RoundBadge roundNumber={round.number} />
-              <button
-                ref={gearRef}
-                type="button"
-                aria-label="Open match settings"
-                aria-haspopup="dialog"
-                aria-expanded={settingsOpen}
-                onClick={() => setSettingsOpen(true)}
-                className="vq-faceoff__gear"
-              >
-                <GearIcon />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setHintVisible(true)}
+              className="vq-faceoff__help-button"
+            >
+              How to play
+            </button>
           </div>
 
           <section
@@ -179,39 +144,24 @@ export function VaultBluffFaceoff(props: FaceoffProps) {
             aria-label={`${persona.name}, BOT scripted opponent`}
           >
             <BotMark />
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="rounded-full bg-[var(--vq-warn)] px-3 py-1 font-[family-name:var(--vq-font-mono)] text-xs font-bold text-[var(--vq-bg-deep)]">
-                  BOT
-                </span>
-                <h2 className="font-[family-name:var(--vq-font-display)] text-2xl font-semibold uppercase">
-                  {persona.name}
-                </h2>
-              </div>
-              <p className="mt-1 text-sm text-[var(--vq-ink-muted)]">
-                Scripted opponent · {persona.style}
-              </p>
-              <p className="mt-3 inline-flex min-h-11 items-center rounded-md border border-[var(--vq-warn)]/60 bg-[var(--vq-bg-sunken)] px-4 font-[family-name:var(--vq-font-mono)] text-xs uppercase text-[var(--vq-warn)]">
-                BOT / scripted opponent
-              </p>
-            </div>
-            <div className="ml-auto hidden text-right text-xs text-[var(--vq-ink-faint)] lg:block">
-              <p className="font-semibold text-[var(--vq-warn)]">Always a BOT</p>
-              <p className="mt-1">No live player · no chat</p>
-            </div>
+            <h2 className="font-[family-name:var(--vq-font-display)] text-2xl font-semibold uppercase">
+              {persona.name} <span className="text-[var(--vq-warn)]">(bot)</span>
+            </h2>
           </section>
 
-          <DramatizationStrip round={round} />
+          <RoundRail currentRound={round.number} />
+          {hintVisible &&
+          round.phase !== "ROUND_REVEAL" &&
+          round.phase !== "MATCH_COMPLETE" ? (
+            <Hint onSkip={() => setHintVisible(false)} />
+          ) : null}
 
           <FaceoffStage {...props} />
 
-          <ScoreRail
-            humanScore={game.session.humanScore}
-            botScore={game.session.botScore}
-            roundNumber={round.number}
-          />
-
-          <RewardsOff />
+          {round.phase !== "ROUND_REVEAL" &&
+          round.phase !== "MATCH_COMPLETE" ? (
+            <RewardsOff />
+          ) : null}
 
           {!game.session.completed ? (
             <ForfeitOptions
@@ -223,26 +173,10 @@ export function VaultBluffFaceoff(props: FaceoffProps) {
           ) : null}
 
           <p className="mt-4 text-xs text-[var(--vq-ink-faint)]">
-            Server-authoritative · structured responses only · no cash or random prize
+            Four rounds. No timer. No automatic rematch.
           </p>
         </main>
-
-        <ContextHelp round={round} />
       </div>
-
-      <MobileNav />
-
-      {settingsOpen ? (
-        <FaceoffSettings
-          tellStrength={tellStrength}
-          reducedMotion={reducedMotion}
-          compactRail={compactRail}
-          onTellStrengthChange={setTellStrength}
-          onReducedMotionChange={setReducedMotion}
-          onCompactRailChange={setCompactRail}
-          onClose={closeSettings}
-        />
-      ) : null}
     </div>
   );
 }
@@ -303,14 +237,14 @@ function FaceoffStage(props: FaceoffProps) {
             </div>
           </fieldset>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <FaceoffSelect
+            <CompactChoiceGroup
               label="Confidence"
               name="confidence"
               value={props.confidence}
               options={["CERTAIN", "UNSURE", "GUESSING"]}
               onChange={(value) => props.onConfidenceChange(value as Confidence)}
             />
-            <FaceoffSelect
+            <CompactChoiceGroup
               label="Recommendation"
               name="recommendation"
               value={props.recommendation}
@@ -382,13 +316,13 @@ function FaceoffStage(props: FaceoffProps) {
 
       {round.phase === "CHOOSER_DECISION" ? (
         <section aria-labelledby="faceoff-decision-title">
-          <StageHeading
-            eyebrow="Your read"
-            title="Keep Case A or take Case B?"
-            description="Both cases stay sealed until your choice is locked."
-            id="faceoff-decision-title"
+          <h2 id="faceoff-decision-title" className="sr-only">
+            Keep Case A or take Case B
+          </h2>
+          <ScoreLine
+            humanScore={game.session.humanScore}
+            botScore={game.session.botScore}
           />
-          <SignalHistory round={round} />
           <FaceoffCases round={round} />
           <div className="vq-faceoff__choices">
             <button
@@ -451,29 +385,36 @@ function RevealStage(props: FaceoffProps & { round: SafeRoundDto }) {
 
   return (
     <section aria-labelledby="faceoff-reveal-title">
-      <StageHeading
-        eyebrow="Reveal"
-        title="Read locked. Key revealed."
-        description="The sequence stays visible so the result cannot replace the read."
-        id="faceoff-reveal-title"
+      <h2 id="faceoff-reveal-title" className="sr-only">
+        Round reveal
+      </h2>
+      <ScoreLine
+        humanScore={props.game.session.humanScore}
+        botScore={props.game.session.botScore}
       />
-      <ol className="mt-5 grid gap-3 lg:grid-cols-3" aria-label="Reveal sequence">
-        {steps.map((step, index) => (
-          <li
-            key={step.label}
-            className="rounded-[10px] border border-[var(--vq-border-strong)] bg-[var(--vq-bg-sunken)] p-4"
-          >
-            <p className="font-[family-name:var(--vq-font-mono)] text-xs uppercase text-[var(--vq-teal)]">
-              {index + 1}. {step.label}
-            </p>
-            <p className="mt-2 text-sm">{step.body}</p>
-          </li>
-        ))}
-      </ol>
       <FaceoffCases round={round} revealed />
+      <div className="vq-faceoff__reveal-panel">
+        <p className="font-[family-name:var(--vq-font-mono)] text-xs uppercase text-[var(--vq-teal)]">
+          Reveal
+        </p>
+        <ol className="vq-faceoff__reveal-steps" aria-label="Reveal sequence">
+          {steps.map((step) => (
+            <li key={step.label}>
+              <p className="font-[family-name:var(--vq-font-mono)] text-xs uppercase text-[var(--vq-warn)]">
+                {step.label}
+              </p>
+              <p className="mt-1 font-semibold">{step.body}</p>
+            </li>
+          ))}
+        </ol>
+        <p className="vq-faceoff__why">
+          <span>Why?</span>
+          Hints are imperfect, never proof.
+        </p>
+      </div>
       {!revealReady ? (
         <p role="status" className="mt-4 text-sm text-[var(--vq-ink-muted)]">
-          Continue unlocks after the result settles.
+          Continue is held briefly.
         </p>
       ) : null}
       <button
@@ -483,7 +424,7 @@ function RevealStage(props: FaceoffProps & { round: SafeRoundDto }) {
         onPointerCancel={props.onContinuePointerReset}
         onPointerLeave={props.onContinuePointerReset}
         onClick={props.onContinue}
-        className="vq-faceoff__primary mt-4"
+        className="vq-faceoff__continue"
       >
         {!revealReady
           ? "Continue available shortly"
@@ -497,33 +438,19 @@ function RevealStage(props: FaceoffProps & { round: SafeRoundDto }) {
 
 function MatchComplete(props: FaceoffProps) {
   const { game, pending } = props;
-  const result = game.session.forfeited
-    ? "Match forfeited"
-    : game.session.humanScore > game.session.botScore
-      ? "Match won"
-      : game.session.humanScore < game.session.botScore
-        ? "Match lost"
-        : "Match tied";
 
   return (
     <section aria-labelledby="faceoff-match-title">
-      <StageHeading
-        eyebrow="Match result"
-        title={result}
-        description={`Final score: you ${game.session.humanScore}, BOT ${game.session.botScore}.`}
-        id="faceoff-match-title"
+      <h2 id="faceoff-match-title" className="sr-only">
+        Match complete
+      </h2>
+      <ScoreLine
+        humanScore={game.session.humanScore}
+        botScore={game.session.botScore}
       />
-      <div className="mt-5 rounded-[10px] border border-[var(--vq-border)] bg-[var(--vq-bg-sunken)] p-4">
-        <p className="text-xs uppercase tracking-wider text-[var(--vq-ink-faint)]">
-          XP earned
-        </p>
-        <p className="mt-1 font-[family-name:var(--vq-font-mono)] text-2xl text-[var(--vq-teal)]">
-          +{game.session.xpAwarded} XP
-        </p>
-        <p className="mt-1 text-xs text-[var(--vq-ink-muted)]">
-          {props.initialTotalXp + game.session.xpAwarded} total XP
-        </p>
-      </div>
+      <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
+        4 of 4 complete · no automatic rematch
+      </p>
       <div
         className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4"
         aria-label="Post-match choices"
@@ -545,34 +472,36 @@ function MatchComplete(props: FaceoffProps) {
           New BOT
         </button>
         <Link href="/earn" className="vq-faceoff__equal-action">
-          Explore
+          Explore VaultQuest
         </Link>
         <Link href="/play" className="vq-faceoff__equal-action">
           Done
         </Link>
       </div>
-      {props.completedMatches + (game.session.forfeited ? 0 : 1) >= 3 ? (
-        <EarnRecommendation earnQuest={props.earnQuest} />
-      ) : null}
+      <EarnRecommendation earnQuest={props.earnQuest} />
+      <p className="mt-3 text-xs text-[var(--vq-ink-faint)]">
+        +{game.session.xpAwarded} XP ·{" "}
+        {props.initialTotalXp + game.session.xpAwarded} total
+      </p>
+      <RewardsOff />
     </section>
   );
 }
 
 function EarnRecommendation({ earnQuest }: { earnQuest: EarnQuest | null }) {
   return (
-    <aside className="mt-6 rounded-[10px] border border-[var(--vq-border)] bg-[var(--vq-bg-raised)] p-4">
-      <p className="text-xs uppercase tracking-wider text-[var(--vq-ink-faint)]">
-        Optional verified quest
+    <aside className="mt-4 rounded-[10px] border border-[var(--vq-info)] bg-[var(--vq-bg-raised)] p-4">
+      <p className="text-xs uppercase tracking-wider text-[var(--vq-info)]">
+        Explore · after match only
       </p>
       {earnQuest ? (
         <>
           <h3 className="mt-1 font-semibold">{earnQuest.title}</h3>
           <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
-            {earnQuest.vpReward} VP · {earnQuest.effort} effort ·{" "}
-            {earnQuest.timeHint} · {earnQuest.holdDays}-day hold
+            {earnQuest.vpReward} VP · {earnQuest.effort} · {earnQuest.timeHint}
           </p>
           <p className="mt-2 text-xs text-[var(--vq-ink-faint)]">
-            Clicking pays nothing. VP posts only after verified completion.
+            Optional. Clicking pays nothing.
           </p>
           <a
             href={`/api/go/${earnQuest.id}`}
@@ -585,12 +514,12 @@ function EarnRecommendation({ earnQuest }: { earnQuest: EarnQuest | null }) {
             }
             className="mt-3 inline-flex min-h-11 items-center rounded-md border border-[var(--vq-border-strong)] px-4 py-2 text-sm font-semibold"
           >
-            Open optional quest
+            Explore quest
           </a>
         </>
       ) : (
         <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">
-          No healthy partner quest is available right now. Check Earn later.
+          The match is over. Explore VaultQuest or choose Done.
         </p>
       )}
     </aside>
@@ -655,10 +584,10 @@ function FaceoffCases({
             </p>
             <p className="mt-2 text-xs text-[var(--vq-ink-muted)]">
               {keyIsHere
-                ? "The Vault Key was in this case."
+                ? "Key shown after the choice."
                 : caseId === round.humanCase
-                  ? "Your assigned case."
-                  : "Scripted opponent case."}
+                  ? "Keep or trade."
+                  : "Still sealed."}
             </p>
           </div>
         );
@@ -698,78 +627,61 @@ function SignalHistory({ round }: { round: SafeRoundDto }) {
   );
 }
 
-function DramatizationStrip({ round }: { round: SafeRoundDto }) {
-  const botLine =
-    round.humanRole === "CHOOSER" && round.responses.length > 0
-      ? `"${humanize(round.responses.at(-1)?.answer ?? "UNSURE")}."`
-      : round.phase === "ROUND_REVEAL" && round.humanRole === "KEEPER"
-        ? round.choice === "KEEP"
-          ? '"I will keep Case B."'
-          : '"I will take Case A."'
-        : "BOT signal pending.";
-  return (
-    <section className="vq-faceoff__dramatization" aria-label="Dramatization">
-      <span className="rounded-md border border-[var(--vq-warn)]/60 px-3 py-2 font-[family-name:var(--vq-font-mono)] text-[0.65rem] uppercase text-[var(--vq-warn)]">
-        Dramatization
-      </span>
-      <div>
-        <p className="text-sm font-semibold">{botLine}</p>
-        <p className="mt-1 text-[0.65rem] text-[var(--vq-ink-faint)]">
-          Authored structured BOT response, not live typing.
-        </p>
-      </div>
-    </section>
-  );
-}
-
-function ScoreRail({
+function ScoreLine({
   humanScore,
   botScore,
-  roundNumber,
 }: {
   humanScore: number;
   botScore: number;
-  roundNumber: number;
 }) {
   return (
-    <div className="vq-faceoff__score" aria-label="Match score and round progress">
-      <span>You {humanScore}</span>
-      <span>BOT {botScore}</span>
+    <p className="vq-faceoff__score">
+      You {humanScore} <span aria-hidden="true">·</span> Bot {botScore}
+    </p>
+  );
+}
+
+function RoundRail({ currentRound }: { currentRound: number }) {
+  return (
+    <div className="vq-faceoff__round">
+      <span>{roundProgressLabel(currentRound)}</span>
       <div
         className="flex items-center gap-2"
         role="progressbar"
-        aria-label={roundProgressLabel(roundNumber)}
+        aria-label={roundProgressLabel(currentRound)}
         aria-valuemin={1}
         aria-valuemax={VAULT_BLUFF_ROUND_COUNT}
-        aria-valuenow={roundNumber}
+        aria-valuenow={currentRound}
       >
         {[1, 2, 3, 4].map((value) => (
           <span
             key={value}
             className="vq-round-dot"
             data-state={
-              value < roundNumber
+              value < currentRound
                 ? "done"
-                : value === roundNumber
+                : value === currentRound
                   ? "current"
                   : "remaining"
             }
             aria-hidden="true"
           />
         ))}
-        <span className="ml-1 text-xs text-[var(--vq-ink-muted)]">
-          R{roundNumber}/4
-        </span>
       </div>
     </div>
   );
 }
 
-function RoundBadge({ roundNumber }: { roundNumber: number }) {
+function Hint({ onSkip }: { onSkip: () => void }) {
   return (
-    <span className="inline-flex min-h-11 items-center rounded-full border border-[var(--vq-info)] px-4 font-[family-name:var(--vq-font-mono)] text-xs uppercase text-[var(--vq-info)]">
-      {roundProgressLabel(roundNumber)}
-    </span>
+    <aside id="faceoff-hint" className="vq-faceoff__hint">
+      <p>
+        <span>Hint</span> Pick the case you trust.
+      </p>
+      <button type="button" onClick={onSkip}>
+        Skip
+      </button>
+    </aside>
   );
 }
 
@@ -786,35 +698,6 @@ function RewardsOff() {
   );
 }
 
-function ContextHelp({ round }: { round: SafeRoundDto }) {
-  const copy: Record<SafeRoundDto["phase"], string> = {
-    KEEPER_INSPECTION: "Inspect your case, then lock it before questions begin.",
-    KEEPER_RESPONSE: "Answer the BOT with the listed structured choices.",
-    CHOOSER_QUESTIONING: "Ask two questions. BOT answers may bluff.",
-    CHOOSER_DECISION: "Use the recorded answers, then keep or take.",
-    ROUND_REVEAL: "Review the signal, your read, and the outcome in order.",
-    MATCH_COMPLETE: "Choose one next step. Nothing starts automatically.",
-  };
-  return (
-    <aside id="faceoff-help" className="vq-faceoff__help" aria-label="Contextual help">
-      <p className="font-[family-name:var(--vq-font-mono)] text-xs uppercase text-[var(--vq-info)]">
-        Playable help
-      </p>
-      <h2 className="mt-2 font-semibold">This step</h2>
-      <p className="mt-2 text-sm text-[var(--vq-ink-muted)]">{copy[round.phase]}</p>
-      <details className="mt-4 border-t border-[var(--vq-border)] pt-4 text-sm">
-        <summary className="min-h-11 cursor-pointer py-3 font-semibold text-[var(--vq-teal)]">
-          Round rules
-        </summary>
-        <p className="mt-2 text-[var(--vq-ink-muted)]">
-          The server fixes key placement before play. BOT behavior cannot move it.
-          Hints are imperfect, never proof.
-        </p>
-      </details>
-    </aside>
-  );
-}
-
 function ForfeitOptions({
   pending,
   open,
@@ -827,7 +710,11 @@ function ForfeitOptions({
   onConfirm: () => void;
 }) {
   return (
-    <section className="mt-4" aria-label="Match options">
+    <section
+      id="faceoff-match-options"
+      className="mt-4"
+      aria-label="Match options"
+    >
       {open ? (
         <div className="rounded-[10px] border border-[var(--vq-danger)]/50 bg-[var(--vq-danger)]/10 p-4">
           <h2 className="font-semibold text-[var(--vq-danger)]">
@@ -873,139 +760,7 @@ function ForfeitOptions({
   );
 }
 
-function FaceoffSettings({
-  tellStrength,
-  reducedMotion,
-  compactRail,
-  onTellStrengthChange,
-  onReducedMotionChange,
-  onCompactRailChange,
-  onClose,
-}: {
-  tellStrength: TellStrength;
-  reducedMotion: boolean;
-  compactRail: boolean;
-  onTellStrengthChange: (value: TellStrength) => void;
-  onReducedMotionChange: (value: boolean) => void;
-  onCompactRailChange: (value: boolean) => void;
-  onClose: () => void;
-}) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    dialog.showModal();
-    return () => {
-      if (dialog.open) dialog.close();
-    };
-  }, []);
-
-  return (
-    <dialog
-      ref={dialogRef}
-      aria-labelledby="faceoff-settings-title"
-      className="vq-faceoff__settings"
-      onCancel={(event) => {
-        event.preventDefault();
-        onClose();
-      }}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <div className="vq-faceoff__settings-panel">
-        <div className="flex items-center justify-between gap-4">
-          <h2
-            id="faceoff-settings-title"
-            className="font-[family-name:var(--vq-font-display)] text-lg font-semibold uppercase text-[var(--vq-warn)]"
-          >
-            Match settings
-          </h2>
-          <button
-            type="button"
-            autoFocus
-            onClick={onClose}
-            className="min-h-11 min-w-11 rounded-md px-3 text-xs uppercase text-[var(--vq-ink-muted)]"
-          >
-            Close
-          </button>
-        </div>
-
-        <fieldset className="mt-3">
-          <div className="flex items-center justify-between gap-3">
-            <legend className="text-sm font-semibold">Tell strength</legend>
-            <span className="font-[family-name:var(--vq-font-mono)] text-xs uppercase text-[var(--vq-warn)]">
-              Phase A · UI only
-            </span>
-          </div>
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            {(["NONE", "SUBTLE", "NOTICEABLE"] as const).map((value) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={tellStrength === value}
-                onClick={() => onTellStrengthChange(value)}
-                className="vq-faceoff__setting-choice"
-                data-selected={tellStrength === value}
-              >
-                {value}
-              </button>
-            ))}
-          </div>
-          <p className="mt-2 text-center text-xs text-[var(--vq-warn)]">
-            SUBTLE is Recommended
-          </p>
-          <p className="mt-1 text-xs text-[var(--vq-ink-faint)]">
-            This preview control does not change engine, cue, or hint behavior.
-          </p>
-        </fieldset>
-
-        <section className="vq-faceoff__settings-note">
-          <h3 className="font-semibold text-[var(--vq-info)]">
-            How BOT tells work
-          </h3>
-          <p className="mt-2 text-sm">
-            Hints are imperfect, never proof. Treat them as uncertain game flavor,
-            not evidence of hidden truth, key location, or a guaranteed bluff.
-          </p>
-        </section>
-
-        <section className="vq-faceoff__settings-note vq-faceoff__settings-note--warn">
-          <h3 className="font-semibold text-[var(--vq-warn)]">Dramatization</h3>
-          <p className="mt-2 text-sm">
-            Dramatized copy is authored UI text. Phase A adds no live composition,
-            timed typing, reactions, or another person on the other side.
-          </p>
-        </section>
-
-        <label className="vq-faceoff__toggle-row">
-          <input
-            type="checkbox"
-            checked={reducedMotion}
-            onChange={(event) => onReducedMotionChange(event.target.checked)}
-            className="h-5 w-5 accent-[var(--vq-teal)]"
-          />
-          <span>Reduced motion</span>
-        </label>
-        <label className="vq-faceoff__toggle-row">
-          <input
-            type="checkbox"
-            checked={compactRail}
-            onChange={(event) => onCompactRailChange(event.target.checked)}
-            className="h-5 w-5 accent-[var(--vq-teal)]"
-          />
-          <span>Compact rail density</span>
-        </label>
-        <p className="mt-3 text-xs text-[var(--vq-ink-faint)]">
-          Presentation settings only. Match rules and BOT behavior stay unchanged.
-        </p>
-      </div>
-    </dialog>
-  );
-}
-
-function FaceoffSelect({
+function CompactChoiceGroup({
   label,
   name,
   value,
@@ -1019,31 +774,24 @@ function FaceoffSelect({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="text-sm">
-      <span className="mb-1 block font-semibold">{label}</span>
-      <select
-        name={name}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="min-h-11 w-full rounded-md border border-[var(--vq-border)] bg-[var(--vq-bg-sunken)] px-3 py-2"
-      >
+    <fieldset className="text-sm">
+      <legend className="mb-1 font-semibold">{label}</legend>
+      <input type="hidden" name={name} value={value} />
+      <div className="flex flex-wrap gap-2">
         {options.map((option) => (
-          <option key={option} value={option}>
+          <button
+            key={option}
+            type="button"
+            aria-pressed={value === option}
+            onClick={() => onChange(option)}
+            className="vq-faceoff__chip"
+            data-selected={value === option}
+          >
             {humanize(option)}
-          </option>
+          </button>
         ))}
-      </select>
-    </label>
-  );
-}
-
-function MobileNav() {
-  return (
-    <nav className="vq-faceoff__mobile-nav" aria-label="Mobile game navigation">
-      <Link href="/play">Home</Link>
-      <span aria-current="page">Play</span>
-      <a href="#faceoff-help">Help</a>
-    </nav>
+      </div>
+    </fieldset>
   );
 }
 
@@ -1055,19 +803,6 @@ function BotMark() {
   );
 }
 
-function GearIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
-      <path
-        d="M12 8.25A3.75 3.75 0 1 0 12 15.75 3.75 3.75 0 0 0 12 8.25ZM19.1 13.2l1.45 1.13-1.8 3.12-1.7-.7a7.9 7.9 0 0 1-2.1 1.22L14.7 19.8h-3.6l-.25-1.83a7.9 7.9 0 0 1-2.1-1.22l-1.7.7-1.8-3.12L6.7 13.2a8.2 8.2 0 0 1 0-2.4L5.25 9.67l1.8-3.12 1.7.7a7.9 7.9 0 0 1 2.1-1.22L11.1 4.2h3.6l.25 1.83a7.9 7.9 0 0 1 2.1 1.22l1.7-.7 1.8 3.12-1.45 1.13a8.2 8.2 0 0 1 0 2.4Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 function humanize(value: string) {
   return value
@@ -1075,4 +810,10 @@ function humanize(value: string) {
     .split("_")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
+}
+
+function faceoffHeading(phase: SafeRoundDto["phase"]) {
+  if (phase === "ROUND_REVEAL") return "Signal, read, outcome.";
+  if (phase === "MATCH_COMPLETE") return "Match complete.";
+  return "Make the call.";
 }

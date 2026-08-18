@@ -89,23 +89,23 @@ function renderFaceoff(game: ApiResult) {
   );
 }
 
-test("Faceoff board keeps disclosure and truthful progress outside settings", () => {
+test("Faceoff board keeps one bot mark and truthful finite progress", () => {
   const html = renderFaceoff(gameResult());
   const mainBoard = html.match(/<main[\s\S]*<\/main>/)?.[0];
 
-  assert.match(html, /BOT \/ scripted opponent/);
+  assert.equal(html.match(/\(bot\)/gi)?.length, 1);
   assert.match(html, /Round 2 of 4/);
   assert.match(html, /Keep Case A · K/);
   assert.match(html, /Take Case B · T/);
   assert.ok(mainBoard);
   assert.doesNotMatch(mainBoard, /Tell strength/);
-  assert.doesNotMatch(mainBoard, /Hints are imperfect, never proof/);
+  assert.doesNotMatch(mainBoard, /Dramatization|Always a BOT|no live player/i);
 });
 
 test("Faceoff match result renders four equal explicit next actions", () => {
   const html = renderFaceoff(gameResult(true));
 
-  for (const label of ["Rematch", "New BOT", "Explore", "Done"]) {
+  for (const label of ["Rematch", "New BOT", "Explore VaultQuest", "Done"]) {
     assert.match(html, new RegExp(`>${label}<`));
   }
   assert.doesNotMatch(html, /Instant rematch/);
