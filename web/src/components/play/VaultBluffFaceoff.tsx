@@ -357,7 +357,9 @@ function revealLines(round: SafeRoundDto) {
   const response = round.responses.at(-1);
   const signal =
     round.humanRole === "CHOOSER" && response
-      ? humanize(response.answer)
+      ? response.recommendation === "TAKE"
+        ? "Take the case"
+        : "Keep the case"
       : round.choice === "TAKE"
         ? "Take the case"
         : "Keep the case";
@@ -372,14 +374,6 @@ function revealLines(round: SafeRoundDto) {
     { label: "Read", value: read },
     { label: "Outcome", value: outcome },
   ];
-}
-
-function humanize(value: string) {
-  return value
-    .toLowerCase()
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
 }
 
 function BotMark() {
