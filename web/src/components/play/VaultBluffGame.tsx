@@ -271,7 +271,7 @@ export function VaultBluffGame({
       return;
     }
     faceoffAutoStartAttemptedRef.current = true;
-    void start();
+    void start("SHOWBOAT");
     // The controller owns the one-time Faceoff bootstrap. The action function
     // intentionally stays outside the dependency list so a render cannot retry it.
     // eslint-disable-next-line react-hooks/exhaustive-deps

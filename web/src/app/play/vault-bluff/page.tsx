@@ -56,6 +56,7 @@ export default async function VaultBluffPage() {
     <VaultBluffGame
       faceoffEnabled={isVaultBluffFaceoffEnabled(
         process.env.VAULT_BLUFF_FACEOFF_UI,
+        process.env.VERCEL_ENV,
       )}
       completedMatches={progress.completedMatches}
       initialTotalXp={progress.totalXp}

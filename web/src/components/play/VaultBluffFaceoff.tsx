@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { useState, type MouseEventHandler } from "react";
 import { PERSONAS } from "@/lib/vault-bluff/personas";
-import type { SafeRoundDto } from "@/lib/vault-bluff/types";
+import {
+  APPROVED_ANSWERS,
+  QUESTIONS,
+  type Choice,
+  type SafeRoundDto,
+} from "@/lib/vault-bluff/types";
 import type { ApiResult, ClientCommand } from "./VaultBluffGame";
 
 type FaceoffProps = {
@@ -30,6 +35,8 @@ export function VaultBluffFaceoffLoading({
   retrying?: boolean;
   onRetry?: (() => void) | null;
 }) {
+  const keepCommand = faceoffTableCommand(round, "KEEP");
+  const takeCommand = faceoffTableCommand(round, "TAKE");
   return (
     <main className="vq-faceoff vq-faceoff--loading">
       <p role="status">{message}</p>
@@ -88,7 +95,7 @@ export function VaultBluffFaceoff({
         </h1>
         <p className="vq-faceoff__bot-label">(bot)</p>
 
-        {round.phase === "CHOOSER_DECISION" ? (
+        {isTablePhase(round.phase) ? (
           <DecisionTable
             round={round}
             personaName={persona.name}
@@ -179,16 +186,20 @@ function DecisionTable({
       <div className="vq-faceoff__choices" aria-label="Choose a case">
         <button
           type="button"
-          disabled={pending}
-          onClick={() => onAction({ kind: "CHOOSE_CASE", choice: "KEEP" })}
+          disabled={pending || !keepCommand}
+          onClick={() => {
+            if (keepCommand) onAction(keepCommand);
+          }}
           className="vq-faceoff__choice vq-faceoff__choice--keep"
         >
           Keep
         </button>
         <button
           type="button"
-          disabled={pending}
-          onClick={() => onAction({ kind: "CHOOSE_CASE", choice: "TAKE" })}
+          disabled={pending || !takeCommand}
+          onClick={() => {
+            if (takeCommand) onAction(takeCommand);
+          }}
           className="vq-faceoff__choice vq-faceoff__choice--take"
         >
           Take
@@ -397,6 +408,49 @@ function revealLines(round: SafeRoundDto) {
     { label: "Read", value: read },
     { label: "Outcome", value: outcome },
   ];
+}
+
+function isTablePhase(phase: SafeRoundDto["phase"]) {
+  return (
+    phase === "KEEPER_INSPECTION" ||
+    phase === "KEEPER_RESPONSE" ||
+    phase === "CHOOSER_QUESTIONING" ||
+    phase === "CHOOSER_DECISION"
+  );
+}
+
+export function faceoffTableCommand(
+  round: SafeRoundDto,
+  choice: Choice,
+): ClientCommand | null {
+  if (round.phase === "KEEPER_INSPECTION") {
+    return { kind: "ACK_INSPECTION" };
+  }
+  if (round.phase === "KEEPER_RESPONSE") {
+    const question = round.questions[round.responses.length];
+    if (!question) return null;
+    const answers = APPROVED_ANSWERS[question];
+    const answer =
+      choice === "KEEP" ? answers[0] : (answers[1] ?? answers[0]);
+    if (!answer) return null;
+    return {
+      kind: "ANSWER_QUESTION",
+      answer,
+      confidence: "UNSURE",
+      recommendation: choice,
+    };
+  }
+  if (round.phase === "CHOOSER_QUESTIONING") {
+    const available = QUESTIONS.filter(
+      (question) => !round.questions.includes(question),
+    );
+    const question = choice === "KEEP" ? available[0] : available.at(-1);
+    return question ? { kind: "ASK_QUESTION", question } : null;
+  }
+  if (round.phase === "CHOOSER_DECISION") {
+    return { kind: "CHOOSE_CASE", choice };
+  }
+  return null;
 }
 
 function BotMark() {

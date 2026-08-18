@@ -6,11 +6,13 @@ import {
   shouldRenderVaultBluffFaceoff,
 } from "./faceoff-presentation";
 
-test("Faceoff UI flag fails closed unless the server value is exactly true", () => {
+test("Faceoff enables on preview while production stays fail-closed", () => {
   assert.equal(isVaultBluffFaceoffEnabled(undefined), false);
-  assert.equal(isVaultBluffFaceoffEnabled("false"), false);
+  assert.equal(isVaultBluffFaceoffEnabled("false", "production"), false);
   assert.equal(isVaultBluffFaceoffEnabled("TRUE"), false);
   assert.equal(isVaultBluffFaceoffEnabled("true"), true);
+  assert.equal(isVaultBluffFaceoffEnabled(undefined, "preview"), true);
+  assert.equal(isVaultBluffFaceoffEnabled("false", "preview"), true);
 });
 
 test("round progress uses the authoritative session round", () => {
@@ -18,10 +20,11 @@ test("round progress uses the authoritative session round", () => {
   assert.equal(roundProgressLabel(4), "Round 4 of 4");
 });
 
-test("Faceoff is limited to the QA decision, reveal, and result states", () => {
+test("enabled Faceoff owns every V1 phase", () => {
   assert.equal(shouldRenderVaultBluffFaceoff(true, "CHOOSER_DECISION"), true);
   assert.equal(shouldRenderVaultBluffFaceoff(false, "CHOOSER_DECISION"), false);
   assert.equal(shouldRenderVaultBluffFaceoff(true, "ROUND_REVEAL"), true);
   assert.equal(shouldRenderVaultBluffFaceoff(true, "MATCH_COMPLETE"), true);
-  assert.equal(shouldRenderVaultBluffFaceoff(true, "CHOOSER_QUESTIONING"), false);
+  assert.equal(shouldRenderVaultBluffFaceoff(true, "CHOOSER_QUESTIONING"), true);
+  assert.equal(shouldRenderVaultBluffFaceoff(true, "KEEPER_RESPONSE"), true);
 });

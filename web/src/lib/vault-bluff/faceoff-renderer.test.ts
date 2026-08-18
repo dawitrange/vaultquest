@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { VaultBluffFaceoff } from "@/components/play/VaultBluffFaceoff";
+import {
+  faceoffTableCommand,
+  VaultBluffFaceoff,
+} from "@/components/play/VaultBluffFaceoff";
 import type { ApiResult } from "@/components/play/VaultBluffGame";
 import type { RoundPhase, SafeRoundDto } from "./types";
 
@@ -95,6 +98,51 @@ test("Faceoff decision renders the quiet play-immediately table", () => {
   assert.doesNotMatch(html, /Signal|Outcome|Rematch|Explore|Done/);
 });
 
+test("Faceoff table replaces every pre-reveal V1 question wall", () => {
+  for (const phase of [
+    "KEEPER_INSPECTION",
+    "KEEPER_RESPONSE",
+    "CHOOSER_QUESTIONING",
+  ] as const) {
+    const html = renderPhase(phase);
+    assert.match(html, />Keep</);
+    assert.match(html, />Take</);
+    assert.doesNotMatch(html, /0 of 2|Lock response|Approved answer/);
+  }
+});
+
+test("Faceoff table verbs dispatch legal commands for each V1 phase", () => {
+  const inspection = gameFor("KEEPER_INSPECTION").session.currentRound;
+  assert.deepEqual(faceoffTableCommand(inspection, "KEEP"), {
+    kind: "ACK_INSPECTION",
+  });
+
+  const keeperResponse = {
+    ...gameFor("KEEPER_RESPONSE").session.currentRound,
+    responses: [],
+  };
+  assert.equal(
+    faceoffTableCommand(keeperResponse, "TAKE")?.kind,
+    "ANSWER_QUESTION",
+  );
+
+  const questioning = {
+    ...gameFor("CHOOSER_QUESTIONING").session.currentRound,
+    questions: [],
+    responses: [],
+  };
+  assert.equal(
+    faceoffTableCommand(questioning, "KEEP")?.kind,
+    "ASK_QUESTION",
+  );
+
+  const decision = gameFor("CHOOSER_DECISION").session.currentRound;
+  assert.deepEqual(faceoffTableCommand(decision, "TAKE"), {
+    kind: "CHOOSE_CASE",
+    choice: "TAKE",
+  });
+});
+
 test("Faceoff reveal contains only signal, read, outcome, and Continue", () => {
   const html = renderPhase("ROUND_REVEAL");
 
@@ -105,6 +153,7 @@ test("Faceoff reveal contains only signal, read, outcome, and Continue", () => {
   assert.match(html, />You took B</);
   assert.match(html, />You win</);
   assert.doesNotMatch(html, /Tell strength|Dramatization|How BOT tells|Rematch|Done/);
+  assert.doesNotMatch(html, /href="\/earn"/);
 });
 
 test("Faceoff result keeps four equal actions and no reward copy", () => {

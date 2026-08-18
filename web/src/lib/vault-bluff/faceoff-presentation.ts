@@ -4,8 +4,9 @@ export const VAULT_BLUFF_ROUND_COUNT = 4;
 
 export function isVaultBluffFaceoffEnabled(
   value: string | undefined,
+  vercelEnvironment?: string,
 ) {
-  return value === "true";
+  return value === "true" || vercelEnvironment === "preview";
 }
 
 export function roundProgressLabel(roundNumber: number) {
@@ -14,12 +15,7 @@ export function roundProgressLabel(roundNumber: number) {
 
 export function shouldRenderVaultBluffFaceoff(
   enabled: boolean,
-  phase: RoundPhase,
+  _phase: RoundPhase,
 ) {
-  return (
-    enabled &&
-    (phase === "CHOOSER_DECISION" ||
-      phase === "ROUND_REVEAL" ||
-      phase === "MATCH_COMPLETE")
-  );
+  return enabled;
 }
