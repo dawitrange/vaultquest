@@ -172,8 +172,8 @@ function DecisionTable({
       ) : null}
       <div className="vq-faceoff__arena">
         <div className="vq-faceoff__cases" aria-label="Two sealed cases">
-          <CaseCard label="A · Yours" tone="human" />
-          <CaseCard label={`B · ${personaName}`} tone="bot" />
+          <CaseCard label="A" owner="yours" tone="human" />
+          <CaseCard label="B" owner={personaName} tone="bot" />
         </div>
       </div>
       <div className="vq-faceoff__choices" aria-label="Choose a case">
@@ -230,12 +230,14 @@ function RevealTable({
       <div className="vq-faceoff__arena vq-faceoff__arena--reveal">
         <div className="vq-faceoff__cases vq-faceoff__cases--reveal">
           <CaseCard
-            label="A · Yours"
+            label="A"
+            owner="yours"
             tone="human"
             status={round.keyCase === "CASE_A" ? "Key" : "Sealed"}
           />
           <CaseCard
-            label={`B · ${personaName}`}
+            label="B"
+            owner={personaName}
             tone="bot"
             status={round.keyCase === "CASE_B" ? "Key" : "Sealed"}
           />
@@ -351,18 +353,25 @@ function Progress({
 
 function CaseCard({
   label,
+  owner,
   tone,
   status = "Sealed",
 }: {
   label: string;
+  owner: string;
   tone: "human" | "bot";
   status?: "Sealed" | "Key";
 }) {
   return (
-    <article className="vq-faceoff__case" data-tone={tone}>
+    <article
+      className="vq-faceoff__case"
+      data-tone={tone}
+      data-status={status.toLowerCase()}
+      aria-label={`Case ${label}, ${owner}, ${status.toLowerCase()}`}
+    >
       <p>{label}</p>
       <span aria-hidden="true" />
-      <strong>{status}</strong>
+      <strong className="sr-only">{status}</strong>
     </article>
   );
 }

@@ -80,9 +80,9 @@ test("Faceoff decision renders the quiet play-immediately table", () => {
 
   assert.equal(html.match(/\(bot\)/gi)?.length, 1);
   assert.match(html, />Showboat</);
-  assert.match(html, />A · Yours</);
-  assert.match(html, />B · Showboat</);
-  assert.equal(html.match(/>Sealed</g)?.length, 2);
+  assert.match(html, /aria-label="Case A, yours, sealed"/);
+  assert.match(html, /aria-label="Case B, Showboat, sealed"/);
+  assert.equal(html.match(/class="sr-only">Sealed</g)?.length, 2);
   assert.match(html, />Keep</);
   assert.match(html, />Take</);
   assert.match(html, />Take the shiny case\.</);
