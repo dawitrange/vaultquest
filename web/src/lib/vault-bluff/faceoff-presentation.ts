@@ -3,7 +3,7 @@ import type { SafeRoundDto } from "./types";
 export const VAULT_BLUFF_ROUND_COUNT = 4;
 
 export function isVaultBluffFaceoffEnabled(
-  value = process.env.VAULT_BLUFF_FACEOFF_UI,
+  value: string | undefined,
 ) {
   return value === "true";
 }
@@ -17,7 +17,9 @@ export function revealSequence(round: SafeRoundDto) {
     round.humanRole === "KEEPER"
       ? round.choice === "KEEP"
         ? "BOT kept Case B."
-        : "BOT took Case A."
+        : round.choice === "TAKE"
+          ? "BOT took Case A."
+          : "BOT decision unavailable."
       : round.responses.length > 0
         ? "BOT responses locked."
         : "BOT signal recorded.";
@@ -25,12 +27,16 @@ export function revealSequence(round: SafeRoundDto) {
     round.humanRole === "CHOOSER"
       ? round.choice === "KEEP"
         ? "You kept Case A."
-        : "You took Case B."
+        : round.choice === "TAKE"
+          ? "You took Case B."
+          : "Your choice is unavailable."
       : "Your structured responses were locked.";
   const outcome =
     round.winner === "HUMAN"
       ? "You earned the round point."
-      : "BOT earned the round point.";
+      : round.winner === "BOT"
+        ? "BOT earned the round point."
+        : "Round outcome unavailable.";
 
   return [
     { label: "BOT signal", body: botSignal },

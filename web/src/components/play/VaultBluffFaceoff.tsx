@@ -15,6 +15,7 @@ import {
   VAULT_BLUFF_ROUND_COUNT,
 } from "@/lib/vault-bluff/faceoff-presentation";
 import { PERSONAS } from "@/lib/vault-bluff/personas";
+import { captureClientEvent, PH_EVENTS } from "@/lib/posthog-client";
 import {
   APPROVED_ANSWERS,
   QUESTION_LABELS,
@@ -575,6 +576,13 @@ function EarnRecommendation({ earnQuest }: { earnQuest: EarnQuest | null }) {
           </p>
           <a
             href={`/api/go/${earnQuest.id}`}
+            onClick={() =>
+              captureClientEvent(PH_EVENTS.vault_bluff_earn_clicked, {
+                quest_id: earnQuest.id,
+                vp: earnQuest.vpReward,
+                hold_days: earnQuest.holdDays,
+              })
+            }
             className="mt-3 inline-flex min-h-11 items-center rounded-md border border-[var(--vq-border-strong)] px-4 py-2 text-sm font-semibold"
           >
             Open optional quest
@@ -966,8 +974,8 @@ function FaceoffSettings({
         <section className="vq-faceoff__settings-note vq-faceoff__settings-note--warn">
           <h3 className="font-semibold text-[var(--vq-warn)]">Dramatization</h3>
           <p className="mt-2 text-sm">
-            Typing and reactions are authored and system-timed. They are not live
-            composition or another person on the other side.
+            Dramatized copy is authored UI text. Phase A adds no live composition,
+            timed typing, reactions, or another person on the other side.
           </p>
         </section>
 
