@@ -2142,7 +2142,7 @@ code,
 
   .vq-faceoff__decision-footer:has(.vq-faceoff__choices)
     .vq-faceoff__progress {
-    bottom: calc(13rem + env(safe-area-inset-bottom));
+    bottom: calc(14.5rem + env(safe-area-inset-bottom));
   }
 
   .vq-faceoff__selected-prompt {
