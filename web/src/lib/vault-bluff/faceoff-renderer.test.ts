@@ -4,20 +4,21 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { VaultBluffFaceoff } from "@/components/play/VaultBluffFaceoff";
 import type { ApiResult } from "@/components/play/VaultBluffGame";
-import type { SafeRoundDto } from "./types";
+import type { RoundPhase, SafeRoundDto } from "./types";
 
-function decisionGame(): ApiResult {
+function gameFor(phase: RoundPhase): ApiResult {
+  const resolved = phase === "ROUND_REVEAL" || phase === "MATCH_COMPLETE";
   const currentRound: SafeRoundDto = {
-    number: 2,
+    number: phase === "MATCH_COMPLETE" ? 4 : 2,
     humanRole: "CHOOSER",
     humanCase: "CASE_A",
     botCase: "CASE_B",
-    phase: "CHOOSER_DECISION",
+    phase,
     questions: ["KEY_INSIDE_YOUR_CASE", "HOW_CONFIDENT_ARE_YOU"],
     responses: [
       {
         question: "KEY_INSIDE_YOUR_CASE",
-        answer: "NO",
+        answer: "TAKE_MINE",
         confidence: "CERTAIN",
         recommendation: "TAKE",
       },
@@ -28,11 +29,12 @@ function decisionGame(): ApiResult {
         recommendation: "TAKE",
       },
     ],
-    choice: null,
-    winner: null,
+    choice: resolved ? "TAKE" : null,
+    winner: resolved ? "HUMAN" : null,
     startedAt: "2026-08-18T00:00:00.000Z",
     deadlineAt: "2026-08-18T00:01:00.000Z",
-    resolvedAt: null,
+    resolvedAt: resolved ? "2026-08-18T00:00:10.000Z" : null,
+    ...(resolved ? { keyCase: "CASE_B" } : {}),
   };
 
   return {
@@ -45,26 +47,36 @@ function decisionGame(): ApiResult {
       persona: "SHOWBOAT",
       rounds: [currentRound],
       currentRound,
-      humanScore: 1,
+      humanScore: phase === "MATCH_COMPLETE" ? 3 : resolved ? 2 : 1,
       botScore: 1,
-      completed: false,
+      completed: phase === "MATCH_COMPLETE",
       forfeited: false,
-      xpAwarded: 0,
+      xpAwarded: phase === "MATCH_COMPLETE" ? 120 : 0,
     },
   };
 }
 
-test("Faceoff renders only the quiet play-immediately table", () => {
-  const html = renderToStaticMarkup(
+function renderPhase(phase: RoundPhase) {
+  return renderToStaticMarkup(
     createElement(VaultBluffFaceoff, {
-      game: decisionGame(),
+      game: gameFor(phase),
       pending: false,
       error: null,
       retryAvailable: false,
+      revealReady: true,
       onAction: () => undefined,
       onRetry: () => undefined,
+      onRematch: () => undefined,
+      onNewBot: () => undefined,
+      onContinue: () => undefined,
+      onContinuePointerDown: () => undefined,
+      onContinuePointerReset: () => undefined,
     }),
   );
+}
+
+test("Faceoff decision renders the quiet play-immediately table", () => {
+  const html = renderPhase("CHOOSER_DECISION");
 
   assert.equal(html.match(/\(bot\)/gi)?.length, 1);
   assert.match(html, />Showboat</);
@@ -77,10 +89,28 @@ test("Faceoff renders only the quiet play-immediately table", () => {
   assert.match(html, /aria-label="How to play"/);
   assert.match(html, /aria-label="Round 2 of 4"/);
   assert.match(html, />1 - 1</);
+  assert.doesNotMatch(html, /Signal|Outcome|Rematch|Explore|Done/);
+});
 
-  assert.doesNotMatch(
-    html,
-    /Tell strength|Match settings|BOT signal|Outcome|Rematch|New BOT|Explore|Done/,
-  );
-  assert.doesNotMatch(html, /href="\/earn"|\/api\/go\/|\bVP\b/);
+test("Faceoff reveal contains only signal, read, outcome, and Continue", () => {
+  const html = renderPhase("ROUND_REVEAL");
+
+  for (const label of ["Signal", "Read", "Outcome", "Continue"]) {
+    assert.match(html, new RegExp(`>${label}<`));
+  }
+  assert.match(html, />Take the case</);
+  assert.match(html, />You took B</);
+  assert.match(html, />You win</);
+  assert.doesNotMatch(html, /Tell strength|Dramatization|How BOT tells|Rematch|Done/);
+});
+
+test("Faceoff result keeps four equal actions and no reward copy", () => {
+  const html = renderPhase("MATCH_COMPLETE");
+
+  for (const label of ["Rematch", "New BOT", "Explore", "Done"]) {
+    assert.match(html, new RegExp(`>${label}<`));
+  }
+  assert.match(html, /href="\/earn"/);
+  assert.match(html, /href="\/play"/);
+  assert.doesNotMatch(html, /auto-rematch|countdown|\/api\/go\/|\bVP\b/i);
 });

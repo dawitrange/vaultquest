@@ -16,5 +16,10 @@ export function shouldRenderVaultBluffFaceoff(
   enabled: boolean,
   phase: RoundPhase,
 ) {
-  return enabled && phase === "CHOOSER_DECISION";
+  return (
+    enabled &&
+    (phase === "CHOOSER_DECISION" ||
+      phase === "ROUND_REVEAL" ||
+      phase === "MATCH_COMPLETE")
+  );
 }

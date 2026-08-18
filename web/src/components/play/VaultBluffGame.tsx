@@ -399,8 +399,18 @@ export function VaultBluffGame({
         pending={pending}
         error={error}
         retryAvailable={Boolean(retryIntent)}
+        revealReady={revealReady}
         onAction={(command) => void act(command)}
         onRetry={retryLast}
+        onRematch={() => void start(game.session.persona, true)}
+        onNewBot={() => void start()}
+        onContinue={continueFromReveal}
+        onContinuePointerDown={() => {
+          continuePointerArmedRef.current = revealReady && !pending;
+        }}
+        onContinuePointerReset={() => {
+          continuePointerArmedRef.current = false;
+        }}
       />
     );
   }

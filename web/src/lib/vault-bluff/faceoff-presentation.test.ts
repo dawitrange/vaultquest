@@ -18,9 +18,10 @@ test("round progress uses the authoritative session round", () => {
   assert.equal(roundProgressLabel(4), "Round 4 of 4");
 });
 
-test("Faceoff is limited to the QA decision table", () => {
+test("Faceoff is limited to the QA decision, reveal, and result states", () => {
   assert.equal(shouldRenderVaultBluffFaceoff(true, "CHOOSER_DECISION"), true);
   assert.equal(shouldRenderVaultBluffFaceoff(false, "CHOOSER_DECISION"), false);
-  assert.equal(shouldRenderVaultBluffFaceoff(true, "ROUND_REVEAL"), false);
-  assert.equal(shouldRenderVaultBluffFaceoff(true, "MATCH_COMPLETE"), false);
+  assert.equal(shouldRenderVaultBluffFaceoff(true, "ROUND_REVEAL"), true);
+  assert.equal(shouldRenderVaultBluffFaceoff(true, "MATCH_COMPLETE"), true);
+  assert.equal(shouldRenderVaultBluffFaceoff(true, "CHOOSER_QUESTIONING"), false);
 });
