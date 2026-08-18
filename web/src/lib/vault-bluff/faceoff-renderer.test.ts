@@ -90,7 +90,7 @@ function renderPhase(phase: RoundPhase) {
   );
 }
 
-test("Faceoff decision renders the quiet play-immediately table", () => {
+test("Faceoff decision renders the ask-once table", () => {
   const html = renderPhase("CHOOSER_DECISION");
 
   assert.equal(html.match(/\(bot\)/gi)?.length, 1);
@@ -98,10 +98,13 @@ test("Faceoff decision renders the quiet play-immediately table", () => {
   assert.match(html, /aria-label="Case A, yours, sealed"/);
   assert.match(html, /aria-label="Case B, Showboat, sealed"/);
   assert.equal(html.match(/class="sr-only">Sealed</g)?.length, 2);
-  assert.match(html, />Keep</);
-  assert.match(html, />Take</);
-  assert.match(html, />Take the shiny case\.</);
-  assert.match(html, />Skip</);
+  assert.match(html, />Ask one\.</);
+  assert.match(html, />Heavy\?</);
+  assert.match(html, />Both sealed\?</);
+  assert.match(html, />Would you keep\?</);
+  assert.doesNotMatch(html, />Keep</);
+  assert.doesNotMatch(html, />Take</);
+  assert.doesNotMatch(html, /Take the shiny case|Skip/);
   assert.match(html, /aria-label="How to play"/);
   assert.match(html, /aria-label="Settings are not part of this QA cycle"/);
   assert.match(html, /aria-label="Round 2 of 4"/);
@@ -110,15 +113,18 @@ test("Faceoff decision renders the quiet play-immediately table", () => {
   assert.doesNotMatch(html, /Signal|Outcome|Rematch|Explore|Done/);
 });
 
-test("Faceoff table replaces every pre-reveal V1 question wall", () => {
+test("Faceoff table replaces every pre-reveal V1 question wall with three chips", () => {
   for (const phase of [
     "KEEPER_INSPECTION",
     "KEEPER_RESPONSE",
     "CHOOSER_QUESTIONING",
   ] as const) {
     const html = renderPhase(phase);
-    assert.match(html, />Keep</);
-    assert.match(html, />Take</);
+    assert.match(html, />Heavy\?</);
+    assert.match(html, />Both sealed\?</);
+    assert.match(html, />Would you keep\?</);
+    assert.doesNotMatch(html, />Keep</);
+    assert.doesNotMatch(html, />Take</);
     assert.doesNotMatch(html, /0 of 2|Lock response|Approved answer/);
   }
 });

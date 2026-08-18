@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { useState, type MouseEventHandler } from "react";
+import {
+  VAULT_BLUFF_FACEOFF_PROMPTS,
+  type VaultBluffFaceoffPrompt,
+} from "@/lib/vault-bluff/faceoff-presentation";
 import { PERSONAS } from "@/lib/vault-bluff/personas";
 import {
   APPROVED_ANSWERS,
@@ -61,22 +65,27 @@ export function VaultBluffFaceoff({
   onContinuePointerDown,
   onContinuePointerReset,
 }: FaceoffProps) {
-  const [hintVisible, setHintVisible] = useState(true);
+  const [promptSelection, setPromptSelection] = useState<{
+    roundNumber: number;
+    prompt: VaultBluffFaceoffPrompt;
+  } | null>(null);
   const persona = PERSONAS[game.session.persona];
   const round = game.session.currentRound;
+  const selectedPrompt =
+    promptSelection?.roundNumber === round.number
+      ? promptSelection.prompt
+      : null;
 
   return (
     <main className="vq-faceoff" aria-labelledby="faceoff-opponent">
       <div className="vq-faceoff__header-controls">
-        <button
-          type="button"
+        <span
+          role="img"
           aria-label="How to play"
-          aria-pressed={hintVisible}
-          onClick={() => setHintVisible(true)}
           className="vq-faceoff__help-icon"
         >
           ?
-        </button>
+        </span>
         <span
           role="img"
           aria-label="Settings are not part of this QA cycle"
@@ -87,22 +96,36 @@ export function VaultBluffFaceoff({
       </div>
 
       <section className="vq-faceoff__table" aria-label="Vault Bluff table">
-        <BotMark />
-        <h1 id="faceoff-opponent" className="vq-faceoff__opponent-name">
-          {persona.name}
-        </h1>
-        <p className="vq-faceoff__bot-label">(bot)</p>
+        <div className="vq-faceoff__opponent">
+          <BotMark />
+          <div>
+            <h1 id="faceoff-opponent" className="vq-faceoff__opponent-name">
+              {persona.name} <small>(bot)</small>
+            </h1>
+            {isTablePhase(round.phase) ? (
+              <p
+                className="vq-faceoff__prompt-line"
+                data-answered={Boolean(selectedPrompt)}
+                aria-live="polite"
+              >
+                {selectedPrompt?.line ?? "Ask one."}
+              </p>
+            ) : null}
+          </div>
+        </div>
 
         {isTablePhase(round.phase) ? (
           <DecisionTable
             round={round}
             personaName={persona.name}
             pending={pending}
-            hintVisible={hintVisible}
+            selectedPrompt={selectedPrompt}
             humanScore={game.session.humanScore}
             botScore={game.session.botScore}
             onChoice={onTableChoice}
-            onSkip={() => setHintVisible(false)}
+            onPrompt={(prompt) =>
+              setPromptSelection({ roundNumber: round.number, prompt })
+            }
           />
         ) : null}
 
@@ -150,60 +173,85 @@ function DecisionTable({
   round,
   personaName,
   pending,
-  hintVisible,
+  selectedPrompt,
   humanScore,
   botScore,
   onChoice,
-  onSkip,
+  onPrompt,
 }: {
   round: SafeRoundDto;
   personaName: string;
   pending: boolean;
-  hintVisible: boolean;
+  selectedPrompt: VaultBluffFaceoffPrompt | null;
   humanScore: number;
   botScore: number;
   onChoice: (choice: Choice) => void;
-  onSkip: () => void;
+  onPrompt: (prompt: VaultBluffFaceoffPrompt) => void;
 }) {
   return (
     <>
-      {hintVisible ? (
-        <div id="faceoff-hint" className="vq-faceoff__hint">
-          <p>Take the shiny case.</p>
-          <button type="button" onClick={onSkip}>
-            Skip
-          </button>
-        </div>
-      ) : null}
       <div className="vq-faceoff__arena">
         <div className="vq-faceoff__cases" aria-label="Two sealed cases">
           <CaseCard label="A" owner="yours" tone="human" />
           <CaseCard label="B" owner={personaName} tone="bot" />
         </div>
       </div>
-      <div className="vq-faceoff__choices" aria-label="Choose a case">
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => onChoice("KEEP")}
-          className="vq-faceoff__choice vq-faceoff__choice--keep"
-        >
-          Keep
-        </button>
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => onChoice("TAKE")}
-          className="vq-faceoff__choice vq-faceoff__choice--take"
-        >
-          Take
-        </button>
+      <div className="vq-faceoff__decision-footer">
+        {selectedPrompt ? (
+          <>
+            <div className="vq-faceoff__selected-prompt">
+              <button
+                type="button"
+                aria-pressed="true"
+                disabled
+                className="vq-faceoff__chip"
+              >
+                {selectedPrompt.label}
+              </button>
+            </div>
+            <div className="vq-faceoff__choices" aria-label="Choose a case">
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => onChoice("KEEP")}
+                className="vq-faceoff__choice vq-faceoff__choice--keep"
+              >
+                <LockIcon />
+                Keep
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => onChoice("TAKE")}
+                className="vq-faceoff__choice vq-faceoff__choice--take"
+              >
+                <SwapIcon />
+                Take
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="vq-faceoff__question-chips" aria-label="Ask one question">
+            {VAULT_BLUFF_FACEOFF_PROMPTS.map((prompt) => (
+              <button
+                key={prompt.id}
+                type="button"
+                disabled={pending}
+                aria-pressed="false"
+                className="vq-faceoff__chip"
+                onClick={() => onPrompt(prompt)}
+              >
+                {prompt.label}
+              </button>
+            ))}
+          </div>
+        )}
+        <Progress
+          round={round}
+          humanScore={humanScore}
+          botScore={botScore}
+        />
       </div>
-      <Progress
-        round={round}
-        humanScore={humanScore}
-        botScore={botScore}
-      />
     </>
   );
 }
@@ -463,6 +511,35 @@ function GearIcon() {
         fill="none"
         stroke="currentColor"
         strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <path
+        d="M7.5 10V7.5a4.5 4.5 0 0 1 9 0V10m-7-3a2.5 2.5 0 0 1 5 0v3M6 10h12v10H6z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SwapIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <path
+        d="m17 3 4 4-4 4M3 7h18M7 21l-4-4 4-4m14 4H3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
         strokeLinejoin="round"
       />
     </svg>
