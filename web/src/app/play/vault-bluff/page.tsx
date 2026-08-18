@@ -4,8 +4,15 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { FaceoffQuestsTab } from "@/components/play/FaceoffQuestsTab";
 import { VaultBluffGame } from "@/components/play/VaultBluffGame";
-import { getRotatedEarnRecommendation } from "@/lib/affiliates";
-import { isVaultBluffFaceoffEnabled } from "@/lib/vault-bluff/faceoff-presentation";
+import {
+  getRotatedEarnRecommendation,
+  isSlugServable,
+} from "@/lib/affiliates";
+import { CPX_SLUG } from "@/lib/postback";
+import {
+  isVaultBluffFaceoffEnabled,
+  shouldShowFaceoffQuests,
+} from "@/lib/vault-bluff/faceoff-presentation";
 import { getPlayProgress } from "@/lib/vault-bluff/service";
 
 export const metadata: Metadata = {
@@ -48,6 +55,12 @@ export default async function VaultBluffPage() {
       </div>
     );
   }
+  const cpxQuestReady = faceoffEnabled
+    ? shouldShowFaceoffQuests(
+        faceoffEnabled,
+        await isSlugServable(CPX_SLUG),
+      )
+    : false;
   const earnQuest =
     progress.completedMatches >= 3
       ? await getRotatedEarnRecommendation({
@@ -58,7 +71,7 @@ export default async function VaultBluffPage() {
 
   return (
     <>
-      {faceoffEnabled ? (
+      {cpxQuestReady ? (
         <FaceoffQuestsTab />
       ) : null}
       <VaultBluffGame
