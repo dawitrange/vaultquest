@@ -10,7 +10,11 @@ import {
 } from "react";
 import { captureClientEvent, PH_EVENTS } from "@/lib/posthog-client";
 import { canSubmitRevealContinue } from "@/lib/vault-bluff/interaction-guards";
-import { shouldRenderVaultBluffFaceoff } from "@/lib/vault-bluff/faceoff-presentation";
+import {
+  nextVaultBluffFaceoffPersona,
+  shouldRenderVaultBluffFaceoff,
+  VAULT_BLUFF_INITIAL_FACEOFF_PERSONA,
+} from "@/lib/vault-bluff/faceoff-presentation";
 import { PERSONAS } from "@/lib/vault-bluff/personas";
 import { parseKeeperResponseForm } from "@/lib/vault-bluff/response-form";
 import {
@@ -19,12 +23,14 @@ import {
   QUESTION_LABELS,
   QUESTIONS,
   type ApprovedAnswer,
+  type Choice,
   type Confidence,
   type PersonaId,
   type Recommendation,
   type SafeSessionDto,
 } from "@/lib/vault-bluff/types";
 import {
+  faceoffTableCommand,
   VaultBluffFaceoff,
   VaultBluffFaceoffLoading,
 } from "./VaultBluffFaceoff";
@@ -259,6 +265,72 @@ export function VaultBluffGame({
     }
   }
 
+  async function resolveFaceoffChoice(choice: Choice) {
+    if (!game || requestInFlightRef.current) return;
+    requestInFlightRef.current = true;
+    setPending(true);
+    setError(null);
+    let current = game;
+
+    try {
+      for (let step = 0; step < 4; step += 1) {
+        const command = faceoffTableCommand(
+          current.session.currentRound,
+          choice,
+        );
+        if (!command) {
+          throw new Error("No legal Faceoff action is available.");
+        }
+        setPendingAction(command.kind);
+        const response = await fetch(
+          `/api/games/vault-bluff/sessions/${current.id}/actions`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              expectedVersion: current.version,
+              clientActionId: crypto.randomUUID(),
+              command,
+            }),
+          },
+        );
+        const body = await response.json();
+        if (!response.ok) {
+          if (body?.error?.code === "VERSION_CONFLICT") {
+            await loadSession(current.id);
+          } else {
+            acceptGameResult(current);
+            setError(body?.error?.message ?? "That choice could not be applied.");
+          }
+          setRetryIntent({ kind: "restore", sessionId: current.id });
+          return;
+        }
+
+        current = body as ApiResult;
+        const phase = current.session.currentRound.phase;
+        if (phase === "ROUND_REVEAL" || phase === "MATCH_COMPLETE") break;
+      }
+
+      const phase = current.session.currentRound.phase;
+      if (phase !== "ROUND_REVEAL" && phase !== "MATCH_COMPLETE") {
+        throw new Error("The choice did not reach a round result.");
+      }
+      acceptGameResult(current);
+      setRetryIntent(null);
+      setAnswer(null);
+      setConfidence("UNSURE");
+      setRecommendation("KEEP");
+    } catch {
+      acceptGameResult(current);
+      setError("That choice could not be completed. Your match is saved.");
+      setRetryIntent({ kind: "restore", sessionId: current.id });
+    } finally {
+      requestInFlightRef.current = false;
+      setPending(false);
+      setPendingAction(null);
+    }
+  }
+
   useEffect(() => {
     if (
       !faceoffEnabled ||
@@ -271,7 +343,7 @@ export function VaultBluffGame({
       return;
     }
     faceoffAutoStartAttemptedRef.current = true;
-    void start("SHOWBOAT");
+    void start(VAULT_BLUFF_INITIAL_FACEOFF_PERSONA);
     // The controller owns the one-time Faceoff bootstrap. The action function
     // intentionally stays outside the dependency list so a render cannot retry it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -400,10 +472,12 @@ export function VaultBluffGame({
         error={error}
         retryAvailable={Boolean(retryIntent)}
         revealReady={revealReady}
-        onAction={(command) => void act(command)}
+        onTableChoice={(choice) => void resolveFaceoffChoice(choice)}
         onRetry={retryLast}
         onRematch={() => void start(game.session.persona, true)}
-        onNewBot={() => void start()}
+        onNewBot={() =>
+          void start(nextVaultBluffFaceoffPersona(game.session.persona))
+        }
         onContinue={continueFromReveal}
         onContinuePointerDown={() => {
           continuePointerArmedRef.current = revealReady && !pending;

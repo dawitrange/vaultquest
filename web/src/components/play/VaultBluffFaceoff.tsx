@@ -17,7 +17,7 @@ type FaceoffProps = {
   error: string | null;
   retryAvailable: boolean;
   revealReady: boolean;
-  onAction: (command: ClientCommand) => void;
+  onTableChoice: (choice: Choice) => void;
   onRetry: () => void;
   onRematch: () => void;
   onNewBot: () => void;
@@ -53,7 +53,7 @@ export function VaultBluffFaceoff({
   error,
   retryAvailable,
   revealReady,
-  onAction,
+  onTableChoice,
   onRetry,
   onRematch,
   onNewBot,
@@ -101,7 +101,7 @@ export function VaultBluffFaceoff({
             hintVisible={hintVisible}
             humanScore={game.session.humanScore}
             botScore={game.session.botScore}
-            onAction={onAction}
+            onChoice={onTableChoice}
             onSkip={() => setHintVisible(false)}
           />
         ) : null}
@@ -153,7 +153,7 @@ function DecisionTable({
   hintVisible,
   humanScore,
   botScore,
-  onAction,
+  onChoice,
   onSkip,
 }: {
   round: SafeRoundDto;
@@ -162,11 +162,9 @@ function DecisionTable({
   hintVisible: boolean;
   humanScore: number;
   botScore: number;
-  onAction: (command: ClientCommand) => void;
+  onChoice: (choice: Choice) => void;
   onSkip: () => void;
 }) {
-  const keepCommand = faceoffTableCommand(round, "KEEP");
-  const takeCommand = faceoffTableCommand(round, "TAKE");
   return (
     <>
       {hintVisible ? (
@@ -186,20 +184,16 @@ function DecisionTable({
       <div className="vq-faceoff__choices" aria-label="Choose a case">
         <button
           type="button"
-          disabled={pending || !keepCommand}
-          onClick={() => {
-            if (keepCommand) onAction(keepCommand);
-          }}
+          disabled={pending}
+          onClick={() => onChoice("KEEP")}
           className="vq-faceoff__choice vq-faceoff__choice--keep"
         >
           Keep
         </button>
         <button
           type="button"
-          disabled={pending || !takeCommand}
-          onClick={() => {
-            if (takeCommand) onAction(takeCommand);
-          }}
+          disabled={pending}
+          onClick={() => onChoice("TAKE")}
           className="vq-faceoff__choice vq-faceoff__choice--take"
         >
           Take

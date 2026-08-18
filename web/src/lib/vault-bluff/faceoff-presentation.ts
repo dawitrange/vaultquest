@@ -1,6 +1,7 @@
-import type { RoundPhase } from "./types";
+import type { PersonaId, RoundPhase } from "./types";
 
 export const VAULT_BLUFF_ROUND_COUNT = 4;
+export const VAULT_BLUFF_INITIAL_FACEOFF_PERSONA: PersonaId = "SHOWBOAT";
 const FACE_OFF_PHASES: readonly RoundPhase[] = [
   "KEEPER_INSPECTION",
   "KEEPER_RESPONSE",
@@ -26,4 +27,10 @@ export function shouldRenderVaultBluffFaceoff(
   phase: RoundPhase,
 ) {
   return enabled && FACE_OFF_PHASES.includes(phase);
+}
+
+export function nextVaultBluffFaceoffPersona(
+  currentPersona: PersonaId,
+): PersonaId {
+  return currentPersona === "SHOWBOAT" ? "NERVOUS" : "SHOWBOAT";
 }

@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   isVaultBluffFaceoffEnabled,
+  nextVaultBluffFaceoffPersona,
   roundProgressLabel,
   shouldRenderVaultBluffFaceoff,
+  VAULT_BLUFF_INITIAL_FACEOFF_PERSONA,
 } from "./faceoff-presentation";
 
 test("Faceoff enables on preview while production stays fail-closed", () => {
@@ -27,4 +29,11 @@ test("enabled Faceoff owns every V1 phase", () => {
   assert.equal(shouldRenderVaultBluffFaceoff(true, "MATCH_COMPLETE"), true);
   assert.equal(shouldRenderVaultBluffFaceoff(true, "CHOOSER_QUESTIONING"), true);
   assert.equal(shouldRenderVaultBluffFaceoff(true, "KEEPER_RESPONSE"), true);
+});
+
+test("Faceoff initial and New BOT starts always name a persona", () => {
+  assert.equal(VAULT_BLUFF_INITIAL_FACEOFF_PERSONA, "SHOWBOAT");
+  assert.equal(nextVaultBluffFaceoffPersona("SHOWBOAT"), "NERVOUS");
+  assert.equal(nextVaultBluffFaceoffPersona("NERVOUS"), "SHOWBOAT");
+  assert.notEqual(nextVaultBluffFaceoffPersona("SHOWBOAT"), "ANALYST");
 });

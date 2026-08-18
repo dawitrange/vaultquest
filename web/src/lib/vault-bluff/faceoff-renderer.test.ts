@@ -6,8 +6,20 @@ import {
   faceoffTableCommand,
   VaultBluffFaceoff,
 } from "@/components/play/VaultBluffFaceoff";
-import type { ApiResult } from "@/components/play/VaultBluffGame";
-import type { RoundPhase, SafeRoundDto } from "./types";
+import type {
+  ApiResult,
+  ClientCommand,
+} from "@/components/play/VaultBluffGame";
+import {
+  applyCommand,
+  startMatch,
+  toSafeSessionDto,
+} from "./engine";
+import type {
+  RoundPhase,
+  SafeRoundDto,
+  VaultBluffCommand,
+} from "./types";
 
 function gameFor(phase: RoundPhase): ApiResult {
   const resolved = phase === "ROUND_REVEAL" || phase === "MATCH_COMPLETE";
@@ -67,7 +79,7 @@ function renderPhase(phase: RoundPhase) {
       error: null,
       retryAvailable: false,
       revealReady: true,
-      onAction: () => undefined,
+      onTableChoice: () => undefined,
       onRetry: () => undefined,
       onRematch: () => undefined,
       onNewBot: () => undefined,
@@ -143,6 +155,32 @@ test("Faceoff table verbs dispatch legal commands for each V1 phase", () => {
   });
 });
 
+test("one Faceoff table click can run legal commands through round resolution", () => {
+  let state = startMatch({
+    seed: "faceoff-one-click",
+    persona: "SHOWBOAT",
+    now: "2026-08-18T00:00:00.000Z",
+  });
+  let commandCount = 0;
+
+  while (state.rounds.at(-1)?.phase !== "ROUND_REVEAL") {
+    const command = faceoffTableCommand(
+      toSafeSessionDto(state).currentRound,
+      "KEEP",
+    );
+    assert.ok(command);
+    commandCount += 1;
+    state = applyCommand(
+      state,
+      withNow(command, `2026-08-18T00:00:0${commandCount}.000Z`),
+    );
+    assert.ok(commandCount <= 4);
+  }
+
+  assert.equal(state.rounds.at(-1)?.phase, "ROUND_REVEAL");
+  assert.equal(commandCount, 3);
+});
+
 test("Faceoff reveal contains only signal, read, outcome, and Continue", () => {
   const html = renderPhase("ROUND_REVEAL");
 
@@ -166,3 +204,10 @@ test("Faceoff result keeps four equal actions and no reward copy", () => {
   assert.match(html, /href="\/play"/);
   assert.doesNotMatch(html, /auto-rematch|countdown|\/api\/go\/|\bVP\b/i);
 });
+
+function withNow(
+  command: ClientCommand,
+  now: string,
+): VaultBluffCommand {
+  return { ...command, now };
+}
