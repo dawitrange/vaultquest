@@ -13,7 +13,11 @@
     "db:seed": "npx tsx prisma/seed.ts",
     "postback:smoke": "npx tsx scripts/postback-smoke.ts",
     "giveaway:smoke": "npx tsx scripts/giveaway-entries-smoke.ts",
-    "giveaway:registration-smoke": "npx tsx scripts/giveaway-registration-smoke.ts"
+    "giveaway:registration-smoke": "npx tsx scripts/giveaway-registration-smoke.ts",
+    "test:vault-bluff": "tsx --test src/lib/vault-bluff/*.test.ts",
+    "vault-bluff:simulate": "tsx scripts/vault-bluff/simulate.ts",
+    "vault-bluff:tune": "tsx scripts/vault-bluff/tune.ts",
+    "vault-bluff:benchmark": "tsx scripts/vault-bluff/benchmark.ts"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
@@ -41,6 +45,7 @@
     "eslint-config-next": "16.3.0",
     "prisma": "^6.19.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.12",
     "typescript": "^5"
   }
 }

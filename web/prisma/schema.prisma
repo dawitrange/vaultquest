@@ -29,6 +29,9 @@ model User {
   contactMessages ContactMessage[]
   passwordResetTokens PasswordResetToken[]
   giveawayEntries GiveawayEntry[]
+  gameSessions GameSession[]
+  botPlayerProfile BotPlayerProfile?
+  gameRewardGrants GameRewardGrant[]
 }
 
 model PasswordResetToken {
@@ -86,11 +89,153 @@ model LedgerEntry {
   questId     String?
   clickId     String?
   note        String?
+  gameSessionId String?      @unique
+  rewardPolicyVersion String?
+  fundingCampaign String?
   createdAt   DateTime     @default(now())
+  gameRewardGrant GameRewardGrant?
 
   @@index([userId, status])
   @@index([userId, availableAt])
   @@index([clickId])
+}
+
+enum GameSessionStatus {
+  ACTIVE
+  COMPLETED
+  FORFEITED
+}
+
+enum GamePersona {
+  ANALYST
+  SHOWBOAT
+  NERVOUS
+  WILDCARD
+}
+
+enum GameRole {
+  KEEPER
+  CHOOSER
+}
+
+enum GameRoundStatus {
+  ACTIVE
+  COMPLETED
+  FORFEITED
+}
+
+enum GameCase {
+  CASE_A
+  CASE_B
+}
+
+enum GameRewardStatus {
+  BLOCKED
+  PENDING
+}
+
+model GameSession {
+  id              String            @id @default(cuid())
+  userId          String
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status          GameSessionStatus @default(ACTIVE)
+  persona         GamePersona
+  engineVersion   String
+  policyVersion   String
+  version         Int               @default(1)
+  seed            String
+  rngCursor       Int               @default(0)
+  state           Json
+  humanScore      Int               @default(0)
+  botScore        Int               @default(0)
+  xpAwarded       Int               @default(0)
+  memoryUpdatedAt DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  rounds          GameRound[]
+  actions         GameAction[]
+  rewardGrant     GameRewardGrant?
+
+  @@index([userId, status])
+  @@index([userId, completedAt])
+}
+
+model GameRound {
+  id          String          @id @default(cuid())
+  sessionId   String
+  session     GameSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  number      Int
+  humanRole   GameRole
+  humanCase   GameCase
+  botCase     GameCase
+  keyCase     GameCase
+  status      GameRoundStatus @default(ACTIVE)
+  publicState Json
+  startedAt   DateTime
+  deadlineAt  DateTime
+  completedAt DateTime?
+  createdAt   DateTime        @default(now())
+  actions     GameAction[]
+
+  @@unique([sessionId, number])
+  @@index([sessionId, status])
+}
+
+model GameAction {
+  id             String      @id @default(cuid())
+  sessionId      String
+  session        GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  roundId        String?
+  round          GameRound?  @relation(fields: [roundId], references: [id], onDelete: SetNull)
+  clientActionId String
+  expectedVersion Int
+  resultingVersion Int
+  kind           String
+  payload        Json
+  createdAt      DateTime    @default(now())
+
+  @@unique([sessionId, clientActionId])
+  @@index([sessionId, createdAt])
+  @@index([roundId])
+}
+
+model BotPlayerProfile {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  completedMatches     Int      @default(0)
+  totalXp              Int      @default(0)
+  rank                 String   @default("Scout")
+  cosmetic             String   @default("Brass Starter Case")
+  memory               Json
+  lastTrainedSessionId String?  @unique
+  lastEngineVersion    String
+  lastPolicyVersion    String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model GameRewardGrant {
+  id                  String           @id @default(cuid())
+  userId              String
+  user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId           String           @unique
+  session             GameSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  rewardPeriod        DateTime
+  vp                  Int
+  status              GameRewardStatus
+  blockReason         String?
+  rewardPolicyVersion String
+  fundingCampaign     String?
+  availableAt         DateTime?
+  ledgerEntryId       String?          @unique
+  ledgerEntry         LedgerEntry?     @relation(fields: [ledgerEntryId], references: [id], onDelete: SetNull)
+  createdAt           DateTime         @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, rewardPeriod, status])
+  @@index([status])
 }
 
 enum RedemptionStatus {

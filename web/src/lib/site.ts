@@ -2,7 +2,7 @@ export const SITE = {
   name: "VaultQuest",
   tagline: "Transparent gaming rewards",
   headline: "Quests → Vault Points → Steam.",
-  promise: "Complete real partner quests, bank Vault points, and cash out to Steam — or enter our scheduled giveaways.",
+  promise: "Complete real partner quests, bank Vault points, and unlock Steam credit — or enter our scheduled giveaways.",
   /** Canonical production origin (www). */
   url: "https://www.vaultquest.io",
   minRedeemUsd: 5,
@@ -12,14 +12,15 @@ export const SITE = {
 /** Effective / last-updated date shown on Terms & Privacy. */
 export const LEGAL_EFFECTIVE = "August 12, 2026";
 
+export const PLAY_REWARDS_OFF_COPY =
+  "Rewards are off. Play and XP stay available.";
+
 export const NAV = [
-  { href: "/about", label: "About" },
-  { href: "/how-it-works", label: "How it works" },
+  { href: "/play", label: "Play" },
   { href: "/earn", label: "Earn" },
   { href: "/rewards", label: "Rewards" },
-  { href: "/giveaways", label: "Giveaways" },
-  { href: "/proof", label: "Proof & Rules" },
-  { href: "/contact", label: "Contact" },
+  // Product freeze: keep the live giveaway form in primary nav through Sep 1 ET.
+  { href: "/giveaway", label: "Giveaway" },
 ] as const;
 
 /** Public indexable routes for sitemap (exclude auth/admin/api). */
@@ -27,6 +28,7 @@ export const PUBLIC_PATHS = [
   "/",
   "/about",
   "/how-it-works",
+  "/play",
   "/earn",
   "/rewards",
   "/giveaways",

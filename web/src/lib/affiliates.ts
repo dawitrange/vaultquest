@@ -367,3 +367,25 @@ export async function listServableQuests(): Promise<Quest[]> {
     quest.pinSlug ? pinnedServable.has(quest.pinSlug) : servable.has(quest.category),
   );
 }
+
+/**
+ * Select one optional Earn recommendation through the same healthy, under-cap
+ * category rotation used by /api/go. This checks inventory without creating an
+ * OfferClick; the click is still created only when the user chooses the CTA.
+ */
+export async function getRotatedEarnRecommendation(args: {
+  userId: string;
+  rotationOffset: number;
+}): Promise<Quest | null> {
+  const eligible = QUESTS.filter(
+    (quest) => !quest.pinSlug && !quest.hideVpReward && quest.vpReward > 0,
+  );
+  if (eligible.length === 0) return null;
+  const start = Math.abs(args.rotationOffset) % eligible.length;
+  const ordered = [...eligible.slice(start), ...eligible.slice(0, start)];
+  for (const quest of ordered) {
+    const link = await serveAffiliateLink(quest.category, { userId: args.userId });
+    if (link) return quest;
+  }
+  return null;
+}

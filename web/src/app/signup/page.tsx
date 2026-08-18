@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { EarnAuthPrompt } from "@/components/EarnAuthPrompt";
 import { OAuthButtons } from "@/components/OAuthButtons";
 import { SignupForm } from "@/components/SignupForm";
-import { pathFromAuthHint } from "@/lib/auth-redirect";
+import { authHintFromValue, pathFromAuthHint } from "@/lib/auth-redirect";
 
 export const metadata: Metadata = { title: "Sign up" };
 
@@ -17,10 +17,7 @@ export default async function SignupPage({
   if (session?.user) redirect("/account");
 
   const params = await searchParams;
-  const from =
-    params.from === "earn" || params.from === "rewards" || params.from === "account" || params.from === "giveaway"
-      ? params.from
-      : undefined;
+  const from = authHintFromValue(params.from);
 
   return (
     <div className="mx-auto max-w-md px-4 py-14 sm:px-6">
