@@ -1319,7 +1319,6 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
           secret: ` ${unitSecret}`,
           partner: "cpx",
           user_id: "Dawit",
-          click_id: "Dawit",
           tx_id: "T-dawit",
           payout_usd: "0.50",
         }),
