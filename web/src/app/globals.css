@@ -1706,6 +1706,27 @@ code,
   color: var(--vq-warn);
 }
 
+.vq-faceoff__gear-icon:hover,
+.vq-faceoff__gear-icon:focus-visible {
+  border-color: var(--vq-warn);
+  background: rgba(224, 179, 90, 0.08);
+}
+
+.vq-faceoff__control-notice {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  width: min(16rem, calc(100vw - 2rem));
+  border: 1px solid var(--vq-border-strong);
+  border-radius: 8px;
+  padding: 0.7rem 0.8rem;
+  background: rgba(6, 21, 29, 0.98);
+  color: var(--vq-ink-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  text-align: left;
+}
+
 .vq-faceoff__table {
   width: min(100%, 58rem);
 }
@@ -1907,5 +1928,237 @@ code,
 
   .vq-faceoff__arena--reveal .vq-faceoff__cases {
     top: 35%;
+  }
+}
+
+/* Faceoff concept 3: ask once, then choose. */
+.vq-faceoff__opponent {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.9rem;
+  margin-inline: auto;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.vq-faceoff__opponent .vq-faceoff__bot-mark {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  margin: 0;
+}
+
+.vq-faceoff__opponent-name {
+  margin: 0;
+  font-size: clamp(1.45rem, 3vw, 1.9rem);
+  line-height: 1.1;
+}
+
+.vq-faceoff__opponent-name small {
+  color: var(--vq-ink-muted);
+  font-family: var(--vq-font-body);
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.vq-faceoff__prompt-line {
+  min-height: 1.4rem;
+  margin-top: 0.8rem;
+  color: var(--vq-ink-muted);
+  font-size: 0.88rem;
+}
+
+.vq-faceoff__prompt-line[data-answered="true"] {
+  color: var(--vq-warn);
+}
+
+.vq-faceoff__decision-footer {
+  width: 100%;
+}
+
+.vq-faceoff__question-chips {
+  display: grid;
+  width: min(100%, 29rem);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0.6rem auto 0;
+}
+
+.vq-faceoff__chip {
+  min-width: 44px;
+  min-height: 48px;
+  border: 1px solid var(--vq-border-strong);
+  border-radius: 9px;
+  background: #102631;
+  padding: 0.55rem 0.75rem;
+  color: var(--vq-ink);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.vq-faceoff__chip:hover,
+.vq-faceoff__chip:focus-visible {
+  border-color: var(--vq-teal);
+}
+
+.vq-faceoff__selected-prompt {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.35rem;
+}
+
+.vq-faceoff__selected-prompt .vq-faceoff__chip {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  border-color: var(--vq-teal);
+  border-radius: 999px;
+  background: rgba(45, 212, 191, 0.08);
+  padding-block: 0.2rem;
+  color: var(--vq-teal);
+  font-size: 0.68rem;
+  opacity: 1;
+}
+
+.vq-faceoff__choice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-transform: none;
+}
+
+@media (max-width: 520px) {
+  .vq-faceoff {
+    padding-top: 1.25rem;
+  }
+
+  .vq-faceoff__opponent {
+    margin-left: clamp(3rem, 18vw, 5rem);
+  }
+
+  .vq-faceoff__arena {
+    height: clamp(24rem, 58dvh, 35rem);
+    margin-top: -0.25rem;
+  }
+
+  .vq-faceoff__arena::before {
+    inset: 8% -12%;
+  }
+
+  .vq-faceoff__arena .vq-faceoff__cases {
+    top: 27%;
+    right: 12%;
+    left: 12%;
+    gap: 2.25rem;
+  }
+
+  .vq-faceoff__decision-footer {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .vq-faceoff__decision-footer .vq-faceoff__progress {
+    order: -1;
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+  }
+
+  .vq-faceoff__question-chips {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+    margin-top: 0;
+  }
+
+  .vq-faceoff__chip {
+    min-height: 44px;
+    padding-block: 0.3rem;
+  }
+
+  .vq-faceoff__selected-prompt {
+    margin: 0 auto 0.35rem;
+  }
+
+  .vq-faceoff__choices {
+    position: sticky;
+    z-index: 10;
+    bottom: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0.75rem 0 calc(0.75rem + env(safe-area-inset-bottom));
+    background: rgba(6, 21, 29, 0.96);
+  }
+
+  .vq-faceoff__choice {
+    min-height: 64px;
+    font-size: 1.05rem;
+  }
+
+  .vq-faceoff__arena--reveal {
+    height: 17rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .vq-faceoff {
+    padding-top: 4.25rem;
+    padding-bottom: calc(10rem + env(safe-area-inset-bottom));
+  }
+
+  .vq-faceoff__opponent {
+    margin-inline: auto;
+  }
+
+  .vq-faceoff__arena {
+    height: 20rem;
+  }
+
+  .vq-faceoff__arena .vq-faceoff__cases {
+    top: -2%;
+  }
+
+  .vq-faceoff__decision-footer .vq-faceoff__progress {
+    position: fixed;
+    z-index: 21;
+    right: 1rem;
+    bottom: calc(16.5rem + env(safe-area-inset-bottom));
+    left: 1rem;
+  }
+
+  .vq-faceoff__question-chips {
+    position: fixed;
+    z-index: 20;
+    right: 1rem;
+    bottom: calc(5.75rem + env(safe-area-inset-bottom));
+    left: 1rem;
+    width: auto;
+    margin: 0;
+    padding: 0.75rem 0;
+    background: rgba(6, 21, 29, 0.98);
+  }
+
+  .vq-faceoff__decision-footer:has(.vq-faceoff__choices)
+    .vq-faceoff__progress {
+    bottom: calc(14.5rem + env(safe-area-inset-bottom));
+  }
+
+  .vq-faceoff__selected-prompt {
+    position: fixed;
+    z-index: 21;
+    right: 1rem;
+    bottom: calc(11.5rem + env(safe-area-inset-bottom));
+    left: 1rem;
+  }
+
+  .vq-faceoff__choices {
+    position: fixed;
+    z-index: 20;
+    right: 1rem;
+    bottom: calc(5.75rem + env(safe-area-inset-bottom));
+    left: 1rem;
+    width: auto;
   }
 }

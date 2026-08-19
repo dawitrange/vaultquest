@@ -90,35 +90,43 @@ function renderPhase(phase: RoundPhase) {
   );
 }
 
-test("Faceoff decision renders the quiet play-immediately table", () => {
+test("Faceoff decision renders the ask-once table", () => {
   const html = renderPhase("CHOOSER_DECISION");
 
   assert.equal(html.match(/\(bot\)/gi)?.length, 1);
-  assert.match(html, />Showboat</);
+  assert.match(html, />Showboat <small>\(bot\)<\/small>/);
   assert.match(html, /aria-label="Case A, yours, sealed"/);
   assert.match(html, /aria-label="Case B, Showboat, sealed"/);
   assert.equal(html.match(/class="sr-only">Sealed</g)?.length, 2);
-  assert.match(html, />Keep</);
-  assert.match(html, />Take</);
-  assert.match(html, />Take the shiny case\.</);
-  assert.match(html, />Skip</);
-  assert.match(html, /aria-label="How to play"/);
-  assert.match(html, /aria-label="Settings are not part of this QA cycle"/);
+  assert.match(html, />Ask one\.</);
+  assert.match(html, />Heavy\?</);
+  assert.match(html, />Both sealed\?</);
+  assert.match(html, />Would you keep\?</);
+  assert.doesNotMatch(html, />Keep</);
+  assert.doesNotMatch(html, />Take</);
+  assert.doesNotMatch(html, /Take the shiny case|Skip/);
+  assert.match(html, /<button[^>]+aria-label="How to play"/);
+  assert.match(html, /<button[^>]+aria-label="Settings"/);
+  assert.doesNotMatch(html, /aria-pressed/);
   assert.match(html, /aria-label="Round 2 of 4"/);
+  assert.match(html, />Score 1 to 1</);
   assert.match(html, />2\/4</);
   assert.match(html, />1 - 1</);
   assert.doesNotMatch(html, /Signal|Outcome|Rematch|Explore|Done/);
 });
 
-test("Faceoff table replaces every pre-reveal V1 question wall", () => {
+test("Faceoff table replaces every pre-reveal V1 question wall with three chips", () => {
   for (const phase of [
     "KEEPER_INSPECTION",
     "KEEPER_RESPONSE",
     "CHOOSER_QUESTIONING",
   ] as const) {
     const html = renderPhase(phase);
-    assert.match(html, />Keep</);
-    assert.match(html, />Take</);
+    assert.match(html, />Heavy\?</);
+    assert.match(html, />Both sealed\?</);
+    assert.match(html, />Would you keep\?</);
+    assert.doesNotMatch(html, />Keep</);
+    assert.doesNotMatch(html, />Take</);
     assert.doesNotMatch(html, /0 of 2|Lock response|Approved answer/);
   }
 });
@@ -155,30 +163,32 @@ test("Faceoff table verbs dispatch legal commands for each V1 phase", () => {
   });
 });
 
-test("one Faceoff table click can run legal commands through round resolution", () => {
-  let state = startMatch({
-    seed: "faceoff-one-click",
-    persona: "SHOWBOAT",
-    now: "2026-08-18T00:00:00.000Z",
-  });
-  let commandCount = 0;
+test("one Keep or Take click can run legal commands through round resolution", () => {
+  for (const choice of ["KEEP", "TAKE"] as const) {
+    let state = startMatch({
+      seed: `faceoff-one-click-${choice.toLowerCase()}`,
+      persona: "SHOWBOAT",
+      now: "2026-08-18T00:00:00.000Z",
+    });
+    let commandCount = 0;
 
-  while (state.rounds.at(-1)?.phase !== "ROUND_REVEAL") {
-    const command = faceoffTableCommand(
-      toSafeSessionDto(state).currentRound,
-      "KEEP",
-    );
-    assert.ok(command);
-    commandCount += 1;
-    state = applyCommand(
-      state,
-      withNow(command, `2026-08-18T00:00:0${commandCount}.000Z`),
-    );
-    assert.ok(commandCount <= 4);
+    while (state.rounds.at(-1)?.phase !== "ROUND_REVEAL") {
+      const command = faceoffTableCommand(
+        toSafeSessionDto(state).currentRound,
+        choice,
+      );
+      assert.ok(command);
+      commandCount += 1;
+      state = applyCommand(
+        state,
+        withNow(command, `2026-08-18T00:00:0${commandCount}.000Z`),
+      );
+      assert.ok(commandCount <= 4);
+    }
+
+    assert.equal(state.rounds.at(-1)?.phase, "ROUND_REVEAL");
+    assert.equal(commandCount, 3);
   }
-
-  assert.equal(state.rounds.at(-1)?.phase, "ROUND_REVEAL");
-  assert.equal(commandCount, 3);
 });
 
 test("Faceoff reveal contains only signal, read, outcome, and Continue", () => {

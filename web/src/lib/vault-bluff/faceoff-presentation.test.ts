@@ -5,6 +5,7 @@ import {
   nextVaultBluffFaceoffPersona,
   roundProgressLabel,
   shouldRenderVaultBluffFaceoff,
+  VAULT_BLUFF_FACEOFF_PROMPTS,
   VAULT_BLUFF_INITIAL_FACEOFF_PERSONA,
 } from "./faceoff-presentation";
 
@@ -36,4 +37,15 @@ test("Faceoff initial and New BOT starts always name a persona", () => {
   assert.equal(nextVaultBluffFaceoffPersona("SHOWBOAT"), "NERVOUS");
   assert.equal(nextVaultBluffFaceoffPersona("NERVOUS"), "SHOWBOAT");
   assert.notEqual(nextVaultBluffFaceoffPersona("SHOWBOAT"), "ANALYST");
+});
+
+test("Faceoff presents three short questions with fixed safe lines", () => {
+  assert.deepEqual(
+    VAULT_BLUFF_FACEOFF_PROMPTS.map(({ label, line }) => ({ label, line })),
+    [
+      { label: "Heavy?", line: "The shine’s a bluff." },
+      { label: "Both sealed?", line: "Sealed tight. Read the table." },
+      { label: "Would you keep?", line: "I'd keep mine. Your move." },
+    ],
+  );
 });
