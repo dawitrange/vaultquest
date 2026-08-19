@@ -1195,6 +1195,14 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
             affiliateLink: { partner: "CPX Research", slug: CPX_SLUG },
           },
           {
+            id: "click-cpx-same-user-older",
+            userId,
+            credited: false,
+            questId: "q-surveys",
+            createdAt: new Date(nowMs - 120_000),
+            affiliateLink: { partner: "CPX Research", slug: CPX_SLUG },
+          },
+          {
             id: "click-cpx-other-user",
             userId: otherUserId,
             credited: false,
@@ -1247,6 +1255,7 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
           row.status === LedgerStatus.PENDING &&
           row.clickId === cpxClickId &&
           boundClick?.credited === true &&
+          wallDb.clicks.get("click-cpx-same-user-older")?.credited === false &&
           wallDb.clicks.get("click-cpx-other-user")?.credited === false &&
           wallDb.clicks.get("click-other-partner")?.credited === false &&
           Boolean(row.note?.includes("tx=T1")) &&
@@ -1268,6 +1277,7 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
           dup.body.duplicate === true &&
           wallDb.ledger.length === 1 &&
           boundClick?.credited === true &&
+          wallDb.clicks.get("click-cpx-same-user-older")?.credited === false &&
           wallDb.clicks.get("click-cpx-other-user")?.credited === false,
         detail: `HTTP ${dup.status} ${JSON.stringify({ ok: dup.body.ok, duplicate: dup.body.duplicate })} ledger=${wallDb.ledger.length} credited=${String(boundClick?.credited)}`,
       });
