@@ -264,7 +264,7 @@ Cases:
   8. Refuse marketing homepages (adgatemedia.com/, www.cpx-research.com/)
   9. CPX official secure_hash = md5(trans_id-appsecurehash); missing HMAC hash must not 401
   10. CPX status=2 voids matching EARN (does not unwind REDEEM) — flagged gap if already spent
-  11. Official CPX user_id-only (no click_id) credits PENDING EARN via wall flow — in-memory, no prod
+  11. Official CPX user_id-only binds the same user's cpx-survey click and credits PENDING EARN — in-memory, no prod
   12. Trim secret/aliases; user_id=Dawit (not a User.id) → 404 and no ledger row
 
 Target network: CPX (${CPX_SLUG}). AdGate (${ADGATE_SLUG}) is stalled (under review).
@@ -1047,7 +1047,8 @@ type MemoryClick = {
   userId: string | null;
   credited: boolean;
   questId: string | null;
-  affiliateLink: { partner: string };
+  createdAt: Date;
+  affiliateLink: { partner: string; slug: string };
 };
 
 type MemoryLedger = {
@@ -1076,6 +1077,18 @@ function createMemoryPostbackDb(seed: { users?: string[]; clicks?: MemoryClick[]
     offerClick: {
       async findUnique({ where }) {
         return clicks.get(where.id) ?? null;
+      },
+      async findFirst({ where }) {
+        return (
+          [...clicks.values()]
+            .filter(
+              (click) =>
+                click.userId === where.userId &&
+                click.credited === where.credited &&
+                click.affiliateLink.slug === where.affiliateLink.is.slug,
+            )
+            .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())[0] ?? null
+        );
       },
       async update({ where, data }) {
         const row = clicks.get(where.id);
@@ -1154,7 +1167,10 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
 
   const unitSecret = "unit-postback-not-a-prod-secret";
   const hmacSecret = "unit-hmac-not-a-prod-secret";
+  const cpxSecret = "unit-cpx-not-a-prod-secret";
   const userId = "cluserwallflow00000000001";
+  const otherUserId = "cluserwallflow00000000002";
+  const cpxClickId = "click-cpx-user-only-001";
   const nowMs = Date.parse("2026-08-16T00:00:00.000Z");
   const holdMs = 3 * 86400000;
 
@@ -1163,20 +1179,50 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
       POSTBACK_SECRET: unitSecret,
       BITLABS_APP_SECRET: hmacSecret,
       AYET_HMAC_SECRET: undefined,
-      CPX_SECURE_HASH: undefined,
+      CPX_SECURE_HASH: cpxSecret,
       CPX_APP_SECRET: undefined,
     },
     async () => {
-      const wallDb = createMemoryPostbackDb({ users: [userId] });
+      const wallDb = createMemoryPostbackDb({
+        users: [userId, otherUserId],
+        clicks: [
+          {
+            id: cpxClickId,
+            userId,
+            credited: false,
+            questId: "q-surveys",
+            createdAt: new Date(nowMs - 60_000),
+            affiliateLink: { partner: "CPX Research", slug: CPX_SLUG },
+          },
+          {
+            id: "click-cpx-other-user",
+            userId: otherUserId,
+            credited: false,
+            questId: "q-surveys",
+            createdAt: new Date(nowMs),
+            affiliateLink: { partner: "CPX Research", slug: CPX_SLUG },
+          },
+          {
+            id: "click-other-partner",
+            userId,
+            credited: false,
+            questId: "q-surveys",
+            createdAt: new Date(nowMs),
+            affiliateLink: { partner: "Other partner", slug: "other-survey" },
+          },
+        ],
+      });
       const wallBag = {
         secret: unitSecret,
         partner: "cpx",
         user_id: userId,
         trans_id: "T1",
         amount_usd: "0.50",
+        status: "1",
+        secure_hash: signCpxPostbackHash("T1", cpxSecret),
       };
       const wallUrl =
-        "http://localhost/api/postback?secret=x&partner=cpx&user_id=u&trans_id=T1&amount_usd=0.50";
+        "http://localhost/api/postback?secret=x&partner=cpx&user_id=u&trans_id=T1&amount_usd=0.50&status=1&secure_hash=x";
       const credit = await handlePostbackRequest({
         url: wallUrl,
         get: bagGet(wallBag),
@@ -1184,22 +1230,28 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
         nowMs,
       });
       const row = wallDb.ledger[0];
+      const boundClick = wallDb.clicks.get(cpxClickId);
       const availableDelta = row?.availableAt ? Math.abs(row.availableAt.getTime() - (nowMs + holdMs)) : Infinity;
       results.push({
-        name: "CPX user_id-only credits PENDING EARN (no OfferClick)",
+        name: "CPX user_id-only binds same-user cpx-survey click",
         pass:
           credit.status === 200 &&
           credit.body.ok === true &&
           credit.body.duplicate !== true &&
           credit.body.user_id === userId &&
+          credit.body.click_id === cpxClickId &&
+          credit.body.cpx_md5 === "ok" &&
           Number(credit.body.vp) === 35 &&
           wallDb.ledger.length === 1 &&
           row?.kind === LedgerKind.EARN &&
           row.status === LedgerStatus.PENDING &&
-          row.clickId === null &&
+          row.clickId === cpxClickId &&
+          boundClick?.credited === true &&
+          wallDb.clicks.get("click-cpx-other-user")?.credited === false &&
+          wallDb.clicks.get("click-other-partner")?.credited === false &&
           Boolean(row.note?.includes("tx=T1")) &&
           availableDelta < 1000,
-        detail: `HTTP ${credit.status} vp=${String(credit.body.vp)} status=${row?.status ?? "none"} note=${row?.note ?? "none"}`,
+        detail: `HTTP ${credit.status} clickId=${row?.clickId ?? "none"} credited=${String(boundClick?.credited)} vp=${String(credit.body.vp)} status=${row?.status ?? "none"}`,
       });
 
       const dup = await handlePostbackRequest({
@@ -1210,8 +1262,14 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
       });
       results.push({
         name: "CPX user_id-only duplicate trans_id",
-        pass: dup.status === 200 && dup.body.ok === true && dup.body.duplicate === true && wallDb.ledger.length === 1,
-        detail: `HTTP ${dup.status} ${JSON.stringify({ ok: dup.body.ok, duplicate: dup.body.duplicate })}`,
+        pass:
+          dup.status === 200 &&
+          dup.body.ok === true &&
+          dup.body.duplicate === true &&
+          wallDb.ledger.length === 1 &&
+          boundClick?.credited === true &&
+          wallDb.clicks.get("click-cpx-other-user")?.credited === false,
+        detail: `HTTP ${dup.status} ${JSON.stringify({ ok: dup.body.ok, duplicate: dup.body.duplicate })} ledger=${wallDb.ledger.length} credited=${String(boundClick?.credited)}`,
       });
 
       const missingIds = await handlePostbackRequest({
@@ -1281,13 +1339,14 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
         nowMs,
       });
       results.push({
-        name: "user_id-only with tx_id + payout_usd credits PENDING",
+        name: "user_id-only without a CPX click does not invent one",
         pass:
           aliasCredit.status === 200 &&
           aliasCredit.body.ok === true &&
           aliasDb.ledger[0]?.status === LedgerStatus.PENDING &&
+          aliasDb.ledger[0]?.clickId === null &&
           Boolean(aliasDb.ledger[0]?.note?.includes("tx=T-alias")),
-        detail: `HTTP ${aliasCredit.status} note=${aliasDb.ledger[0]?.note ?? "none"}`,
+        detail: `HTTP ${aliasCredit.status} clickId=${aliasDb.ledger[0]?.clickId ?? "none"} note=${aliasDb.ledger[0]?.note ?? "none"}`,
       });
 
       const clickId = "click-signed-in-001";
@@ -1299,7 +1358,8 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
             userId,
             credited: false,
             questId: "q-surveys",
-            affiliateLink: { partner: "cpx" },
+            createdAt: new Date(nowMs),
+            affiliateLink: { partner: "cpx", slug: CPX_SLUG },
           },
         ],
       });
@@ -1340,7 +1400,8 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
             userId: productionUserId,
             credited: false,
             questId: "q-surveys",
-            affiliateLink: { partner: "cpx" },
+            createdAt: new Date(nowMs),
+            affiliateLink: { partner: "cpx", slug: CPX_SLUG },
           },
         ],
       });

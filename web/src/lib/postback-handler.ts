@@ -1,6 +1,7 @@
 import { LedgerKind, LedgerStatus } from "@prisma/client";
 import { getQuest } from "./affiliates";
 import {
+  CPX_SLUG,
   CPX_SECURE_HASH_ENV_NAMES,
   HMAC_SECRET_ENV_NAMES,
   PAYOUT_ALIASES,
@@ -25,19 +26,30 @@ export type PostbackResult = {
   body: PostbackJson;
 };
 
+type PostbackClick = {
+  id: string;
+  userId: string | null;
+  credited: boolean;
+  questId: string | null;
+  affiliateLink: { partner: string };
+};
+
 /** Minimal Prisma surface used by S2S credit. Tests pass an in-memory stand-in. */
 export type PostbackDb = {
   offerClick: {
     findUnique: (args: {
       where: { id: string };
       include?: { affiliateLink: boolean };
-    }) => Promise<{
-      id: string;
-      userId: string | null;
-      credited: boolean;
-      questId: string | null;
-      affiliateLink: { partner: string };
-    } | null>;
+    }) => Promise<PostbackClick | null>;
+    findFirst: (args: {
+      where: {
+        userId: string;
+        credited: false;
+        affiliateLink: { is: { slug: string } };
+      };
+      orderBy: { createdAt: "desc" };
+      include: { affiliateLink: true };
+    }) => Promise<PostbackClick | null>;
     update: (args: { where: { id: string }; data: { credited: boolean } }) => Promise<unknown>;
   };
   user: {
@@ -63,7 +75,8 @@ export type PostbackDb = {
 
 /**
  * S2S postback core. Official CPX may send `user_id` and no click_id — that
- * must credit via wall flow, not 400 `click_id required`.
+ * must credit via wall flow, not 400 `click_id required`. The wall flow binds
+ * the newest uncredited click owned by that user on the cpx-survey link.
  * A display name (e.g. Dawit) is not a User.id — 404, do not invent a user.
  * Incoming secret and alias values are trimmed so `secret= VALUE` still matches.
  */
@@ -161,9 +174,21 @@ export async function handlePostbackRequest(args: {
       return json(404, { ok: false, error: "unknown click_id or user" });
     }
     userId = user.id;
-    partnerName = get("partner") || "partner wall";
-    clickId = null;
-    clickQuestId = null;
+    const cpxClick =
+      isCpxPartner(partnerHint) && !clickIdCandidate
+        ? await prisma.offerClick.findFirst({
+            where: {
+              userId: user.id,
+              credited: false,
+              affiliateLink: { is: { slug: CPX_SLUG } },
+            },
+            orderBy: { createdAt: "desc" },
+            include: { affiliateLink: true },
+          })
+        : null;
+    partnerName = (cpxClick?.affiliateLink.partner ?? get("partner")) || "partner wall";
+    clickId = cpxClick?.id ?? null;
+    clickQuestId = cpxClick?.questId ?? null;
   }
 
   if (!userId) {
