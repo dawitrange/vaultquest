@@ -13,6 +13,8 @@
 | Engineering MVP | After Product + Offers + Compliance + Brand tokens |
 | Marketing wave | After landing MVP + claims policy |
 | Paid ads spend | After LTV sketch + owner OK from budget |
+| Grok Bot operating company (5 standing bots, $40k car fund, GitHub kanban) | **Pack in repo** — `docs/19-grok-bot-ops.md` (2026-08-15). Ethio still creates the 5 agents in the Grok Bot app. |
+| Earn-live (one network crediting pending VP on production) | **Blocked** — unblocks Traffic posting + any paid tests |
 
 ## Wave 1 (parallel) — after you approve this pack
 
