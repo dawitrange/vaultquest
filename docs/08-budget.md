@@ -29,7 +29,7 @@ Owner approves before spend. Prefer free/cheap until ROI is clear.
 1. Domain `vaultquest.*` + hosting + email  
 2. Small Steam vault for first redemptions/giveaways (trust)  
 3. Creator/organic content tooling if needed  
-4. Paid traffic only after claims policy + live earn path  
+4. Paid traffic: claims policy on the live landing is required. **Owner override 2026-08-16:** weekly ad tests and aggressive spend for quick gains toward the $40k car are allowed. Earn-live work runs **in parallel** (do not scale into a dead `/earn` catalog). Caps, UTM, and kill rules: `docs/ops/ads-weekly-protocol.md`. Overnight Manager paste: `docs/20-overnight-manager.md`.  
 
 ## AI operating budget — OpenRouter (added 2026-08-09)
 

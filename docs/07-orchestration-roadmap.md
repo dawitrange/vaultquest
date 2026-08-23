@@ -12,7 +12,7 @@
 | Engineering MVP | **In progress** |
 | Engineering MVP | After Product + Offers + Compliance + Brand tokens |
 | Marketing wave | After landing MVP + claims policy |
-| Paid ads spend | After LTV sketch + owner OK from budget |
+| Paid ads spend | **Owner override 2026-08-16:** weekly tests + aggressive spend OK toward $40k car. Earn-live in parallel. See `docs/20-overnight-manager.md` + `docs/ops/ads-weekly-protocol.md`. |
 
 ## Wave 1 (parallel) — after you approve this pack
 

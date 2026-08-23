@@ -36,25 +36,21 @@ This plan turns the current research + QA into an executable, gated workflow. It
 - **Also fix now (owner):** reseed the **production** DB so `/earn` stops showing dead partner-homepage links (`npm run db:seed` on prod `DATABASE_URL`, or flip links to `disabled` in `/admin`). See PR #5.
 - **Also (owner):** set `OPENROUTER_API_KEY` on Vercel so the Vault Assistant works (PR #6 hides it until then).
 
-### W3 — Marketing / Facebook (gated on W2)
-- **Do:** prepare campaign assets (angles, creative concepts, audiences, budget, tracking) so we can launch the moment prerequisites clear.
-- **Gate (hard):** per `vaultquest.mdc` #7 + `docs/07-orchestration-roadmap.md`, **no paid spend before** (a) landing MVP solid, (b) claims/copy policy done (W1), (c) at least one monetization network LIVE and crediting (W2). Spending before that drives users to a product that can't pay them = wasted CAC, bad first impression, and Facebook rewards-vertical policy risk.
-- **Budget guard:** any spend needs a cost / lift / kill line + explicit owner approval and a connected Meta ad account. The agent cannot launch or fund ads.
+### W3 — Marketing / Facebook
+- **Do:** campaign assets (angles, creative, audiences, budget, tracking) **and** launch weekly tests when the ad account is connected. Competitor Facebook playbook: steal cadence/hooks that convert, never fake counters or banned claims. Protocol: `docs/ops/ads-weekly-protocol.md`.
+- **Gate (updated 2026-08-16, owner override):** Ethio approved aggressive weekly ad tests toward the $40k car. Claims policy on the live landing still binds. Earn-live (W2) runs **in parallel** — do not scale spend into dead partner-homepage `/earn` links. Overnight factory prompt: `docs/20-overnight-manager.md`.
+- **Budget guard:** each cell still needs cost / lift / kill. Default caps $150/day Meta + $50/day YouTube unless Ethio sets another number. The agent cannot click Meta billing or accept partner ToS.
 
 ---
 
-## 3. Critical path to first Facebook traffic (the honest "tomorrow" answer)
+## 3. Critical path to first Facebook traffic
 
-FB spend "tomorrow" is only responsible if this path is cleared first — most steps are fast:
+Earn-live still matters (dead `/earn` burns CAC). Owner override 2026-08-16 runs ads **in parallel** with that fix. Overnight factory: `docs/20-overnight-manager.md`.
 
-1. **(Owner, minutes)** Set `OPENROUTER_API_KEY` on Vercel → assistant works.
-2. **(Owner, minutes)** Reseed prod DB / flip links → `/earn` stops showing dead links.
-3. **(Agent + owner, hours)** Get ONE self-serve provider LIVE (W2 runbook) so new users can actually earn + a postback credits VP end-to-end.
-4. **(Agent, hours)** Ship the W1 copy realignment PR.
-5. **(Owner)** Connect Meta ad account + approve a small test budget with kill criteria.
-6. **Then** launch a small FB test (not a big push) → measure CAC vs first-earn rate → scale only if unit economics work.
-
-If steps 1–5 land quickly, a **small** FB test within ~24–48h is realistic. A large push tomorrow is not advisable.
+1. **(Owner, minutes)** `OPENROUTER_API_KEY` on Vercel. Reseed or disable dead `/earn` links. Meta Ads admin + daily cap. Facebook Page + YouTube Studio signed in on the bot browser.
+2. **(Agent + owner)** One provider crediting VP. Agent cannot accept ToS/tax/payout as Ethio.
+3. **(Agent, overnight)** PRs + competitor Facebook playbook + end-user QA + weekly ad cells (or a 5-minute launch pack if billing is not connected).
+4. **Morning** read `docs/ops/overnight-debrief-YYYY-MM-DD.md`. Click the 10-minute list. Scale winners.
 
 ---
 
@@ -63,15 +59,16 @@ If steps 1–5 land quickly, a **small** FB test within ~24–48h is realistic. 
 - [ ] `OPENROUTER_API_KEY` on Vercel (+ credits) — assistant.
 - [ ] Reseed prod DB or disable stale links — `/earn` dead links.
 - [ ] Provide identity/payout details (or complete those signup steps yourself) for provider approvals — agent cannot submit legal/tax/ToS as you.
-- [ ] `AGENTMAIL_API_KEY` — provided (rotate within 24h as agreed). Used for signup verification + support.
-- [ ] Connect Meta ad account + approve test budget with kill criteria before any spend.
-- [ ] Rotate the AgentMail + Apify keys pasted in chat once things are running.
+- [ ] `AGENTMAIL_API_KEY` — used for signup verification + support.
+- [ ] Connect Meta ad account + set a daily cap (default $150 Meta / $50 YouTube if unset). Pixel ID if you have one.
+- [ ] Sign in Facebook Page + YouTube Studio on the shared bot browser.
+- [ ] Overnight Manager: `/poteto-mode` then paste `docs/20-overnight-manager.md` §2.
 
 ---
 
 ## 5. Guardrails (non-negotiable)
 
-- No paid spend before the W3 gate + owner approval (budget guard).
+- Paid spend: owner override 2026-08-16 allows weekly tests; still no banned claims, no fake proof, and no scaling into a broken earn path.
 - No fabricated social proof, winner feeds, or inflated counters (competitor "static counter" tells are liabilities, not goals).
 - No banned claims ever: generators, "no survey", Steam password asks, guaranteed $.
 - Agents do not submit an owner's legal identity, tax, or payout info, or accept ToS on their behalf, without explicit authorization.
