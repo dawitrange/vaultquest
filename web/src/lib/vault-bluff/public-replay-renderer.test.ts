@@ -74,7 +74,7 @@ test("public replay route view is stable, BOT-labeled, and actionable", () => {
   assert.match(first, />Public replay · finished match</);
   assert.match(first, /Final score, player 2, bot 2/i);
   assert.equal(first.match(/Round [1-4] ·/g)?.length, 4);
-  assert.match(first, />Bold read</);
+  assert.match(first, />Persona cue: Bold read</);
   assert.match(first, />Share replay</);
   assert.match(first, /href="\/play\/vault-bluff\/r\/opaque-session-id"/);
   assert.match(first, /href="\/play\/vault-bluff"/);

@@ -195,7 +195,14 @@ export function toPublicVaultBluffReplay(
     const expectedPhase = index === value.rounds.length - 1
       ? "MATCH_COMPLETE"
       : "ROUND_REVEAL";
-    if (!round || round.phase !== expectedPhase) return null;
+    const expectedHumanRole = index % 2 === 0 ? "KEEPER" : "CHOOSER";
+    if (
+      !round ||
+      round.phase !== expectedPhase ||
+      round.humanRole !== expectedHumanRole
+    ) {
+      return null;
+    }
 
     if (round.winner === "BOT") botScore += 1;
     const response = round.responses.at(-1);

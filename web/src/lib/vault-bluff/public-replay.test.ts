@@ -129,6 +129,15 @@ test("public replay rejects active, forfeited, and inconsistent sessions", () =>
     toPublicVaultBluffReplay({ ...completed, botScore: completed.botScore + 1 }),
     null,
   );
+  assert.equal(
+    toPublicVaultBluffReplay({
+      ...completed,
+      rounds: completed.rounds.map((round, index) =>
+        index === 0 ? { ...round, humanRole: "CHOOSER" as const } : round,
+      ),
+    }),
+    null,
+  );
 });
 
 test("replay path treats the opaque session id as one URL segment", () => {
