@@ -19,6 +19,7 @@ import {
   type SafeRoundDto,
 } from "@/lib/vault-bluff/types";
 import type { ApiResult, ClientCommand } from "./VaultBluffGame";
+import { VaultBluffReplayShare } from "./VaultBluffReplayShare";
 
 type FaceoffProps = {
   game: ApiResult;
@@ -180,6 +181,7 @@ export function VaultBluffFaceoff({
             pending={pending}
             humanScore={game.session.humanScore}
             botScore={game.session.botScore}
+            replaySessionId={game.session.forfeited ? null : game.id}
             onRematch={onRematch}
             onNewBot={onNewBot}
           />
@@ -362,6 +364,7 @@ function ResultTable({
   pending,
   humanScore,
   botScore,
+  replaySessionId,
   onRematch,
   onNewBot,
 }: {
@@ -369,6 +372,7 @@ function ResultTable({
   pending: boolean;
   humanScore: number;
   botScore: number;
+  replaySessionId: string | null;
   onRematch: () => void;
   onNewBot: () => void;
 }) {
@@ -380,6 +384,14 @@ function ResultTable({
         botScore={botScore}
         result
       />
+      {replaySessionId ? (
+        <section className="mt-8" aria-label="Public replay">
+          <p className="mb-3 text-sm text-[var(--vq-ink-muted)]">
+            Share this finished match without sharing your account.
+          </p>
+          <VaultBluffReplayShare sessionId={replaySessionId} />
+        </section>
+      ) : null}
       <div className="vq-faceoff__result-actions">
         <button type="button" disabled={pending} onClick={onRematch}>
           Rematch

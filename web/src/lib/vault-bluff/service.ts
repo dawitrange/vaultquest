@@ -20,6 +20,10 @@ import {
   type GameRewardResult,
 } from "./rewards";
 import {
+  toPublicVaultBluffReplay,
+  type PublicVaultBluffReplay,
+} from "./public-replay";
+import {
   PERSONA_IDS,
   VAULT_BLUFF_ENGINE_VERSION,
   VAULT_BLUFF_POLICY_VERSION,
@@ -234,6 +238,19 @@ export async function getGameSession(args: {
     session: toSafeSessionDto(parseState(session.state)),
     reward: rewardResultFromGrant(session.rewardGrant),
   };
+}
+
+export async function getPublicGameReplay(
+  sessionId: string,
+): Promise<PublicVaultBluffReplay | null> {
+  const session = await prisma.gameSession.findFirst({
+    where: {
+      id: sessionId,
+      status: GameSessionStatus.COMPLETED,
+    },
+    select: { state: true },
+  });
+  return session ? toPublicVaultBluffReplay(session.state) : null;
 }
 
 async function applyActionAttempt(args: {
