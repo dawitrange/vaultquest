@@ -34,6 +34,7 @@ import {
   VaultBluffFaceoff,
   VaultBluffFaceoffLoading,
 } from "./VaultBluffFaceoff";
+import { VaultBluffReplayShare } from "./VaultBluffReplayShare";
 
 export type ApiResult = {
   id: string;
@@ -833,6 +834,9 @@ function MatchResult({
         </div>
         <RewardState reward={game.reward} forfeited={game.session.forfeited} />
       </div>
+      {!game.session.forfeited ? (
+        <VaultBluffReplayShare sessionId={game.id} className="mt-6" />
+      ) : null}
       <button
         type="button"
         disabled={pending}

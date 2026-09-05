@@ -212,6 +212,10 @@ test("Faceoff result keeps four equal actions and no reward copy", () => {
   }
   assert.match(html, /href="\/earn"/);
   assert.match(html, /href="\/play"/);
+  assert.match(html, />Open replay</);
+  assert.match(html, />Share replay</);
+  assert.match(html, /href="\/play\/vault-bluff\/r\/safe-session-id"/);
+  assert.match(html, /without sharing your account/);
   assert.doesNotMatch(html, /auto-rematch|countdown|\/api\/go\/|\bVP\b/i);
 });
 
