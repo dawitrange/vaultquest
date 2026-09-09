@@ -94,10 +94,6 @@ function loadEnvFile(filePath: string) {
   }
 }
 
-function envSet(name: string): boolean {
-  return Boolean(process.env[name]?.trim());
-}
-
 function redactUrl(raw: string): string {
   try {
     const url = new URL(raw);

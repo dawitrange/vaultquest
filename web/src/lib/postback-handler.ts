@@ -314,7 +314,7 @@ export async function handlePostbackRequest(args: {
       });
       return ledger;
     });
-  } catch (e) {
+  } catch {
     console.error("[postback] credit_failed");
     return json(500, { ok: false, error: "credit_failed" });
   }
