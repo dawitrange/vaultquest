@@ -10,6 +10,7 @@ import { exactFraction, funnel } from "@/lib/analytics";
 import { requireAdmin } from "@/lib/admin";
 import { clicksTodayForLink } from "@/lib/affiliates";
 import { prisma } from "@/lib/db";
+import { listPostbackLabEvidence } from "@/lib/postback-lab";
 import {
   ADGATE_SLUG,
   CPX_APP_ID,
@@ -29,7 +30,7 @@ export default async function AdminPage() {
   const admin = await requireAdmin();
   if (!admin) redirect("/login");
 
-  const [links, redemptions, contacts, recentClicks] = await Promise.all([
+  const [links, redemptions, contacts, recentClicks, postbackLab] = await Promise.all([
     prisma.affiliateLink.findMany({ orderBy: [{ category: "asc" }, { priority: "asc" }] }),
     prisma.redemption.findMany({
       include: { user: { select: { email: true } } },
@@ -42,28 +43,13 @@ export default async function AdminPage() {
       orderBy: { createdAt: "desc" },
       take: 20,
     }),
+    listPostbackLabEvidence(prisma),
   ]);
 
   const clickCounts = await Promise.all(links.map(async (l) => [l.id, await clicksTodayForLink(l.id)] as const));
   const clicksMap = Object.fromEntries(clickCounts);
 
   const stats = await funnel(7);
-  const recentS2s = await prisma.ledgerEntry.findMany({
-    where: { kind: "EARN", note: { startsWith: "S2S postback" } },
-    orderBy: { createdAt: "desc" },
-    take: 10,
-    select: {
-      id: true,
-      vp: true,
-      status: true,
-      availableAt: true,
-      questId: true,
-      clickId: true,
-      createdAt: true,
-      note: true,
-    },
-  });
-
   return (
     <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6">
       <h1 className="font-[family-name:var(--vq-font-display)] text-4xl font-bold tracking-tight">Admin</h1>
@@ -176,29 +162,77 @@ export default async function AdminPage() {
       </section>
 
       <section className="mt-14">
-        <h2 className="font-[family-name:var(--vq-font-display)] text-2xl font-semibold">S2S postback credits</h2>
-        <p className="mt-1 text-sm text-[var(--vq-ink-faint)]">
-          Ledger rows created by <code className="text-[var(--vq-teal)]">/api/postback</code> (pending VP +{" "}
-          <code>availableAt</code> from holdDays). Demo credits are excluded.
-        </p>
-        {recentS2s.length === 0 ? (
-          <p className="mt-4 text-sm text-[var(--vq-ink-faint)]">No S2S credits yet.</p>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="font-[family-name:var(--vq-font-display)] text-2xl font-semibold">S2S Postback Lab</h2>
+            <p className="mt-1 max-w-3xl text-sm text-[var(--vq-ink-faint)]">
+              Read-only database evidence joining each S2S ledger entry to its OfferClick. This proves binding,
+              credited state, and VP hold state; it does not prove partner payout.
+            </p>
+          </div>
+          <a
+            href="/api/admin/postback-lab.csv"
+            className="rounded-md border border-[var(--vq-border)] px-3 py-2 text-xs font-semibold text-[var(--vq-teal)] hover:border-[var(--vq-teal)]"
+          >
+            Download CSV
+          </a>
+        </div>
+        {postbackLab.length === 0 ? (
+          <p className="mt-4 text-sm text-[var(--vq-ink-faint)]">No S2S ledger entries yet.</p>
         ) : (
-          <ul className="mt-4 divide-y divide-[var(--vq-border)] rounded-[10px] border border-[var(--vq-border)] text-sm">
-            {recentS2s.map((row) => (
-              <li key={row.id} className="flex flex-wrap justify-between gap-2 px-4 py-3">
-                <span className="font-[family-name:var(--vq-font-mono)] text-xs">{row.id}</span>
-                <span>
-                  {row.vp} VP · {row.status}
-                  {row.availableAt ? ` · available ${row.availableAt.toISOString()}` : ""}
-                  {row.questId ? ` · ${row.questId}` : ""}
-                  {row.note?.includes("tx=") ? " · has tx_id" : ""}
-                  {row.note?.includes("hmac=ok") ? " · hmac=ok" : ""}
-                  {row.note?.includes("cpx_md5=ok") ? " · cpx_md5=ok" : ""}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <div className="mt-4 overflow-x-auto rounded-[10px] border border-[var(--vq-border)]">
+            <table className="min-w-[980px] table-fixed text-left text-xs">
+              <thead className="bg-[var(--vq-bg-raised)] text-[var(--vq-ink-faint)]">
+                <tr>
+                  <th className="w-44 px-3 py-2 font-medium">Partner / transaction</th>
+                  <th className="w-56 px-3 py-2 font-medium">OfferClick</th>
+                  <th className="w-56 px-3 py-2 font-medium">LedgerEntry</th>
+                  <th className="w-48 px-3 py-2 font-medium">VP state</th>
+                  <th className="w-36 px-3 py-2 font-medium">Binding</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--vq-border)]">
+                {postbackLab.map((row) => (
+                  <tr key={row.ledgerId} className="align-top">
+                    <td className="px-3 py-3">
+                      <span className="block">{row.partner ?? "unknown partner"}</span>
+                      <span className="mt-1 block break-all font-[family-name:var(--vq-font-mono)] text-[10px] text-[var(--vq-ink-faint)]">
+                        tx={row.transactionId ?? "not supplied"}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className="block break-all font-[family-name:var(--vq-font-mono)] text-[10px]">
+                        {row.clickId ?? "unbound"}
+                      </span>
+                      <span className="mt-1 block text-[var(--vq-ink-faint)]">
+                        credited={row.clickCredited == null ? "unknown" : String(row.clickCredited)}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className="block break-all font-[family-name:var(--vq-font-mono)] text-[10px]">
+                        {row.ledgerId}
+                      </span>
+                      <span className="mt-1 block text-[var(--vq-ink-faint)]">
+                        {row.vp} VP{row.questId ? ` · ${row.questId}` : ""}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className="block">{row.ledgerStatus}</span>
+                      <span className="mt-1 block text-[var(--vq-ink-faint)]">{row.availability}</span>
+                      {row.availableAt ? (
+                        <span className="mt-1 block font-[family-name:var(--vq-font-mono)] text-[10px] text-[var(--vq-ink-faint)]">
+                          {row.availableAt.toISOString()}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="px-3 py-3 font-[family-name:var(--vq-font-mono)] text-[10px]">
+                      {row.binding}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
 

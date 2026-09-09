@@ -34,6 +34,13 @@ type PostbackClick = {
   affiliateLink: { partner: string };
 };
 
+type CreatedLedgerEntry = {
+  id: string;
+  status: LedgerStatus;
+  availableAt: Date | null;
+  clickId: string | null;
+};
+
 /** Minimal Prisma surface used by S2S credit. Tests pass an in-memory stand-in. */
 export type PostbackDb = {
   offerClick: {
@@ -50,7 +57,10 @@ export type PostbackDb = {
       orderBy: { createdAt: "desc" };
       include: { affiliateLink: true };
     }) => Promise<PostbackClick | null>;
-    update: (args: { where: { id: string }; data: { credited: boolean } }) => Promise<unknown>;
+    updateMany: (args: {
+      where: { id: string; credited: false; userId: string | null };
+      data: { credited: true; userId?: string };
+    }) => Promise<{ count: number }>;
   };
   user: {
     findUnique: (args: { where: { id: string }; select?: { id: true } }) => Promise<{ id: string } | null>;
@@ -64,7 +74,7 @@ export type PostbackDb = {
       status: LedgerStatus;
       note: string | null;
     } | null>;
-    create: (args: { data: Record<string, unknown> }) => Promise<unknown>;
+    create: (args: { data: Record<string, unknown> }) => Promise<CreatedLedgerEntry>;
     update: (args: {
       where: { id: string };
       data: { status: LedgerStatus; note: string };
@@ -156,15 +166,29 @@ export async function handlePostbackRequest(args: {
   let partnerName: string;
   let clickId: string | null;
   let clickQuestId: string | null | undefined;
+  let clickOwnerId: string | null = null;
 
   if (click) {
     if (click.credited) {
       return json(200, { ok: true, duplicate: true });
     }
-    userId = userIdCandidate || click.userId || undefined;
+    if (click.userId && userIdCandidate && click.userId !== userIdCandidate) {
+      return json(409, { ok: false, error: "user_id does not match click" });
+    }
+    if (!click.userId && userIdCandidate) {
+      const user = await prisma.user.findUnique({
+        where: { id: userIdCandidate },
+        select: { id: true },
+      });
+      if (!user) {
+        return json(404, { ok: false, error: "unknown click user" });
+      }
+    }
+    userId = click.userId || userIdCandidate || undefined;
     partnerName = click.affiliateLink.partner;
     clickId = click.id;
     clickQuestId = click.questId;
+    clickOwnerId = click.userId;
   } else {
     const candidateUserId = userIdCandidate || clickIdCandidate;
     const user = candidateUserId
@@ -189,6 +213,7 @@ export async function handlePostbackRequest(args: {
     partnerName = (cpxClick?.affiliateLink.partner ?? get("partner")) || "partner wall";
     clickId = cpxClick?.id ?? null;
     clickQuestId = cpxClick?.questId ?? null;
+    clickOwnerId = cpxClick?.userId ?? null;
   }
 
   if (!userId) {
@@ -261,15 +286,21 @@ export async function handlePostbackRequest(args: {
   const holdDays = Number.isFinite(holdDaysRaw) ? holdDaysRaw : 3;
   const availableAt = holdDays > 0 ? new Date(nowMs + holdDays * 86400000) : null;
 
-  let credited = false;
+  let credit: CreatedLedgerEntry | null = null;
   try {
-    credited = await prisma.$transaction(async (tx) => {
+    credit = await prisma.$transaction(async (tx) => {
       if (clickId) {
-        const fresh = await tx.offerClick.findUnique({ where: { id: clickId } });
-        if (!fresh || fresh.credited) return false;
+        const claim = await tx.offerClick.updateMany({
+          where: { id: clickId, credited: false, userId: clickOwnerId },
+          data: {
+            credited: true,
+            ...(!clickOwnerId ? { userId } : {}),
+          },
+        });
+        if (claim.count !== 1) return null;
       }
 
-      await tx.ledgerEntry.create({
+      const ledger = await tx.ledgerEntry.create({
         data: {
           userId,
           vp,
@@ -281,27 +312,24 @@ export async function handlePostbackRequest(args: {
           note: `S2S postback via ${partnerName}${txId ? ` tx=${txId}` : ""}${hashOk ? " hmac=ok" : ""}${cpxMd5Ok ? " cpx_md5=ok" : ""}`,
         },
       });
-
-      if (clickId) {
-        await tx.offerClick.update({
-          where: { id: clickId },
-          data: { credited: true },
-        });
-      }
-      return true;
+      return ledger;
     });
   } catch (e) {
     console.error("[postback] credit_failed");
     return json(500, { ok: false, error: "credit_failed" });
   }
 
-  if (!credited) {
+  if (!credit) {
     return json(200, { ok: true, duplicate: true, ...(txId ? { tx_id: txId } : {}) });
   }
 
   return json(200, {
     ok: true,
+    credited: true,
     click_id: clickId ?? clickIdCandidate,
+    ledger_id: credit.id,
+    ledger_status: credit.status,
+    available_at: credit.availableAt?.toISOString() ?? null,
     vp,
     user_id: userId,
     ...(hashOk ? { hash: "ok" } : {}),
