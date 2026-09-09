@@ -61,6 +61,7 @@ import {
 import { pathFromAuthHint } from "../src/lib/auth-redirect";
 import { createResetToken, hashResetToken } from "../src/lib/password-reset";
 import type { PostbackDb } from "../src/lib/postback-handler";
+import { buildPostbackLabRows, postbackLabCsv } from "../src/lib/postback-lab";
 import { LedgerKind, LedgerStatus } from "@prisma/client";
 
 type CaseResult = { name: string; pass: boolean; detail: string };
@@ -265,7 +266,8 @@ Cases:
   9. CPX official secure_hash = md5(trans_id-appsecurehash); missing HMAC hash must not 401
   10. CPX status=2 voids matching EARN (does not unwind REDEEM) — flagged gap if already spent
   11. Official CPX user_id-only binds the same user's cpx-survey click and credits PENDING EARN — in-memory, no prod
-  12. Trim secret/aliases; user_id=Dawit (not a User.id) → 404 and no ledger row
+  12. Simultaneous same-tx callbacks atomically claim one click; Lab join/CSV shows OfferClick ↔ ledger evidence
+  13. User/click mismatch is write-free; trim aliases; user_id=Dawit (not a User.id) → 404 and no ledger row
 
 Target network: CPX (${CPX_SLUG}). AdGate (${ADGATE_SLUG}) is stalled (under review).
 Ethio's CPX postback test succeeded. Live URL has no hash=. Yield is flipping
@@ -1058,8 +1060,10 @@ type MemoryLedger = {
   kind: LedgerKind;
   status: LedgerStatus;
   availableAt: Date | null;
+  questId: string | null;
   clickId: string | null;
   note: string | null;
+  createdAt: Date;
 };
 
 function createMemoryPostbackDb(seed: { users?: string[]; clicks?: MemoryClick[] }) {
@@ -1090,11 +1094,13 @@ function createMemoryPostbackDb(seed: { users?: string[]; clicks?: MemoryClick[]
             .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())[0] ?? null
         );
       },
-      async update({ where, data }) {
+      async updateMany({ where, data }) {
         const row = clicks.get(where.id);
-        if (!row) throw new Error("missing click");
+        if (!row || row.credited !== where.credited || row.userId !== where.userId) {
+          return { count: 0 };
+        }
         Object.assign(row, data);
-        return row;
+        return { count: 1 };
       },
     },
     ledgerEntry: {
@@ -1112,8 +1118,10 @@ function createMemoryPostbackDb(seed: { users?: string[]; clicks?: MemoryClick[]
           kind: data.kind as LedgerKind,
           status: data.status as LedgerStatus,
           availableAt: (data.availableAt as Date | null) ?? null,
+          questId: (data.questId as string | null) ?? null,
           clickId: (data.clickId as string | null) ?? null,
           note: (data.note as string | null) ?? null,
+          createdAt: new Date(),
         };
         ledger.push(row);
         return row;
@@ -1245,9 +1253,13 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
         pass:
           credit.status === 200 &&
           credit.body.ok === true &&
+          credit.body.credited === true &&
           credit.body.duplicate !== true &&
           credit.body.user_id === userId &&
           credit.body.click_id === cpxClickId &&
+          credit.body.ledger_id === row?.id &&
+          credit.body.ledger_status === LedgerStatus.PENDING &&
+          credit.body.available_at === row?.availableAt?.toISOString() &&
           credit.body.cpx_md5 === "ok" &&
           Number(credit.body.vp) === 35 &&
           wallDb.ledger.length === 1 &&
@@ -1280,6 +1292,34 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
           wallDb.clicks.get("click-cpx-same-user-older")?.credited === false &&
           wallDb.clicks.get("click-cpx-other-user")?.credited === false,
         detail: `HTTP ${dup.status} ${JSON.stringify({ ok: dup.body.ok, duplicate: dup.body.duplicate })} ledger=${wallDb.ledger.length} credited=${String(boundClick?.credited)}`,
+      });
+
+      const labRows = buildPostbackLabRows({
+        ledgers: wallDb.ledger.map((ledger) => ({
+          ...ledger,
+          user: { email: "postback-lab@vaultquest.invalid" },
+        })),
+        clicks: [...wallDb.clicks.values()],
+        now: new Date(nowMs),
+      });
+      const labRow = labRows[0];
+      const labCsv = postbackLabCsv(labRows);
+      results.push({
+        name: "Postback Lab evidence joins OfferClick ↔ ledger",
+        pass:
+          labRows.length === 1 &&
+          labRow?.ledgerId === row?.id &&
+          labRow.clickId === cpxClickId &&
+          labRow.clickCredited === true &&
+          labRow.binding === "BOUND_CREDITED" &&
+          labRow.ledgerStatus === LedgerStatus.PENDING &&
+          labRow.availability === "PENDING" &&
+          labRow.transactionId === "T1" &&
+          labCsv.includes('"binding"') &&
+          labCsv.includes('"BOUND_CREDITED"') &&
+          labCsv.includes(`"${cpxClickId}"`) &&
+          labCsv.includes(`"${row?.id}"`),
+        detail: `clickId=${labRow?.clickId ?? "none"} credited=${String(labRow?.clickCredited)} ledger=${labRow?.ledgerId ?? "none"} status=${labRow?.ledgerStatus ?? "none"} binding=${labRow?.binding ?? "none"}`,
       });
 
       const missingIds = await handlePostbackRequest({
@@ -1392,10 +1432,104 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
         pass:
           clickCredit.status === 200 &&
           clickCredit.body.ok === true &&
+          clickCredit.body.credited === true &&
+          clickCredit.body.ledger_id === clickLedger?.id &&
           clickRow?.credited === true &&
           clickLedger?.clickId === clickId &&
           clickLedger.status === LedgerStatus.PENDING,
         detail: `HTTP ${clickCredit.status} credited=${String(clickRow?.credited)} clickId=${clickLedger?.clickId ?? "none"}`,
+      });
+
+      const mismatchClickId = "click-user-mismatch-001";
+      const mismatchDb = createMemoryPostbackDb({
+        users: [userId, otherUserId],
+        clicks: [
+          {
+            id: mismatchClickId,
+            userId,
+            credited: false,
+            questId: "q-surveys",
+            createdAt: new Date(nowMs),
+            affiliateLink: { partner: "cpx", slug: CPX_SLUG },
+          },
+        ],
+      });
+      const mismatch = await handlePostbackRequest({
+        url: "http://localhost/api/postback?secret=x&click_id=c1&user_id=other&partner=cpx&trans_id=T-mismatch&amount_usd=0.50",
+        get: bagGet({
+          secret: unitSecret,
+          click_id: mismatchClickId,
+          user_id: otherUserId,
+          partner: "cpx",
+          trans_id: "T-mismatch",
+          amount_usd: "0.50",
+        }),
+        prisma: mismatchDb,
+        nowMs,
+      });
+      results.push({
+        name: "click owner mismatch is write-free",
+        pass:
+          mismatch.status === 409 &&
+          mismatch.body.error === "user_id does not match click" &&
+          mismatchDb.ledger.length === 0 &&
+          mismatchDb.clicks.get(mismatchClickId)?.credited === false,
+        detail: `HTTP ${mismatch.status} ledger=${mismatchDb.ledger.length} credited=${String(mismatchDb.clicks.get(mismatchClickId)?.credited)}`,
+      });
+
+      const raceClickId = "click-concurrent-replay-001";
+      const raceTx = "T-concurrent-replay";
+      const raceDb = createMemoryPostbackDb({
+        users: [userId],
+        clicks: [
+          {
+            id: raceClickId,
+            userId,
+            credited: false,
+            questId: "q-surveys",
+            createdAt: new Date(nowMs),
+            affiliateLink: { partner: "cpx", slug: CPX_SLUG },
+          },
+        ],
+      });
+      const raceBag = {
+        secret: unitSecret,
+        click_id: raceClickId,
+        user_id: userId,
+        partner: "cpx",
+        trans_id: raceTx,
+        amount_usd: "0.50",
+        secure_hash: signCpxPostbackHash(raceTx, cpxSecret),
+      };
+      const raceUrl =
+        "http://localhost/api/postback?secret=x&click_id=c1&user_id=u&partner=cpx&trans_id=T-concurrent-replay&amount_usd=0.50&secure_hash=x";
+      const raceResults = await Promise.all([
+        handlePostbackRequest({
+          url: raceUrl,
+          get: bagGet(raceBag),
+          prisma: raceDb,
+          nowMs,
+        }),
+        handlePostbackRequest({
+          url: raceUrl,
+          get: bagGet(raceBag),
+          prisma: raceDb,
+          nowMs,
+        }),
+      ]);
+      const raceCredits = raceResults.filter((result) => result.body.credited === true);
+      const raceDuplicates = raceResults.filter((result) => result.body.duplicate === true);
+      results.push({
+        name: "concurrent same-tx replay claims click once",
+        pass:
+          raceResults.every((result) => result.status === 200 && result.body.ok === true) &&
+          raceCredits.length === 1 &&
+          raceDuplicates.length === 1 &&
+          raceDb.ledger.length === 1 &&
+          raceDb.ledger[0]?.clickId === raceClickId &&
+          raceDb.ledger[0]?.status === LedgerStatus.PENDING &&
+          raceDb.clicks.get(raceClickId)?.credited === true,
+        detail: `credited=${raceCredits.length} duplicate=${raceDuplicates.length} ledger=${raceDb.ledger.length} click=${String(raceDb.clicks.get(raceClickId)?.credited)}`,
       });
 
       const productionUserId = "cmsm9ktvi0000l4049p7l03xk";
