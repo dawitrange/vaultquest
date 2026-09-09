@@ -86,7 +86,8 @@ export type PostbackDb = {
 /**
  * S2S postback core. Official CPX may send `user_id` and no click_id — that
  * must credit via wall flow, not 400 `click_id required`. The wall flow binds
- * the newest uncredited click owned by that user on the cpx-survey link.
+ * the newest uncredited click owned by that user on the cpx-survey link. A
+ * positive callback with no matching OfferClick is rejected without a write.
  * A display name (e.g. Dawit) is not a User.id — 404, do not invent a user.
  * Incoming secret and alias values are trimmed so `secret= VALUE` still matches.
  */
@@ -259,6 +260,10 @@ export async function handlePostbackRequest(args: {
       ledger_id: prior.id,
       gap: prior.kind === LedgerKind.EARN ? undefined : "status_2_non_earn",
     });
+  }
+
+  if (!clickId) {
+    return json(404, { ok: false, error: "matching offer click required" });
   }
 
   const questId = get("quest_id") || clickQuestId || undefined;

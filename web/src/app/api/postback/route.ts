@@ -15,7 +15,8 @@ import { handlePostbackRequest, type PostbackDb } from "@/lib/postback-handler";
  *           partner=cpx with no HMAC `hash` must not 401. Missing `secure_hash`
  *           skips MD5 (Ethio's current save) and still credits via POSTBACK_SECRET.
  *           Official CPX may send `user_id` (and/or `uid`) with no click_id —
- *           that credits the matching User via wall flow (clickId may be null).
+ *           that credits only when wall flow finds that user's uncredited
+ *           cpx-survey OfferClick. Positive credits are never clickless.
  *           status=2 voids a matching PENDING/POSTED EARN; does not unwind REDEEM.
  *           Live URL has no hash=. MD5 stays for later signed CPX posts.
  *           Yield flipped cpx-survey to the official offers host + app_id 35413

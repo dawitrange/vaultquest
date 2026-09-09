@@ -936,13 +936,12 @@ async function liveCases(baseUrl: string): Promise<CaseResult[]> {
     where: { userId, note: { contains: `tx=${adgateTx}` } },
   });
   results.push({
-    name: "alias wiring postback (not earn-live / not Yield)",
+    name: "unbound alias postback is write-free",
     pass:
-      adgate.status === 200 &&
-      adgate.json.ok === true &&
-      adgateLedger?.status === "PENDING" &&
-      Boolean(adgateLedger.availableAt),
-    detail: `HTTP ${adgate.status} tx_id=${adgateTx} ledger=${adgateLedger?.id ?? "none"} status=${adgateLedger?.status ?? "none"}`,
+      adgate.status === 404 &&
+      adgate.json.error === "matching offer click required" &&
+      adgateLedger == null,
+    detail: `HTTP ${adgate.status} error=${String(adgate.json.error ?? "")} ledger=${adgateLedger?.id ?? "none"}`,
   });
 
   const cpxNoHmac = new URL(`${origin}/api/postback`);
@@ -954,9 +953,11 @@ async function liveCases(baseUrl: string): Promise<CaseResult[]> {
   cpxNoHmac.searchParams.set("trans_id", `cpx-nohash-${Date.now()}`);
   const cpxUnsigned = await fetchJson(cpxNoHmac.toString());
   results.push({
-    name: "CPX partner without HMAC hash does not 401",
-    pass: cpxUnsigned.status === 200 && cpxUnsigned.json.ok === true,
-    detail: `HTTP ${cpxUnsigned.status} ok=${String(cpxUnsigned.json.ok)} — Ethio save without hash= must smoke after flip`,
+    name: "CPX without HMAC reaches click-required gate",
+    pass:
+      cpxUnsigned.status === 404 &&
+      cpxUnsigned.json.error === "matching offer click required",
+    detail: `HTTP ${cpxUnsigned.status} error=${String(cpxUnsigned.json.error ?? "")} — no unbound credit`,
   });
 
   const cpxBad = await fetchJson(
@@ -971,10 +972,10 @@ async function liveCases(baseUrl: string): Promise<CaseResult[]> {
   const cpxSecret = firstCpxSecret();
   if (!cpxSecret) {
     results.push({
-      name: "CPX valid official secure_hash live credit",
+      name: "CPX valid official secure_hash click gate",
       pass: true,
       detail:
-        "SKIPPED — set CPX_SECURE_HASH locally to exercise official secure_hash. Hook is unit-tested. Earn-live not certified.",
+        "SKIPPED — set CPX_SECURE_HASH locally to exercise signed click-required rejection. Hook is unit-tested.",
     });
   } else {
     const cpxTx = `cpx-smoke-${Date.now()}`;
@@ -992,31 +993,12 @@ async function liveCases(baseUrl: string): Promise<CaseResult[]> {
       where: { userId, note: { contains: `tx=${cpxTx}` } },
     });
     results.push({
-      name: "CPX valid official secure_hash (localhost only)",
+      name: "CPX valid secure_hash cannot credit unknown click",
       pass:
-        cpxOk.status === 200 &&
-        cpxOk.json.ok === true &&
-        cpxOk.json.cpx_md5 === "ok" &&
-        cpxLedger?.status === "PENDING" &&
-        Boolean(cpxLedger.availableAt),
-      detail: `HTTP ${cpxOk.status} cpx_md5=${String(cpxOk.json.cpx_md5 ?? "")} ledger=${cpxLedger?.id ?? "none"} — not earn-live`,
-    });
-    const cpxDup = await fetchJson(cpxUrl.toString());
-    results.push({
-      name: "CPX duplicate trans_id",
-      pass: cpxDup.status === 200 && cpxDup.json.ok === true && cpxDup.json.duplicate === true,
-      detail: `HTTP ${cpxDup.status} duplicate=${String(cpxDup.json.duplicate)}`,
-    });
-    const cpxRev = new URL(cpxUrl.toString());
-    cpxRev.searchParams.set("status", "2");
-    const cpxRevRes = await fetchJson(cpxRev.toString());
-    const cpxVoided = await prisma.ledgerEntry.findFirst({
-      where: { userId, note: { contains: `tx=${cpxTx}` } },
-    });
-    results.push({
-      name: "CPX status=2 voids matching EARN",
-      pass: cpxRevRes.status === 200 && cpxRevRes.json.reversed === true && cpxVoided?.status === "VOID",
-      detail: `HTTP ${cpxRevRes.status} reversed=${String(cpxRevRes.json.reversed)} status=${cpxVoided?.status ?? "none"} — does not unwind REDEEM`,
+        cpxOk.status === 404 &&
+        cpxOk.json.error === "matching offer click required" &&
+        cpxLedger == null,
+      detail: `HTTP ${cpxOk.status} error=${String(cpxOk.json.error ?? "")} ledger=${cpxLedger?.id ?? "none"}`,
     });
   }
 
@@ -1384,14 +1366,36 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
         nowMs,
       });
       results.push({
-        name: "user_id-only without a CPX click does not invent one",
+        name: "user_id-only without a CPX click is write-free",
         pass:
-          aliasCredit.status === 200 &&
-          aliasCredit.body.ok === true &&
-          aliasDb.ledger[0]?.status === LedgerStatus.PENDING &&
-          aliasDb.ledger[0]?.clickId === null &&
-          Boolean(aliasDb.ledger[0]?.note?.includes("tx=T-alias")),
-        detail: `HTTP ${aliasCredit.status} clickId=${aliasDb.ledger[0]?.clickId ?? "none"} note=${aliasDb.ledger[0]?.note ?? "none"}`,
+          aliasCredit.status === 404 &&
+          aliasCredit.body.ok === false &&
+          aliasCredit.body.error === "matching offer click required" &&
+          aliasDb.ledger.length === 0,
+        detail: `HTTP ${aliasCredit.status} error=${String(aliasCredit.body.error ?? "")} ledger=${aliasDb.ledger.length}`,
+      });
+
+      const unknownClickDb = createMemoryPostbackDb({ users: [userId] });
+      const unknownClick = await handlePostbackRequest({
+        url: "http://localhost/api/postback?secret=x&partner=cpx&click_id=missing&user_id=u&tx_id=T-unknown&payout_usd=0.50",
+        get: bagGet({
+          secret: unitSecret,
+          partner: "cpx",
+          click_id: "missing-click",
+          user_id: userId,
+          tx_id: "T-unknown",
+          payout_usd: "0.50",
+        }),
+        prisma: unknownClickDb,
+        nowMs,
+      });
+      results.push({
+        name: "unknown click plus valid user is write-free",
+        pass:
+          unknownClick.status === 404 &&
+          unknownClick.body.error === "matching offer click required" &&
+          unknownClickDb.ledger.length === 0,
+        detail: `HTTP ${unknownClick.status} error=${String(unknownClick.body.error ?? "")} ledger=${unknownClickDb.ledger.length}`,
       });
 
       const clickId = "click-signed-in-001";
@@ -1575,6 +1579,7 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
         detail: `HTTP ${subidCredit.status} clickId=${subidLedger?.clickId ?? "none"}`,
       });
 
+      const skipHmacDb = createMemoryPostbackDb({ users: [userId] });
       const skipHmac = await handlePostbackRequest({
         url: "http://localhost/api/postback?secret=x&partner=cpx&user_id=u&trans_id=T-hmac&amount_usd=0.50",
         get: bagGet({
@@ -1584,13 +1589,16 @@ async function offlineCpxUserIdCases(): Promise<CaseResult[]> {
           trans_id: "T-hmac-skip",
           amount_usd: "0.50",
         }),
-        prisma: createMemoryPostbackDb({ users: [userId] }),
+        prisma: skipHmacDb,
         nowMs,
       });
       results.push({
-        name: "partner=cpx skips HMAC hash= when missing",
-        pass: skipHmac.status === 200 && skipHmac.body.ok === true && skipHmac.body.hash !== "ok",
-        detail: `HTTP ${skipHmac.status} ok=${String(skipHmac.body.ok)} hash=${String(skipHmac.body.hash ?? "absent")}`,
+        name: "missing CPX HMAC still reaches click-required gate",
+        pass:
+          skipHmac.status === 404 &&
+          skipHmac.body.error === "matching offer click required" &&
+          skipHmacDb.ledger.length === 0,
+        detail: `HTTP ${skipHmac.status} error=${String(skipHmac.body.error ?? "")} ledger=${skipHmacDb.ledger.length}`,
       });
     },
   );

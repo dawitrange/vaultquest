@@ -8,6 +8,7 @@ Partners credit Vault points over S2S `/api/postback`. The user does not see thi
 - `postback-prod-probe` public production checks never send secrets.
 - `postback-local-credit` on a verify DB: click → postback → pending VP (issue #15).
 - `postback-duplicate` same `tx_id` does not double-credit.
+- `postback-click-required` rejects positive callbacks that cannot bind an existing OfferClick.
 
 ## How to get to it (user POV)
 
