@@ -43,6 +43,7 @@ See **[docs/deploy-vercel.md](docs/deploy-vercel.md)**. Vercel MCP is configured
 |-------|------|
 | `/contact` | Contact form (saved + emailed if Resend set) |
 | `/admin` | Caps, fulfillment, contact inbox |
+| `/api/admin/postback-lab.csv` | Admin-only, read-only OfferClick ↔ S2S ledger evidence |
 | `/api/go/[questId]` | Tracked click → rotated partner |
 | `/api/postback` | S2S credit (`secret`, `click_id`, `vp`) |
 | `/signup` `/login` `/forgot-password` | Email auth + OAuth when configured; password reset uses `RESEND_API_KEY` |

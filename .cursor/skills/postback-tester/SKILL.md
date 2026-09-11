@@ -16,6 +16,7 @@ pwsh .cursor/skills/postback-tester/scripts/test.ps1
 pwsh .cursor/skills/postback-tester/scripts/test.ps1 -Help
 bash .cursor/skills/postback-tester/scripts/test.sh
 bash .cursor/skills/postback-tester/scripts/test.sh --help
+bash .cursor/skills/postback-tester/scripts/test.sh --offline
 bash .cursor/skills/postback-tester/scripts/test.sh --probe-prod
 bash .cursor/skills/postback-tester/scripts/test.sh --seed-local http://localhost:3000
 ```
@@ -32,8 +33,10 @@ Flags: `--help` prints cases without calling; `--probe-prod` public prod checks 
 8. Refuse marketing homepages (`adgatemedia.com/`, `www.cpx-research.com/`)
 9. **CPX MD5:** official param is `secure_hash` = `md5(trans_id-appsecurehash)`. Fail-closed when `secure_hash` is present. `partner=cpx` with **no** HMAC `hash` must **not** 401 (Ethio’s current save). Do not put MD5 on `hash=` — current prod HMAC-checks `hash`.
 10. **CPX status=2:** voids matching PENDING/POSTED EARN. Does **not** unwind REDEEM if already spent (flagged gap).
-11. Flip watch: `--probe-prod` reads `/earn` and signed-out `/api/go/q-surveys` (login, no wall click). **Does not** hit `/api/go/q-freecash` on production (that would create a Freecash click until the auth-gate ships). After confirm, smoke path is **CPX / q-surveys only** — not Freecash, not a homepage.
-12. Reports PASS/FAIL per case. `--help` needs no server. Live credit needs localhost + env names below.
+11. In-memory CPX replay uses the real handler to prove OfferClick claim + `credited=true` + one PENDING ledger row, including simultaneous same-transaction callbacks. User-only CPX binds only when that user has an uncredited `cpx-survey` click; otherwise the callback is write-free.
+12. The Lab evidence join and CSV formatter prove the same OfferClick ID, ledger ID, credited state, VP state, and transaction ID are inspectable without a database write.
+13. Flip watch: `--probe-prod` reads `/earn` and signed-out `/api/go/q-surveys` (login, no wall click). **Does not** hit `/api/go/q-freecash` on production (that would create a Freecash click until the auth-gate ships). After confirm, smoke path is **CPX / q-surveys only** — not Freecash, not a homepage.
+14. Reports PASS/FAIL per case. `--help` and `--offline` need no server or database. Live credit needs localhost + env names below.
 
 ## Yield target: CPX (Yield is flipping — do not smoke yet)
 
@@ -61,5 +64,6 @@ Flags: `--help` prints cases without calling; `--probe-prod` public prod checks 
 ## Constraints
 - Never sends real secrets to prod; use local env.
 - Stage-only — do not trigger live network callbacks.
+- Positive S2S credit requires an existing OfferClick. Never treat a clickless ledger row as a successful Lab case.
 - Smoke AffiliateLink is first-party `https://www.vaultquest.io/proof` — do not invent partner placement URLs.
 - Never smoke marketing homepages. Never flip `/admin`. Never hardcode a CPX wall URL.
