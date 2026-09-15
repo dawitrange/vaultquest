@@ -29,6 +29,7 @@ export const PUBLIC_PATHS = [
   "/about",
   "/how-it-works",
   "/play",
+  "/haul",
   "/earn",
   "/rewards",
   "/giveaways",
