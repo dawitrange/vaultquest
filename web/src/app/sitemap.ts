@@ -7,8 +7,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const core: MetadataRoute.Sitemap = PUBLIC_PATHS.map((path) => ({
     url: path === "/" ? SITE.url : `${SITE.url}${path}`,
     lastModified,
-    changeFrequency: path === "/" || path === "/earn" || path === "/rewards" ? "daily" : "weekly",
-    priority: path === "/" ? 1 : path === "/earn" || path === "/rewards" ? 0.9 : 0.7,
+    changeFrequency:
+      path === "/" ||
+      path === "/haul" ||
+      path === "/earn" ||
+      path === "/rewards"
+        ? "daily"
+        : "weekly",
+    priority:
+      path === "/"
+        ? 1
+        : path === "/haul" || path === "/earn" || path === "/rewards"
+          ? 0.9
+          : 0.7,
   }));
 
   const guides: MetadataRoute.Sitemap = REWARD_GUIDES.map((g) => ({

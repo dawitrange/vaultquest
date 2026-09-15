@@ -17,6 +17,7 @@ export const PLAY_REWARDS_OFF_COPY =
 
 export const NAV = [
   { href: "/play", label: "Play" },
+  { href: "/haul", label: "Haul" },
   { href: "/earn", label: "Earn" },
   { href: "/rewards", label: "Rewards" },
   // Product freeze: keep the live giveaway form in primary nav through Sep 1 ET.
@@ -29,6 +30,7 @@ export const PUBLIC_PATHS = [
   "/about",
   "/how-it-works",
   "/play",
+  "/haul",
   "/earn",
   "/rewards",
   "/giveaways",
